@@ -26,14 +26,14 @@
 3. Выбери задачу в [Projects]((https://github.com/users/DaL1ner/projects/1)) → начни работу
 
 ### ✅ Перед началом работы:
-`git pull origin main`
+- `git pull origin main`
 
 ### ✅ После правки:
-`git add archi-model/название_папки`
-`git commit -m "feat(business): Добавлены клиент и оператор очереди"`
-`git push origin main`
+- `git add archi-model/название_папки`
+- `git commit -m "feat(business): Добавлены клиент и оператор очереди"`
+- `git push origin main`
 
-### Как работаем (пример)?
+### Как работаем по Scrum (пример)?
 
 1. **PO** создаёт Задачу "Смоделировать роль Client" → она попадает в _Backlog_
 2. На подготовке к спринту команда перетаскивает Задачу в _Sprint Backlog_ + назначает _Milestone_ (номер спринта)
