@@ -23,7 +23,7 @@
 ## 🚀 Быстрый старт
 1. Клонируй репозиторий - `git clone ссылка`
 2. Открой `archi-model/...` в Archi
-3. Выбери задачу в [Projects]((https://github.com/users/DaL1ner/projects/1)) → начни работу
+3. Выбери задачу в [Projects](https://github.com/users/DaL1ner/projects/1) → начни работу
 
 ### ✅ Перед началом работы:
 - `git pull origin main`
