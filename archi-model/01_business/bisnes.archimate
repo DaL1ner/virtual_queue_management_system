@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<archimate:model xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:archimate="http://www.archimatetool.com/archimate" name="(new model)" id="id-8349c2d3ae5e43898061b1fb7b82abe9" version="5.0.0">
+  <folder name="Strategy" id="id-9fda98b97c264c178ab1eb8cbb33b1e9" type="strategy"/>
+  <folder name="Business" id="id-259c3c5d0944484e911df7e6a3a7d81d" type="business">
+    <element xsi:type="archimate:BusinessActor" id="id-c0c5c0eb6e5b4dcbb96b900f33027e0f"/>
+    <element xsi:type="archimate:BusinessActor" id="id-42d3cf63ce5546258d88505b7e34efe3"/>
+    <element xsi:type="archimate:BusinessActor" name="Администрация учебного заведения" id="id-66042277a9c84df6b43b8d5a798bc8af"/>
+    <element xsi:type="archimate:BusinessActor" id="id-ad5db9b494144d9c9c7127ad5f5000d7"/>
+    <element xsi:type="archimate:BusinessActor" id="id-8c0504287def4232b317458f4ba2ce62"/>
+    <element xsi:type="archimate:BusinessActor" name="Администрация учебного заведения (copy) (copy)" id="id-211f239e5dba4f2ba032b065f1d58768"/>
+    <element xsi:type="archimate:BusinessActor" name="Преподаватели (copy)" id="id-b3c8c392d7ee4c959ca90b7e6bb60d4a"/>
+    <element xsi:type="archimate:BusinessActor" name="клиент" id="id-6f7828052fbe4a299811ed2837bfcffc"/>
+    <element xsi:type="archimate:BusinessObject" name="Техническая поддержка" id="id-ae785adb4838448282b5685a839f6ce3"/>
+    <element xsi:type="archimate:BusinessActor" id="id-f4368cba9772460e93124a75e9a73fbe"/>
+    <element xsi:type="archimate:BusinessRole" name="Техническая поддержка/Администратор" id="id-fd3d40f3b9ce49ffaf11b793fc09c377"/>
+    <element xsi:type="archimate:BusinessProcess" name="запись в очередь" id="id-fa9189968b2b402abed2456f9e319f6d"/>
+    <element xsi:type="archimate:BusinessService" name="просмотр текущего места и его отслеживание" id="id-e6e2eaf1c27c4db5be3e180d55013f45"/>
+    <element xsi:type="archimate:BusinessService" name="•&#x9;уведомление о приближении очереди" id="id-f6daa39c27c54c928e31fe551a2fc0b1"/>
+    <element xsi:type="archimate:BusinessProcess" name="уведомление о приближении очереди" id="id-afbd4d362a494f34b8b296ec9a4e798c"/>
+    <element xsi:type="archimate:BusinessProcess" name="возможность вызывать следующего" id="id-b0da7b8823724ca69b2a2f0aec490745"/>
+    <element xsi:type="archimate:BusinessService" name="видеть список ожидающих" id="id-881a0af5883443359f6c51d24717c26a"/>
+    <element xsi:type="archimate:BusinessProcess" name="отмечать, кто уже сдал" id="id-fe74d002b13141048152c4ba1d4c09bd"/>
+    <element xsi:type="archimate:BusinessProcess" name="поддерживать работоспособность сервиса" id="id-d51f23ff228240c39bc2f3be29a05681"/>
+    <element xsi:type="archimate:BusinessProcess" name="устранять ошибки" id="id-1783c996a57e437e88762a29526f8fc9"/>
+    <element xsi:type="archimate:BusinessProcess" name="исправлять технические сбои" id="id-034fc1e95c6248d591f5a01b1881cc41"/>
+    <element xsi:type="archimate:BusinessProcess" name="помогать с доступом пользователям" id="id-da1ff9e7d8a44c3991738f5ea6d7bccb"/>
+    <element xsi:type="archimate:BusinessService" name="Business Service" id="id-5218593a21d54f3788dd3155739b68ec"/>
+    <element xsi:type="archimate:BusinessRole" name="Business Role" id="id-5d6fcd6ea69042daa576ee48f8919e62"/>
+    <element xsi:type="archimate:BusinessRole" name="оператор" id="id-a9ca5cb70b8c424db4edfe662e8e1536"/>
+    <element xsi:type="archimate:BusinessRole" name="клиент" id="id-cfb6a86886c64c828a30523975cfcfbf"/>
+    <element xsi:type="archimate:BusinessProcess" name="Business Process" id="id-dfb7abe164a144ac807300c630b9cd70"/>
+  </folder>
+  <folder name="Application" id="id-86f6d26960f24f2eab926562819ddbc3" type="application"/>
+  <folder name="Technology &amp; Physical" id="id-59ba4f0fe54646169332bb3d49fcd68e" type="technology"/>
+  <folder name="Motivation" id="id-4dec88003efd42e8b6e371cd24ff07c9" type="motivation"/>
+  <folder name="Implementation &amp; Migration" id="id-33b072df361649c9b0dbc8cbb22ae173" type="implementation_migration"/>
+  <folder name="Other" id="id-053b5d1a1462466e8bd8fbadc7f02cef" type="other"/>
+  <folder name="Relations" id="id-851e47d2d7ed4e00959f18bb7bc27017" type="relations"/>
+  <folder name="Views" id="id-c477e6dde3074cdd9d32bcb17bafde8c" type="diagrams">
+    <element xsi:type="archimate:ArchimateDiagramModel" name="Default View" id="id-732647f666b0486e86e2261242d18736">
+      <child xsi:type="archimate:DiagramObject" id="id-17de2af256484aadbe531338b7680f2a" archimateElement="id-fd3d40f3b9ce49ffaf11b793fc09c377">
+        <bounds x="384" y="36" width="120" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-d2892cbf347e4091b661fb4df24ae487" archimateElement="id-fa9189968b2b402abed2456f9e319f6d">
+        <bounds x="120" y="108" width="120" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-f9edfa0adee44af08d2dfe5dd5355788" archimateElement="id-e6e2eaf1c27c4db5be3e180d55013f45">
+        <bounds x="120" y="180" width="120" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-369ce7dfd9924a0db078f875c41705be" archimateElement="id-afbd4d362a494f34b8b296ec9a4e798c">
+        <bounds x="120" y="255" width="120" height="73"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-50217f6983e04c1d83e2ca7583bacd8c" archimateElement="id-b0da7b8823724ca69b2a2f0aec490745">
+        <bounds x="252" y="180" width="120" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-81d6d80e53474a61abe5e4911126079a" archimateElement="id-881a0af5883443359f6c51d24717c26a">
+        <bounds x="252" y="108" width="120" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-3f7b2eabbaf94427935d4eb8088cb639" archimateElement="id-fe74d002b13141048152c4ba1d4c09bd">
+        <bounds x="252" y="264" width="120" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-027d3a23ee0d46cd8cfaa5d3b74bfa5c" archimateElement="id-d51f23ff228240c39bc2f3be29a05681">
+        <bounds x="384" y="108" width="120" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-8fa8b5c552dc44e2880a0a448eb19d38" archimateElement="id-1783c996a57e437e88762a29526f8fc9">
+        <bounds x="384" y="180" width="120" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-35be2d95e96f48619b3e8c9f2c1a73da" archimateElement="id-034fc1e95c6248d591f5a01b1881cc41">
+        <bounds x="384" y="264" width="120" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-b5dc2dc6d37c4fca8b0df978955e79ca" archimateElement="id-5218593a21d54f3788dd3155739b68ec">
+        <bounds x="816" y="612" width="120" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-1924f496583e4a34a0c8c4874747e556" archimateElement="id-da1ff9e7d8a44c3991738f5ea6d7bccb">
+        <bounds x="384" y="336" width="120" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-e2a7e504a4734bc78bc9ca8b0d4d071a" archimateElement="id-a9ca5cb70b8c424db4edfe662e8e1536">
+        <bounds x="252" y="36" width="120" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="id-43086d5dff7b4771afd0cc3174746c60" archimateElement="id-cfb6a86886c64c828a30523975cfcfbf">
+        <bounds x="120" y="36" width="120" height="55"/>
+      </child>
+    </element>
+  </folder>
+</archimate:model>
