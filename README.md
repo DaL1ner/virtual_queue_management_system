@@ -28,8 +28,11 @@
 ## 📁 Структура
 - `/archi-model` — файлы ArchiMate
 - `/docs/views` — экспортированные диаграммы
+- `/docs/requirements` — требования
+- `/docs/adr` — решения по архетиктуре
+- `/docs/feedback` — замечания от преподавателя
 - `/sprints` — планы и итоги спринтов
-- `/reports` - отчёты
+- `/reports` - отчёты по спринтам
 
 ## 👥 Команда
 - @DaL1ner — PO / Developer
