@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Виртуальная очередь</title>
+
+<style>
+
+body{
+    font-family: "Segoe UI", Roboto, sans-serif;
+    background:#f3f6fb;
+    margin:0;
+    padding:40px;
+}
+
+.container{
+    max-width:1000px;
+    margin:auto;
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:white;
+    padding:20px 30px;
+    border-radius:12px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.08);
+    margin-bottom:20px;
+}
+
+.queue-title{
+    font-size:24px;
+    font-weight:600;
+    color:#2b4eff;
+}
+
+.call-btn{
+    background:#2b4eff;
+    color:white;
+    border:none;
+    padding:12px 20px;
+    border-radius:8px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.queue-list{
+    background:white;
+    border-radius:12px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.08);
+    overflow:hidden;
+}
+
+.queue-header{
+    display:grid;
+    grid-template-columns:80px 1fr 200px 160px;
+    padding:15px 20px;
+    background:#eef2ff;
+    font-weight:600;
+}
+
+.queue-item{
+    display:grid;
+    grid-template-columns:80px 1fr 200px 160px;
+    padding:16px 20px;
+    border-top:1px solid #f1f1f1;
+    align-items:center;
+    background:white;
+}
+
+.queue-item:hover{
+    background:#fafbff;
+}
+
+.number{
+    font-size:22px;
+    font-weight:700;
+    color:#2b4eff;
+}
+
+.info{
+    color:#6b7280;
+}
+
+.actions{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.action-btn{
+    width:32px;
+    height:32px;
+    border-radius:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    font-size:18px;
+    transition:0.2s;
+}
+
+.call{
+    background:#e8f5e9;
+    color:#2e7d32;
+}
+
+.call:hover{
+    background:#c8e6c9;
+}
+
+.remove{
+    background:#ffebee;
+    color:#c62828;
+}
+
+.remove:hover{
+    background:#ffcdd2;
+}
+
+.drag{
+    cursor:grab;
+    font-size:20px;
+    color:#999;
+}
+
+.drag:active{
+    cursor:grabbing;
+}
+
+.dragging{
+    opacity:0.4;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+<div class="queue-title">Очередь в кабинет №12</div>
+<button class="call-btn">Позвать следующего</button>
+</div>
+
+<div class="queue-list" id="queue">
+
+<div class="queue-header">
+<div>№</div>
+<div>ФИО</div>
+<div>Доп. инфо</div>
+<div>Действия</div>
+</div>
+
+<div class="queue-item" draggable="true">
+<div class="number">A01</div>
+<div>Иванов Иван</div>
+<div class="info">Первичный прием</div>
+<div class="actions">
+<div class="action-btn call">+</div>
+<div class="action-btn remove">✕</div>
+<div class="drag">⋮⋮</div>
+</div>
+</div>
+
+<div class="queue-item" draggable="true">
+<div class="number">A02</div>
+<div>Петрова Анна</div>
+<div class="info">Консультация</div>
+<div class="actions">
+<div class="action-btn call">+</div>
+<div class="action-btn remove">✕</div>
+<div class="drag">⋮⋮</div>
+</div>
+</div>
+
+<div class="queue-item" draggable="true">
+<div class="number">A03</div>
+<div>Сидоров Алексей</div>
+<div class="info">Документы</div>
+<div class="actions">
+<div class="action-btn call">+</div>
+<div class="action-btn remove">✕</div>
+<div class="drag">⋮⋮</div>
+</div>
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const queue = document.getElementById('queue');
+let dragged;
+
+document.querySelectorAll('.queue-item').forEach(item => {
+
+item.addEventListener('dragstart', () => {
+dragged = item;
+item.classList.add('dragging');
+});
+
+item.addEventListener('dragend', () => {
+item.classList.remove('dragging');
+});
+
+item.addEventListener('dragover', e => {
+e.preventDefault();
+const afterElement = item;
+queue.insertBefore(dragged, afterElement);
+});
+
+});
+
+document.querySelectorAll('.remove').forEach(btn=>{
+btn.onclick = (e)=>{
+e.target.closest('.queue-item').remove();
+}
+});
+
+document.querySelectorAll('.call').forEach(btn=>{
+btn.onclick = (e)=>{
+const name = e.target.closest('.queue-item').children[1].innerText;
+alert("Вызван: " + name);
+}
+});
+
+</script>
+
+</body>
+</html>
