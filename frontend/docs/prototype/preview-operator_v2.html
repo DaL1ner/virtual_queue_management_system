@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Очередь в кабинет №12</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+        .stat-card { background: #f8f9fa; border-radius: 12px; padding: 16px; }
+        .stat-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .stat-icon.bg-blue { background: #dbeafe; color: #2563eb; }
+        .stat-icon.bg-green { background: #d1fae5; color: #059669; }
+        .stat-icon.bg-clock { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+        .called-item { background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; }
+        
+        /* Бейджи: приоритетные - светлые, обычные - тёмные */
+        .badge-custom { color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+        .badge-priority { background: #0ea5e9; } /* Светло-голубой для приоритетных */
+        .badge-regular { background: #2563eb; }  /* Тёмно-синий для обычных */
+        
+        .queue-info { display: inline-block; padding: 4px 8px; background: #d1fae5; color: #059669; border-radius: 4px; font-size: 12px; }
+        .drag-handle { cursor: grab; color: #9ca3af; }
+        .drag-handle:active { cursor: grabbing; }
+        .table-queue th { font-weight: 600; color: #6b7280; font-size: 13px; border-bottom: 1px solid #e5e7eb; }
+        .table-queue td { vertical-align: middle; border-bottom: 1px solid #e5e7eb; }
+        .btn-icon { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; }
+        .history-item { padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+        .history-item:last-child { border-bottom: none; }
+        .nav-tabs .nav-link { border: none; color: #6b7280; font-weight: 500; padding: 8px 0; margin-right: 24px; }
+        .nav-tabs .nav-link.active { color: #2563eb; border-bottom: 2px solid #2563eb; background: transparent; }
+    </style>
+</head>
+<body>
+
+<div class="container py-4" style="max-width: 900px;">
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h4 mb-0 text-primary fw-bold">Очередь в кабинет №12</h1>
+                <button class="btn btn-primary" id="mainActionBtn" onclick="handleMainAction()">Позвать следующего</button>
+            </div>
+
+            <!-- Stats -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="stat-card d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-blue">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                        <div><div class="text-muted small mb-0">Ожидает</div><div class="h5 mb-0 fw-bold" id="countWaiting">0</div></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-green">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                        </div>
+                        <div><div class="text-muted small mb-0">Обслужено</div><div class="h5 mb-0 fw-bold" id="countServed">0</div></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-clock">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                        </div>
+                        <div><div class="text-muted small mb-0">Среднее время</div><div class="h5 mb-0 fw-bold">7 минут</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Called Section -->
+            <div class="mb-4">
+                <h5 class="mb-3 fw-semibold">Вызываются</h5>
+                <div id="calledSection">
+                    <div class="called-item d-flex justify-content-between align-items-center" id="activeUserCard" style="display: none;">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge-custom" id="activeBadge">A02</span>
+                            <div>
+                                <div class="fw-medium" id="activeName">Петрова Анна</div>
+                                <div class="text-muted small">
+                                    <span class="timer me-2" id="activeTimer">00:00</span>
+                                    <span id="activeInfo">Консультация</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-light btn-sm btn-icon" title="Пауза" onclick="togglePause()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            </button>
+                            <button class="btn btn-success btn-sm" onclick="finishService()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="me-1"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="noActiveMsg" class="text-muted small py-2">Никто не вызван</div>
+                </div>
+            </div>
+
+            <!-- Queue Table -->
+            <div class="mb-4">
+                <table class="table table-queue table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">№</th><th>ФИО</th><th>Доп. инфо</th>
+                            <th style="width: 150px; text-align: right;">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="queueBody"></tbody>
+                </table>
+            </div>
+
+            <!-- History Section -->
+            <div class="border-top pt-4">
+                <ul class="nav nav-tabs border-0 mb-3">
+                    <li class="nav-item"><a class="nav-link active" href="#">История</a></li>
+                </ul>
+                <div>
+                    <h6 class="fw-semibold mb-3">Обслуженные сегодня:</h6>
+                    <div id="historyList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Данные: priority: true = приоритетный клиент (светлый бейдж)
+    let queue = [
+        { id: 'P01', name: 'Сидоров Алексей', info: 'Документы', priority: true },   
+        { id: 'A01', name: 'Иванов Иван', info: '', priority: false },               
+        { id: 'A02', name: 'Александр Иванов', info: '', priority: false }     
+    ];
+    
+    let activeUser = null; // Начинаем без активного пользователя
+    let history = [ 
+        { id: 'A00', name: 'Петров П.', info: 'Первичный прием', time: '10:27', priority: false } 
+    ];
+    
+    let timerInterval, isPaused = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderQueue();
+        renderHistory();
+        updateMainButton();
+        updateStats();
+        // Если есть активный пользователь - показываем (для демо можно раскомментировать)
+        // if (activeUser) { showActiveUser(); startTimer(); }
+    });
+
+    // Получить класс бейджа в зависимости от приоритета
+    function getBadgeClass(isPriority) {
+        return isPriority ? 'badge-priority' : 'badge-regular';
+    }
+
+    function updateMainButton() {
+        const btn = document.getElementById('mainActionBtn');
+        if (activeUser) {
+            btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="me-1"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Завершить обслуживание`;
+            btn.className = 'btn btn-success';
+        } else {
+            btn.innerHTML = 'Позвать следующего';
+            btn.className = 'btn btn-primary';
+        }
+    }
+
+    function handleMainAction() { 
+        if (activeUser) { 
+            finishService(); 
+        } else { 
+            callNext(); 
+        } 
+    }
+
+    function renderQueue() {
+        const tbody = document.getElementById('queueBody');
+        tbody.innerHTML = '';
+        
+        queue.forEach((person, index) => {
+            const tr = document.createElement('tr');
+            tr.draggable = true;
+            
+            // Drag & Drop
+            tr.addEventListener('dragstart', (e) => { 
+                e.dataTransfer.setData('text/plain', index); 
+                tr.style.opacity = '0.4'; 
+            });
+            tr.addEventListener('dragover', (e) => { e.preventDefault(); return false; });
+            tr.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+                const toIdx = index;
+                if (fromIdx !== toIdx) { 
+                    const tmp = queue[fromIdx]; 
+                    queue[fromIdx] = queue[toIdx]; 
+                    queue[toIdx] = tmp; 
+                    renderQueue(); 
+                }
+                tr.style.opacity = '1';
+            });
+            tr.addEventListener('dragend', () => { tr.style.opacity = '1'; });
+
+            // Бейдж с учётом приоритета
+            const badgeClass = getBadgeClass(person.priority);
+            
+            tr.innerHTML = `
+                <td><span class="badge-custom ${badgeClass}">${person.id}</span></td>
+                <td class="fw-medium">${person.name}</td>
+                <td><span class="queue-info ${person.info ? '' : 'd-none'}">${person.info}</span></td>
+                <td style="text-align: right;">
+                    <div class="btn-group">
+                        <button class="btn btn-light btn-sm btn-icon text-success" title="Добавить" onclick="addService(${index})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        </button>
+                        <button class="btn btn-light btn-sm btn-icon text-danger" title="Отменить" onclick="removeFromQueue(${index})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                        </button>
+                        <button class="btn btn-light btn-sm btn-icon drag-handle" title="Переместить">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                        </button>
+                    </div>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+        updateStats();
+    }
+
+    function addService(idx) { 
+        const person = queue[idx];
+        person.info = person.info ? person.info + ', доп. услуга' : 'Доп. услуга';
+        renderQueue(); 
+    }
+    
+    function removeFromQueue(idx) { 
+        queue.splice(idx, 1); 
+        renderQueue(); 
+    }
+
+    function renderHistory() {
+        const container = document.getElementById('historyList');
+        container.innerHTML = '';
+        
+        history.forEach(p => {
+            const div = document.createElement('div');
+            div.className = 'history-item d-flex justify-content-between align-items-center';
+            const badgeClass = getBadgeClass(p.priority);
+            div.innerHTML = `
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge-custom ${badgeClass}">${p.id}</span>
+                    <div>
+                        <div class="fw-medium">${p.name}</div>
+                        <div class="text-muted small">${p.info}</div>
+                    </div>
+                </div>
+                <div class="text-muted font-monospace">${p.time}</div>`;
+            container.appendChild(div);
+        });
+        updateStats();
+    }
+
+    function showActiveUser() {
+        if (!activeUser) return;
+        
+        document.getElementById('activeUserCard').style.display = 'flex';
+        document.getElementById('noActiveMsg').style.display = 'none';
+        
+        // 🔥 Сохраняем цвет бейджа в зависимости от приоритета
+        const badge = document.getElementById('activeBadge');
+        badge.className = `badge-custom ${getBadgeClass(activeUser.priority)}`;
+        
+        badge.innerText = activeUser.id;
+        document.getElementById('activeName').innerText = activeUser.name;
+        document.getElementById('activeInfo').innerText = activeUser.info || '';
+        
+        updateMainButton();
+    }
+
+    function hideActiveUser() {
+        const card = document.getElementById('activeUserCard');
+        const msg = document.getElementById('noActiveMsg');
+        
+        if (card) card.style.setProperty('display', 'none', 'important');
+        if (msg) msg.style.display = 'block';
+        
+        clearInterval(timerInterval);
+        activeUser = null;
+        isPaused = false;
+        updateMainButton();
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        const el = document.getElementById('activeTimer');
+        
+        timerInterval = setInterval(() => {
+            if (!isPaused && activeUser) {
+                activeUser.time++;
+                const m = Math.floor(activeUser.time / 60).toString().padStart(2,'0');
+                const s = (activeUser.time % 60).toString().padStart(2,'0');
+                el.innerText = `${m}:${s}`;
+            }
+        }, 1000);
+    }
+
+    function togglePause() { 
+        isPaused = !isPaused; 
+    }
+
+    function callNext() {
+        if (queue.length === 0) { 
+            alert('Очередь пуста'); 
+            return; 
+        }
+        
+        // Берём первого из очереди
+        const next = queue.shift();
+        
+        activeUser = { 
+            id: next.id, 
+            name: next.name, 
+            info: next.info, 
+            priority: next.priority, // 🔥 Сохраняем флаг приоритета
+            time: 0 
+        };
+        
+        showActiveUser();
+        startTimer();
+        renderQueue();
+    }
+
+    function finishService() {
+        if (!activeUser) return;
+        
+        const now = new Date();
+        const t = now.getHours().toString().padStart(2,'0') + ':' + 
+                  now.getMinutes().toString().padStart(2,'0');
+        
+        // Добавляем в историю с сохранением приоритета
+        history.unshift({ 
+            id: activeUser.id, 
+            name: activeUser.name, 
+            info: activeUser.info, 
+            priority: activeUser.priority, // 🔥 Сохраняем
+            time: t 
+        });
+        
+        hideActiveUser();
+        renderHistory();
+    }
+
+    function updateStats() {
+        document.getElementById('countWaiting').innerText = queue.length;
+        document.getElementById('countServed').innerText = history.length;
+    }
+</script>
+</body>
+</html>
