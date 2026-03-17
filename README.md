@@ -7,7 +7,7 @@
 [GitHub Projects](https://github.com/users/DaL1ner/projects/1)
 
 ## 🎯 Текущий спринт
-[Milestone: Sprint 3](https://github.com/DaL1ner/virtual_queue_Project/milestone/3)
+[Milestone: Sprint 4](https://github.com/DaL1ner/virtual_queue_Project/milestone/4)
 
 ---
 ### 🔸 Проблема
@@ -17,7 +17,7 @@
 Система позволяет:
 - Записаться в очередь через веб-интерфейс
 - Отслеживать текущий статус, положение и примерное время ожидания
-- Получать push/SMS-уведомления о приближении очереди
+- Получать уведомления о приближении очереди в виде модальных окон
 - Операторам — управлять вызовом клиентов и статистикой
 
 ## 🔹 Цель проекта
@@ -48,10 +48,11 @@
 
 ## 👥 Команда
 - @DaL1ner — PO / Developer
-- @adalar4ik — SM / Developer
-- @1-s-e-d — Developer
+- @1-s-e-d — SM / Developer
+- @adalar4ik — Developer
 - @alerent8-bit — Developer
 - @anastasia1233455 — Developer
+- @derizhable — Developer
 
 ---
 
