@@ -7,7 +7,7 @@
 [GitHub Projects](https://github.com/users/DaL1ner/projects/1)
 
 ## 🎯 Текущий спринт
-[Milestone: Sprint 4](https://github.com/DaL1ner/virtual_queue_Project/milestone/4)
+[Milestone: Sprint 5](https://github.com/DaL1ner/virtual_queue_Project/milestone/5)
 
 ---
 ### 🔸 Проблема
