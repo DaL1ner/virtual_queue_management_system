@@ -1,0 +1,619 @@
+# Логическая модель данных
+## Virtual Queue Management System
+
+*Версия: 1.0 | Обновлено: 27.03.2026*
+
+---
+
+## Оглавление
+
+- [Логическая модель данных](#логическая-модель-данных)
+  - [Virtual Queue Management System](#virtual-queue-management-system)
+  - [Оглавление](#оглавление)
+  - [1. Обзор модели](#1-обзор-модели)
+  - [2. Сущности](#2-сущности)
+    - [User (Пользователь системы)](#user-пользователь-системы)
+    - [Role (Роль)](#role-роль)
+    - [UserRole (Связь Пользователь-Роль)](#userrole-связь-пользователь-роль)
+    - [Queue (Конфигурация очереди)](#queue-конфигурация-очереди)
+    - [QueueSession (Сессия очереди)](#queuesession-сессия-очереди)
+    - [Ticket (Талон / Запись в очередь)](#ticket-талон--запись-в-очередь)
+    - [ServiceType (Тип обслуживания)](#servicetype-тип-обслуживания)
+    - [ExecutorState (Состояние исполнителя)](#executorstate-состояние-исполнителя)
+    - [ClientSession (Сессия клиента)](#clientsession-сессия-клиента)
+    - [EventLog (Журнал событий)](#eventlog-журнал-событий)
+  - [3. Связи между сущностями](#3-связи-между-сущностями)
+    - [Диаграмма связей](#диаграмма-связей)
+    - [Таблица кардинальностей](#таблица-кардинальностей)
+  - [4. Бизнес-правила и ограничения](#4-бизнес-правила-и-ограничения)
+    - [4.1. Управление позицией в очереди (sort\_order)](#41-управление-позицией-в-очереди-sort_order)
+    - [4.2. Приоритетность](#42-приоритетность)
+    - [4.3. Статусы талона (Lifecycle)](#43-статусы-талона-lifecycle)
+    - [4.4. Конкурентный доступ (Optimistic Locking)](#44-конкурентный-доступ-optimistic-locking)
+    - [4.5. Ограничения по сессии клиента](#45-ограничения-по-сессии-клиента)
+    - [4.6. Расчёт времени ожидания](#46-расчёт-времени-ожидания)
+    - [4.7. Безопасность данных](#47-безопасность-данных)
+  - [5. Приложения](#5-приложения)
+    - [A. Перечисляемые типы (Enums)](#a-перечисляемые-типы-enums)
+    - [B. Сводная таблица внешних ключей](#b-сводная-таблица-внешних-ключей)
+    - [C. Рекомендуемые индексы PostgreSQL](#c-рекомендуемые-индексы-postgresql)
+
+---
+
+## 1. Обзор модели
+
+Данная логическая модель данных разработана для системы управления виртуальной очередью. Модель является детализацией концептуальной модели
+
+**Ключевые архитектурные решения:**
+- Разделение конфигурации очереди (`Queue`) и сессии (`QueueSession`) для хранения истории
+- Приоритет определяется типом услуги (`ServiceType`), а не выбирается клиентом
+- Позиция в очереди через `sort_order` (DECIMAL) для O(1) перемещения
+- Оптимистичная блокировка через `version` для конкурентного доступа
+- Аудит всех событий через `EventLog`
+
+---
+
+## 2. Сущности
+
+### User (Пользователь системы)
+
+**Назначение:** Хранение учётных данных сотрудников (Администраторы, Операторы, Исполнители).
+
+| Атрибут | Тип данных | Ограничения | Описание |
+|---------|------------|-------------|----------|
+| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор пользователя |
+| `login` | `VARCHAR(100)` | `NOT NULL`, `UNIQUE` | Логин для входа в систему |
+| `password_hash` | `VARCHAR(255)` | `NOT NULL` | Хешированный пароль (bcrypt/argon2) |
+| `full_name` | `VARCHAR(255)` | `NOT NULL` | Полное имя сотрудника |
+| `email` | `VARCHAR(255)` | `NULL`, `UNIQUE` | Контактный email |
+| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Флаг активности учётной записи |
+| `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания записи |
+| `updated_at` | `TIMESTAMP` | `NULL`, `ON UPDATE NOW()` | Дата последнего обновления |
+
+**Ключи:**
+- Первичный ключ: `id`
+- Уникальные: `login`, `email`
+
+**Индексы:**
+- `idx_user_login` (`login`) — для быстрого поиска при авторизации
+
+---
+
+### Role (Роль)
+
+**Назначение:** Справочник системных ролей. Определяет права доступа к функциям системы.
+
+| Атрибут | Тип данных | Ограничения | Описание |
+|---------|------------|-------------|----------|
+| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор роли |
+| `name` | `VARCHAR(100)` | `NOT NULL`, `UNIQUE` | Отображаемое название роли |
+| `code` | `VARCHAR(50)` | `NOT NULL`, `UNIQUE` | Системный код для проверки прав |
+| `description` | `TEXT` | `NULL` | Описание полномочий роли |
+| `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания роли |
+
+**Ключи:**
+- Первичный ключ: `id`
+- Уникальные: `name`, `code`
+
+**Предустановленные роли:**
+- `ADMIN` — Администратор системы
+- `OPERATOR` — Оператор очереди
+- `EXECUTOR` — Исполнитель услуги
+
+---
+
+### UserRole (Связь Пользователь-Роль)
+
+**Назначение:** Реализация связи «Многие-ко-Многим» между пользователями и ролями.
+
+| Атрибут | Тип данных | Ограничения | Описание |
+|---------|------------|-------------|----------|
+| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор записи |
+| `user_id` | `INTEGER` | `NOT NULL`, `FK → User(id) ON DELETE CASCADE` | Ссылка на пользователя |
+| `role_id` | `INTEGER` | `NOT NULL`, `FK → Role(id) ON DELETE CASCADE` | Ссылка на роль |
+| `assigned_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата назначения роли |
+| `assigned_by` | `INTEGER` | `NULL`, `FK → User(id) ON DELETE SET NULL` | Кто назначил роль |
+
+**Ключи:**
+- Первичный ключ: `id`
+- Уникальный составной: `UNIQUE(user_id, role_id)` — запрет дублирования
+
+**Индексы:**
+- `idx_userrole_user` (`user_id`) — поиск ролей пользователя
+- `idx_userrole_role` (`role_id`) — поиск пользователей по роли
+
+---
+
+### Queue (Конфигурация очереди)
+
+**Назначение:** Шаблон очереди с настройками, не меняющимися в рамках сессии.
+
+| Атрибут | Тип данных | Ограничения | Описание |
+|---------|------------|-------------|----------|
+| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор очереди |
+| `name` | `VARCHAR(255)` | `NOT NULL` | Отображаемое название очереди |
+| `description` | `TEXT` | `NULL` | Подробное описание очереди |
+| `distribution_mode` | `ENUM` | `NOT NULL`, `DEFAULT 'MANUAL'` | MANUAL или AUTO |
+| `is_service_type_enabled` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Требовать ли выбор услуги |
+| `is_priority_enabled` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Разрешено ли приоритетное обслуживание |
+| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Флаг активности конфигурации |
+| `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания конфигурации |
+| `created_by` | `INTEGER` | `NOT NULL`, `FK → User(id) ON DELETE RESTRICT` | Администратор-создатель |
+
+**Ключи:**
+- Первичный ключ: `id`
+- Внешние ключи: `created_by → User(id)`
+
+**Проверочные ограничения:**
+```
+CHECK (distribution_mode IN ('MANUAL', 'AUTO'))
+```
+
+---
+
+### QueueSession (Сессия очереди)
+
+**Назначение:** Конкретный запуск очереди во времени. Позволяет хранить историю работы.
+
+| Атрибут | Тип данных | Ограничения | Описание |
+|---------|------------|-------------|----------|
+| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор сессии |
+| `queue_id` | `INTEGER` | `NOT NULL`, `FK → Queue(id) ON DELETE CASCADE` | Ссылка на конфигурацию |
+| `status` | `ENUM` | `NOT NULL`, `DEFAULT 'DRAFT'` | DRAFT, OPEN, PAUSED, CLOSED |
+| `started_at` | `TIMESTAMP` | `NULL` | Фактическое время начала работы |
+| `closed_at` | `TIMESTAMP` | `NULL` | Время завершения сессии |
+| `current_ticket_number` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Счётчик для генерации талонов |
+| `served_count` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Число обслуженных клиентов |
+| `total_service_time_sec` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Сумма времени обслуживаний (сек) |
+| `avg_service_time_actual` | `DECIMAL(5,2)` | `NULL`, `CHECK (>= 0)` | Фактическое среднее (мин) |
+| `created_by` | `INTEGER` | `NOT NULL`, `FK → User(id) ON DELETE RESTRICT` | Администратор, запустивший сессию |
+| `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания сессии |
+
+**Ключи:**
+- Первичный ключ: `id`
+- Внешние ключи: `queue_id → Queue(id)`, `created_by → User(id)`
+
+**Индексы:**
+- `idx_session_queue_status` (`queue_id`, `status`) — поиск активных сессий
+
+**Проверочные ограничения:**
+```
+CHECK (status IN ('DRAFT', 'OPEN', 'PAUSED', 'CLOSED'))
+CHECK (closed_at IS NULL OR closed_at >= started_at)
+```
+
+**Бизнес-правила:**
+- Только одна сессия со статусом `OPEN` может быть активна для одной `queue_id`
+- `avg_service_time_actual` рассчитывается: `total_service_time_sec / served_count / 60`
+
+---
+
+### Ticket (Талон / Запись в очередь)
+
+**Назначение:** Ключевая сущность системы. Представляет клиента в очереди.
+
+| Атрибут | Тип данных | Ограничения | Описание |
+|---------|------------|-------------|----------|
+| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор талона |
+| `session_id` | `INTEGER` | `NOT NULL`, `FK → QueueSession(id) ON DELETE CASCADE` | Ссылка на сессию |
+| `service_type_id` | `INTEGER` | `NULL`, `FK → ServiceType(id) ON DELETE SET NULL` | Ссылка на тип услуги |
+| `priority_level` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | **Кэш приоритета** (из ServiceType) |
+| `ticket_number` | `VARCHAR(20)` | `NOT NULL` | Видимый номер (напр. «А-005») |
+| `client_name` | `VARCHAR(100)` | `NOT NULL` | Имя клиента |
+| `client_surname` | `VARCHAR(100)` | `NOT NULL` | Фамилия клиента |
+| `sort_order` | `DECIMAL(20,10)` | `NOT NULL`, `CHECK (>= 0)` | Позиция для сортировки |
+| `status` | `ENUM` | `NOT NULL`, `DEFAULT 'WAITING'` | Текущий статус талона |
+| `version` | `INTEGER` | `NOT NULL`, `DEFAULT 1`, `CHECK (>= 1)` | Для оптимистичной блокировки |
+| `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время записи (не меняется) |
+| `called_at` | `TIMESTAMP` | `NULL` | Время вызова |
+| `service_started_at` | `TIMESTAMP` | `NULL` | Начало обслуживания |
+| `service_ended_at` | `TIMESTAMP` | `NULL` | Завершение обслуживания |
+| `served_by_user_id` | `INTEGER` | `NULL`, `FK → User(id) ON DELETE SET NULL` | Исполнитель |
+| `client_session_id` | `INTEGER` | `NULL`, `FK → ClientSession(id) ON DELETE SET NULL` | Сессия устройства |
+| `cancel_reason` | `TEXT` | `NULL` | Причина отмены/пропуска |
+
+**Ключи:**
+- Первичный ключ: `id`
+- Внешние ключи: `session_id`, `service_type_id`, `served_by_user_id`, `client_session_id`
+
+**Индексы:**
+```
+idx_ticket_queue_sort     (session_id, status, priority_level DESC, sort_order ASC)
+idx_ticket_client_session (client_session_id, status)
+idx_ticket_status_time    (session_id, status, created_at)
+idx_ticket_service_type   (session_id, service_type_id, status)
+```
+
+**Проверочные ограничения:**
+```
+CHECK (status IN ('WAITING', 'CALLED', 'SERVING', 'SERVED', 'SKIPPED', 'CANCELLED'))
+CHECK (
+  (status = 'SERVED' AND service_ended_at IS NOT NULL) OR
+  (status != 'SERVED')
+)
+CHECK (
+  (status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT NULL) OR
+  (status NOT IN ('SERVED', 'SKIPPED', 'CANCELLED'))
+)
+```
+
+**Бизнес-правила:**
+- `priority_level` копируется из `ServiceType.priority_level` при создании талона
+- `sort_order` обновляется только при статусе `WAITING` или `CALLED`
+- При создании нового талона с тем же `client_session_id` — предыдущие аннулируются
+
+---
+
+### ServiceType (Тип обслуживания)
+
+**Назначение:** Справочник типов услуг. Определяет приоритет и плановое время для каждой услуги.
+
+| Атрибут | Тип данных | Ограничения | Описание |
+|---------|------------|-------------|----------|
+| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор типа услуги |
+| `queue_id` | `INTEGER` | `NOT NULL`, `FK → Queue(id) ON DELETE CASCADE` | Ссылка на конфигурацию |
+| `name` | `VARCHAR(255)` | `NOT NULL` | Название услуги |
+| `code` | `VARCHAR(50)` | `NOT NULL`, `UNIQUE` | Системный код |
+| `letter` | `CHAR(1)` | `NOT NULL`, `CHECK (LENGTH = 1)` | Буква для номера талона |
+| `priority_level` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Приоритет услуги |
+| `plan_avg_service_time_sec` | `INTEGER` | `NULL`, `CHECK (> 0)` | Плановое время (секунды) |
+| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Активен ли тип услуги |
+| `is_highlighting` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Выделяется ли в UI |
+| `sort_order` | `INTEGER` | `NOT NULL`, `DEFAULT 0` | Порядок отображения |
+| `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания |
+
+**Ключи:**
+- Первичный ключ: `id`
+- Уникальные: `code`
+- Внешние ключи: `queue_id → Queue(id)`
+
+**Индексы:**
+- `idx_servicetype_queue` (`queue_id`, `is_active`, `sort_order`) — для списка услуг
+
+**Бизнес-правила:**
+- Если `Queue.is_service_type_enabled = false`, используется базовая услуга по умолчанию
+- Приоритет талона определяется приоритетом выбранной услуги
+
+---
+
+### ExecutorState (Состояние исполнителя)
+
+**Назначение:** Хранит состояние готовности исполнителя в рамках конкретной сессии очереди.
+
+| Атрибут | Тип данных | Ограничения | Описание |
+|---------|------------|-------------|----------|
+| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор записи |
+| `session_id` | `INTEGER` | `NOT NULL`, `FK → QueueSession(id) ON DELETE CASCADE` | Ссылка на сессию |
+| `user_id` | `INTEGER` | `NOT NULL`, `FK → User(id) ON DELETE CASCADE` | Исполнитель услуги |
+| `is_ready` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Флаг готовности |
+| `current_ticket_id` | `INTEGER` | `NULL`, `FK → Ticket(id) ON DELETE SET NULL`, `UNIQUE` | Текущий талон |
+| `last_status_change` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время последнего изменения |
+| `served_count` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Счётчик обслуженных за сессию |
+
+**Ключи:**
+- Первичный ключ: `id`
+- Уникальный составной: `UNIQUE(session_id, user_id)`
+- Внешние ключи: `session_id`, `user_id`, `current_ticket_id`
+
+**Индексы:**
+- `idx_executor_ready` (`session_id`, `is_ready`) WHERE `is_ready = true` — поиск свободных
+
+**Бизнес-правила:**
+- Один исполнитель = одна запись на сессию
+- `current_ticket_id` заполняется только при статусе `SERVING`
+
+---
+
+### ClientSession (Сессия клиента)
+
+**Назначение:** Отслеживает сессию браузера/устройства клиента. Реализация требования «один активный талон с устройства».
+
+| Атрибут | Тип данных | Ограничения | Описание |
+|---------|------------|-------------|----------|
+| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор сессии |
+| `device_fingerprint` | `VARCHAR(255)` | `NOT NULL` | Идентификатор устройства/браузера |
+| `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время создания сессии |
+| `expires_at` | `TIMESTAMP` | `NOT NULL` | Время истечения сессии |
+| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Флаг активности сессии |
+| `ip_address` | `VARCHAR(45)` | `NULL` | IP-адрес клиента (IPv6 compatible) |
+| `user_agent` | `TEXT` | `NULL` | Информация о браузере/устройстве |
+
+**Ключи:**
+- Первичный ключ: `id`
+
+**Индексы:**
+- `idx_clientsession_active` (`device_fingerprint`, `is_active`) — поиск активной сессии
+
+**Бизнес-правила:**
+- Сессия считается неактивной после `expires_at`
+- При создании нового талона все активные талоны с этим `client_session_id` аннулируются
+
+---
+
+### EventLog (Журнал событий)
+
+**Назначение:** Хранит историю всех значимых событий в системе. Используется для аудита, аналитики и отладки.
+
+| Атрибут | Тип данных | Ограничения | Описание |
+|---------|------------|-------------|----------|
+| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор события |
+| `session_id` | `INTEGER` | `NOT NULL`, `FK → QueueSession(id) ON DELETE CASCADE` | Контекст сессии |
+| `ticket_id` | `INTEGER` | `NULL`, `FK → Ticket(id) ON DELETE SET NULL` | Связанный талон |
+| `actor_user_id` | `INTEGER` | `NULL`, `FK → User(id) ON DELETE SET NULL` | Кто совершил (или SYSTEM) |
+| `event_type` | `VARCHAR(100)` | `NOT NULL` | Тип события |
+| `timestamp` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата и время события |
+| `details` | `JSONB` | `NULL` | Дополнительные данные (JSON) |
+| `ip_address` | `VARCHAR(45)` | `NULL` | IP-адрес актора |
+
+**Ключи:**
+- Первичный ключ: `id`
+- Внешние ключи: `session_id`, `ticket_id`, `actor_user_id`
+
+**Индексы:**
+```
+idx_eventlog_session_time (session_id, timestamp)  — фильтрация по времени
+idx_eventlog_ticket      (ticket_id)               — история талона
+idx_eventlog_type        (event_type)              — аналитика по типам
+```
+
+**Типы событий:**
+- `TICKET_CREATED` — Создание талона
+- `TICKET_CALLED` — Вызов клиента
+- `SERVICE_STARTED` — Начало обслуживания
+- `SERVICE_COMPLETED` — Завершение обслуживания
+- `TICKET_MOVED` — Перемещение в очереди
+- `TICKET_CANCELLED` — Отмена талона
+- `EXECUTOR_READY` — Исполнитель готов
+- `SESSION_STARTED` — Сессия начата
+- `SESSION_CLOSED` — Сессия закрыта
+
+---
+
+## 3. Связи между сущностями
+
+### Диаграмма связей
+
+### Таблица кардинальностей
+
+| Сущность 1 | Связь | Сущность 2 | Кардинальность | Правило ON DELETE |
+|------------|-------|------------|----------------|-------------------|
+| User | имеет | UserRole | 1 : N | CASCADE |
+| UserRole | относится к | Role | N : 1 | CASCADE |
+| Queue | имеет сессии | QueueSession | 1 : N | RESTRICT (created_by) |
+| Queue | имеет типы услуг | ServiceType | 1 : N | CASCADE |
+| QueueSession | содержит | Ticket | 1 : N | CASCADE |
+| QueueSession | имеет состояния | ExecutorState | 1 : N | CASCADE |
+| Ticket | принадлежит сессии | ClientSession | N : 1 | SET NULL |
+| Ticket | обслуживается | User | N : 1 | SET NULL |
+| Ticket | имеет тип услуги | ServiceType | N : 1 | SET NULL |
+| ServiceType | принадлежит очереди | Queue | N : 1 | CASCADE |
+| ExecutorState | обслуживает | Ticket | 1 : 1 | SET NULL |
+| QueueSession/Ticket/User | генерирует | EventLog | 1 : N | CASCADE/SET NULL |
+
+---
+
+## 4. Бизнес-правила и ограничения
+
+### 4.1. Управление позицией в очереди (sort_order)
+
+Атрибут sort_order использует десятичные числа с шагом 1000  
+Позиция в очереди определяется путём сортировки всех активных талонов в состоянии ожидания по этому полю  
+Данный подход позволяет добиться O(1) перемещение без пересчёта всех записей
+
+```
+Пример:
+  Талон 1: sort_order = 1000.0000000000
+  Талон 2: sort_order = 2000.0000000000
+  Талон 3: sort_order = 3000.0000000000
+
+  При перемещении Талона 3 между 1 и 2:
+  Талон 3: sort_order = 1500.0000000000
+```
+
+**Ренормализация:**
+- Выполняется когда минимальный интервал < 100
+- В фоновом режиме, когда очередь на паузе
+- Логировать в EventLog как `QUEUE_RENORMALIZED`
+
+**Сортировка очереди:**
+```sql
+ORDER BY priority_level DESC, sort_order ASC, created_at ASC
+```
+
+---
+
+### 4.2. Приоритетность
+
+Если конфигурацией очереди клиенту не предоставляется выбор типа услуги, то ему автоматически должна присваиваться "базовая услуга"  
+В ином случае клиенту выдаётся приоритет, соответствующий заранее установленному приоритету выбранного типа услуги. При первичной вставке талона клиента с приоритетом >1 добавление производится после последнего клиента с таким же приоритетом. Вставка клиента без приоритета производится сразу в конец очереди.
+
+| Правило | Описание |
+|---------|----------|
+| **Источник приоритета** | `ServiceType.priority_level` (задаётся Администратором) |
+| **Кэш в талоне** | `Ticket.priority_level` копируется при создании |
+
+---
+
+### 4.3. Статусы талона (Lifecycle)
+
+```
+┌──────────┐    вызов    ┌──────────┐   начало    ┌───────────┐
+│ WAITING  │ ──────────> │ CALLED   │ ──────────> │ SERVING   │
+└──────────┘             └──────────┘             └───────────┘
+     │                        │                        │
+     │ отмена                 │ пропуск                │ завершение
+     ▼                        ▼                        ▼
+┌──────────┐             ┌──────────┐             ┌───────────┐
+│CANCELLED │             │ SKIPPED  │             │ SERVED    │
+└──────────┘             └──────────┘             └───────────┘
+```
+
+**Ограничения переходов:**
+
+| Из статуса | В статус | Условие |
+|------------|----------|---------|
+| WAITING | CALLED | Оператор или автоматика |
+| WAITING | CANCELLED | Клиент или Оператор |
+| CALLED | SERVING | Исполнитель подтвердил |
+| CALLED | SKIPPED | Клиент не явился |
+| SERVING | SERVED | Обслуживание завершено |
+
+**Обязательные поля при переходе:**
+- `SERVED` → `service_ended_at` NOT NULL
+- `SKIPPED` → `service_ended_at` NOT NULL
+- `CANCELLED` → `service_ended_at` NOT NULL
+
+---
+
+### 4.4. Конкурентный доступ (Optimistic Locking)
+
+Поле `Ticket.version` увеличивается при каждом обновлении  
+Проверка выполняется `UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?`  
+При конфликте вернуть ошибку 409 Conflict, запросить обновление данных
+
+**Сценарии защиты:**
+- Оператор vs Оператор (одновременное перемещение)
+- Оператор vs Клиент (вызов vs отмена)
+- Авто vs Оператор (автоматическое распределение vs ручной вызов)
+- Исполнитель vs Исполнитель (двойное назначение)
+
+---
+
+### 4.5. Ограничения по сессии клиента
+
+```
+Правило: Один активный талон на одну ClientSession
+
+Реализация при создании талона:
+  1. Найти все активные талоны с этим client_session_id
+  2. Перевести их в статус CANCELLED
+  3. Создать новый талон
+  4. Записать событие в EventLog
+```
+
+**Исключение:** Талоны в статусе `SERVING`, `SERVED` не аннулируются (логировать предупреждение)
+
+---
+
+### 4.6. Расчёт времени ожидания
+
+---
+
+### 4.7. Безопасность данных
+
+| Требование | Реализация |
+|------------|------------|
+| Пароли | Хеширование bcrypt/argon2 (NFR-S-01) |
+| Передача | HTTPS обязательно (NFR-S-02) |
+| SQL Injection | Параметризированные запросы (NFR-S-03) |
+| XSS | Санитизация всех входных данных (NFR-S-03) |
+| Audit Trail | Все действия в EventLog (3.8) |
+
+---
+
+## 5. Приложения
+
+### A. Перечисляемые типы (Enums)
+
+**Ticket.status:**
+| Значение | Описание |
+|----------|----------|
+| `WAITING` | Ожидает вызова |
+| `CALLED` | Вызван, ожидает подтверждения |
+| `SERVING` | Обслуживается |
+| `SERVED` | Обслужен успешно |
+| `SKIPPED` | Пропущен (не явился) |
+| `CANCELLED` | Отменён клиентом или оператором |
+
+**QueueSession.status:**
+| Значение | Описание |
+|----------|----------|
+| `DRAFT` | Черновик, не активна |
+| `OPEN` | Активна, принимает клиентов |
+| `PAUSED` | На паузе, не принимает новых |
+| `CLOSED` | Завершена |
+
+**Queue.distribution_mode:**
+| Значение | Описание |
+|----------|----------|
+| `MANUAL` | Оператор вызывает клиентов вручную |
+| `AUTO` | Система автоматически назначает готовым исполнителям |
+
+**EventLog.event_type:**
+| Значение | Описание |
+|----------|----------|
+| `TICKET_CREATED` | Создание талона |
+| `TICKET_CALLED` | Вызов клиента |
+| `SERVICE_STARTED` | Начало обслуживания |
+| `SERVICE_COMPLETED` | Завершение обслуживания |
+| `TICKET_MOVED` | Перемещение в очереди |
+| `TICKET_CANCELLED` | Отмена талона |
+| `EXECUTOR_READY` | Исполнитель готов |
+| `EXECUTOR_BUSY` | Исполнитель занят |
+| `SESSION_STARTED` | Сессия начата |
+| `SESSION_CLOSED` | Сессия закрыта |
+| `QUEUE_RENORMALIZED` | Ренормализация sort_order |
+
+---
+
+### B. Сводная таблица внешних ключей
+
+| Таблица | Поле | Ссылается на | ON DELETE | ON UPDATE |
+|---------|------|--------------|-----------|-----------|
+| UserRole | user_id | User(id) | CASCADE | CASCADE |
+| UserRole | role_id | Role(id) | CASCADE | CASCADE |
+| Queue | created_by | User(id) | RESTRICT | CASCADE |
+| QueueSession | queue_id | Queue(id) | CASCADE | CASCADE |
+| QueueSession | created_by | User(id) | RESTRICT | CASCADE |
+| Ticket | session_id | QueueSession(id) | CASCADE | CASCADE |
+| Ticket | service_type_id | ServiceType(id) | SET NULL | CASCADE |
+| Ticket | served_by_user_id | User(id) | SET NULL | CASCADE |
+| Ticket | client_session_id | ClientSession(id) | SET NULL | CASCADE |
+| ServiceType | queue_id | Queue(id) | CASCADE | CASCADE |
+| ExecutorState | session_id | QueueSession(id) | CASCADE | CASCADE |
+| ExecutorState | user_id | User(id) | CASCADE | CASCADE |
+| ExecutorState | current_ticket_id | Ticket(id) | SET NULL | CASCADE |
+| EventLog | session_id | QueueSession(id) | CASCADE | CASCADE |
+| EventLog | ticket_id | Ticket(id) | SET NULL | CASCADE |
+| EventLog | actor_user_id | User(id) | SET NULL | CASCADE |
+
+---
+
+### C. Рекомендуемые индексы PostgreSQL
+
+```sql
+-- Ticket: основной запрос отображения очереди
+CREATE INDEX idx_ticket_queue_sort ON Ticket(session_id, status, priority_level DESC, sort_order ASC);
+
+-- Ticket: поиск по сессии клиента
+CREATE INDEX idx_ticket_client_session ON Ticket(client_session_id, status);
+
+-- Ticket: аналитика по статусам
+CREATE INDEX idx_ticket_status_time ON Ticket(session_id, status, created_at);
+
+-- Ticket: фильтрация по типу услуги
+CREATE INDEX idx_ticket_service_type ON Ticket(session_id, service_type_id, status);
+
+-- ExecutorState: поиск готовых исполнителей
+CREATE INDEX idx_executor_ready ON ExecutorState(session_id, is_ready) WHERE is_ready = true;
+
+-- EventLog: фильтрация по сессии и времени
+CREATE INDEX idx_eventlog_session_time ON EventLog(session_id, timestamp);
+
+-- EventLog: история талона
+CREATE INDEX idx_eventlog_ticket ON EventLog(ticket_id);
+
+-- EventLog: аналитика по типам
+CREATE INDEX idx_eventlog_type ON EventLog(event_type);
+
+-- ClientSession: поиск по отпечатку устройства
+CREATE INDEX idx_clientsession_active ON ClientSession(device_fingerprint, is_active);
+
+-- ServiceType: список услуг очереди
+CREATE INDEX idx_servicetype_queue ON ServiceType(queue_id, is_active, sort_order);
+
+-- QueueSession: поиск активных сессий
+CREATE INDEX idx_session_queue_status ON QueueSession(queue_id, status);
+```
+
+---
