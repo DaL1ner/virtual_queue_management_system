@@ -1,7 +1,7 @@
 # Логическая модель данных
 ## Virtual Queue Management System
 
-*Версия: 1.0 | Обновлено: 27.03.2026*
+*Версия: 1.1 | Обновлено: 27.03.2026*
 
 ---
 
@@ -12,19 +12,19 @@
   - [Оглавление](#оглавление)
   - [1. Обзор модели](#1-обзор-модели)
   - [2. Сущности](#2-сущности)
-    - [User (Пользователь системы)](#user-пользователь-системы)
-    - [Role (Роль)](#role-роль)
-    - [UserRole (Связь Пользователь-Роль)](#userrole-связь-пользователь-роль)
-    - [Queue (Конфигурация очереди)](#queue-конфигурация-очереди)
-    - [QueueSession (Сессия очереди)](#queuesession-сессия-очереди)
-    - [Ticket (Талон / Запись в очередь)](#ticket-талон--запись-в-очередь)
-    - [ServiceType (Тип обслуживания)](#servicetype-тип-обслуживания)
-    - [ExecutorState (Состояние исполнителя)](#executorstate-состояние-исполнителя)
-    - [ClientSession (Сессия клиента)](#clientsession-сессия-клиента)
-    - [EventLog (Журнал событий)](#eventlog-журнал-событий)
+    - [2.1. User (Пользователь системы)](#21-user-пользователь-системы)
+    - [2.2. Role (Роль)](#22-role-роль)
+    - [2.3. UserRole (Связь Пользователь-Роль)](#23-userrole-связь-пользователь-роль)
+    - [2.4. Queue (Конфигурация очереди)](#24-queue-конфигурация-очереди)
+    - [2.5. QueueSession (Сессия очереди)](#25-queuesession-сессия-очереди)
+    - [2.6. Ticket (Талон / Запись в очередь)](#26-ticket-талон--запись-в-очередь)
+    - [2.7. ServiceType (Тип обслуживания)](#27-servicetype-тип-обслуживания)
+    - [2.8. ExecutorState (Состояние исполнителя)](#28-executorstate-состояние-исполнителя)
+    - [2.9. ClientSession (Сессия клиента)](#29-clientsession-сессия-клиента)
+    - [2.10. EventLog (Журнал событий)](#210-eventlog-журнал-событий)
   - [3. Связи между сущностями](#3-связи-между-сущностями)
-    - [Диаграмма связей](#диаграмма-связей)
-    - [Таблица кардинальностей](#таблица-кардинальностей)
+    - [3.1. Диаграмма связей](#31-диаграмма-связей)
+    - [3.2. Таблица кардинальностей](#32-таблица-кардинальностей)
   - [4. Бизнес-правила и ограничения](#4-бизнес-правила-и-ограничения)
     - [4.1. Управление позицией в очереди (sort\_order)](#41-управление-позицией-в-очереди-sort_order)
     - [4.2. Добавление позиций в очереди](#42-добавление-позиций-в-очереди)
@@ -56,7 +56,7 @@
 
 ## 2. Сущности
 
-### User (Пользователь системы)
+### 2.1. User (Пользователь системы)
 
 **Назначение:** Хранение учётных данных сотрудников (Администраторы, Операторы, Исполнители).
 
@@ -80,7 +80,7 @@
 
 ---
 
-### Role (Роль)
+### 2.2. Role (Роль)
 
 **Назначение:** Справочник системных ролей. Определяет права доступа к функциям системы.
 
@@ -103,17 +103,17 @@
 
 ---
 
-### UserRole (Связь Пользователь-Роль)
+### 2.3. UserRole (Связь Пользователь-Роль)
 
 **Назначение:** Реализация связи «Многие-ко-Многим» между пользователями и ролями.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
 | `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор записи |
-| `user_id` | `INTEGER` | `NOT NULL`, `FK → User(id) ON DELETE CASCADE` | Ссылка на пользователя |
-| `role_id` | `INTEGER` | `NOT NULL`, `FK → Role(id) ON DELETE CASCADE` | Ссылка на роль |
+| `user_id` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE CASCADE` | Ссылка на пользователя |
+| `role_id` | `INTEGER` | `NOT NULL`, `FK -> Role(id) ON DELETE CASCADE` | Ссылка на роль |
 | `assigned_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата назначения роли |
-| `assigned_by` | `INTEGER` | `NULL`, `FK → User(id) ON DELETE SET NULL` | Кто назначил роль |
+| `assigned_by` | `INTEGER` | `NULL`, `FK -> User(id) ON DELETE SET NULL` | Кто назначил роль |
 
 **Ключи:**
 - Первичный ключ: `id`
@@ -125,7 +125,7 @@
 
 ---
 
-### Queue (Конфигурация очереди)
+### 2.4. Queue (Конфигурация очереди)
 
 **Назначение:** Шаблон очереди с настройками, не меняющимися в рамках сессии.
 
@@ -139,11 +139,15 @@
 | `is_priority_enabled` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Разрешено ли приоритетное обслуживание |
 | `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Флаг активности конфигурации |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания конфигурации |
-| `created_by` | `INTEGER` | `NOT NULL`, `FK → User(id) ON DELETE RESTRICT` | Администратор-создатель |
+| `created_by` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE RESTRICT` | Администратор-создатель |
 
 **Ключи:**
 - Первичный ключ: `id`
-- Внешние ключи: `created_by → User(id)`
+- Внешние ключи: `created_by -> User(id)`
+
+**Типы distribution_mode:**
+- `MANUAL` - Оператор вызывает клиентов вручную
+- `AUTO` - Система автоматически назначает готовым исполнителям
 
 **Проверочные ограничения:**
 ```
@@ -152,14 +156,14 @@ CHECK (distribution_mode IN ('MANUAL', 'AUTO'))
 
 ---
 
-### QueueSession (Сессия очереди)
+### 2.5. QueueSession (Сессия очереди)
 
 **Назначение:** Конкретный запуск очереди во времени. Позволяет хранить историю работы.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
 | `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор сессии |
-| `queue_id` | `INTEGER` | `NOT NULL`, `FK → Queue(id) ON DELETE CASCADE` | Ссылка на конфигурацию |
+| `queue_id` | `INTEGER` | `NOT NULL`, `FK -> Queue(id) ON DELETE CASCADE` | Ссылка на конфигурацию |
 | `status` | `ENUM` | `NOT NULL`, `DEFAULT 'DRAFT'` | DRAFT, OPEN, PAUSED, CLOSED |
 | `started_at` | `TIMESTAMP` | `NULL` | Фактическое время начала работы |
 | `closed_at` | `TIMESTAMP` | `NULL` | Время завершения сессии |
@@ -167,12 +171,18 @@ CHECK (distribution_mode IN ('MANUAL', 'AUTO'))
 | `served_count` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Число обслуженных клиентов |
 | `total_service_time_sec` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Сумма времени обслуживаний (сек) |
 | `avg_service_time_actual` | `DECIMAL(5,2)` | `NULL`, `CHECK (>= 0)` | Фактическое среднее (мин) |
-| `created_by` | `INTEGER` | `NOT NULL`, `FK → User(id) ON DELETE RESTRICT` | Администратор, запустивший сессию |
+| `created_by` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE RESTRICT` | Администратор, запустивший сессию |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания сессии |
 
 **Ключи:**
 - Первичный ключ: `id`
-- Внешние ключи: `queue_id → Queue(id)`, `created_by → User(id)`
+- Внешние ключи: `queue_id -> Queue(id)`, `created_by -> User(id)`
+
+**Типы status:**
+- `DRAFT` - Черновик, не активна
+- `OPEN` - Активна, принимает клиентов
+- `PAUSED` - На паузе, не принимает новых
+- `CLOSED` - Завершена
 
 **Индексы:**
 - `idx_session_queue_status` (`queue_id`, `status`) — поиск активных сессий
@@ -189,15 +199,15 @@ CHECK (closed_at IS NULL OR closed_at >= started_at)
 
 ---
 
-### Ticket (Талон / Запись в очередь)
+### 2.6. Ticket (Талон / Запись в очередь)
 
 **Назначение:** Ключевая сущность системы. Представляет клиента в очереди.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
 | `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор талона |
-| `session_id` | `INTEGER` | `NOT NULL`, `FK → QueueSession(id) ON DELETE CASCADE` | Ссылка на сессию |
-| `service_type_id` | `INTEGER` | `NULL`, `FK → ServiceType(id) ON DELETE SET NULL` | Ссылка на тип услуги |
+| `session_id` | `INTEGER` | `NOT NULL`, `FK -> QueueSession(id) ON DELETE CASCADE` | Ссылка на сессию |
+| `service_type_id` | `INTEGER` | `NULL`, `FK -> ServiceType(id) ON DELETE SET NULL` | Ссылка на тип услуги |
 | `ticket_number` | `VARCHAR(20)` | `NOT NULL` | Видимый номер (напр. «А-005») |
 | `client_name` | `VARCHAR(100)` | `NOT NULL` | Имя клиента |
 | `client_surname` | `VARCHAR(100)` | `NOT NULL` | Фамилия клиента |
@@ -209,13 +219,21 @@ CHECK (closed_at IS NULL OR closed_at >= started_at)
 | `called_at` | `TIMESTAMP` | `NULL` | Время вызова |
 | `service_started_at` | `TIMESTAMP` | `NULL` | Начало обслуживания |
 | `service_ended_at` | `TIMESTAMP` | `NULL` | Завершение обслуживания |
-| `served_by_user_id` | `INTEGER` | `NULL`, `FK → User(id) ON DELETE SET NULL` | Исполнитель |
-| `client_session_id` | `INTEGER` | `NULL`, `FK → ClientSession(id) ON DELETE SET NULL` | Сессия устройства |
+| `served_by_user_id` | `INTEGER` | `NULL`, `FK -> User(id) ON DELETE SET NULL` | Исполнитель |
+| `client_session_id` | `INTEGER` | `NULL`, `FK -> ClientSession(id) ON DELETE SET NULL` | Сессия устройства |
 | `cancel_reason` | `TEXT` | `NULL` | Причина отмены/пропуска |
 
 **Ключи:**
 - Первичный ключ: `id`
 - Внешние ключи: `session_id`, `service_type_id`, `served_by_user_id`, `client_session_id`
+
+**Типы status:**
+- `WAITING` - Ожидает вызова
+- `CANCELLED` - Отменён клиентом или оператором
+- `CALLED` - Вызван, ожидает подтверждения
+- `SERVING` - Обслуживается
+- `SERVED` - Обслужен успешно
+- `SKIPPED` - Пропущен (не явился)
 
 **Индексы:**
 ```
@@ -245,14 +263,14 @@ CHECK (
 
 ---
 
-### ServiceType (Тип обслуживания)
+### 2.7. ServiceType (Тип обслуживания)
 
 **Назначение:** Справочник типов услуг. Определяет приоритет и плановое время для каждой услуги.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
 | `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор типа услуги |
-| `queue_id` | `INTEGER` | `NOT NULL`, `FK → Queue(id) ON DELETE CASCADE` | Ссылка на конфигурацию |
+| `queue_id` | `INTEGER` | `NOT NULL`, `FK -> Queue(id) ON DELETE CASCADE` | Ссылка на конфигурацию |
 | `name` | `VARCHAR(255)` | `NOT NULL` | Название услуги |
 | `code` | `VARCHAR(50)` | `NOT NULL`, `UNIQUE` | Системный код |
 | `letter` | `CHAR(1)` | `NOT NULL`, `CHECK (LENGTH = 1)` | Буква для номера талона |
@@ -266,28 +284,28 @@ CHECK (
 **Ключи:**
 - Первичный ключ: `id`
 - Уникальные: `code`
-- Внешние ключи: `queue_id → Queue(id)`
+- Внешние ключи: `queue_id -> Queue(id)`
 
 **Индексы:**
 - `idx_servicetype_queue` (`queue_id`, `is_active`, `sort_order`) — для списка услуг
 
 **Бизнес-правила:**
 - Если `Queue.is_service_type_enabled = false`, используется базовая услуга по умолчанию
-- Приоритет талона определяется приоритетом выбранной услуги
+- Приоритет талона `Ticket.priority_level` определяется приоритетом выбранной услуги `ServiceType.base_priority_level`. Базовая услуга имеет приоритет 0
 
 ---
 
-### ExecutorState (Состояние исполнителя)
+### 2.8. ExecutorState (Состояние исполнителя)
 
 **Назначение:** Хранит состояние готовности исполнителя в рамках конкретной сессии очереди.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
 | `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор записи |
-| `session_id` | `INTEGER` | `NOT NULL`, `FK → QueueSession(id) ON DELETE CASCADE` | Ссылка на сессию |
-| `user_id` | `INTEGER` | `NOT NULL`, `FK → User(id) ON DELETE CASCADE` | Исполнитель услуги |
+| `session_id` | `INTEGER` | `NOT NULL`, `FK -> QueueSession(id) ON DELETE CASCADE` | Ссылка на сессию |
+| `user_id` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE CASCADE` | Исполнитель услуги |
 | `is_ready` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Флаг готовности |
-| `current_ticket_id` | `INTEGER` | `NULL`, `FK → Ticket(id) ON DELETE SET NULL`, `UNIQUE` | Текущий талон |
+| `current_ticket_id` | `INTEGER` | `NULL`, `FK -> Ticket(id) ON DELETE SET NULL`, `UNIQUE` | Текущий талон |
 | `last_status_change` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время последнего изменения |
 | `served_count` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Счётчик обслуженных за сессию |
 
@@ -300,12 +318,12 @@ CHECK (
 - `idx_executor_ready` (`session_id`, `is_ready`) WHERE `is_ready = true` — поиск свободных
 
 **Бизнес-правила:**
-- Один исполнитель = одна запись на сессию
+- Один исполнитель может иметь лишь одну запись на сессию
 - `current_ticket_id` заполняется только при статусе `SERVING`
 
 ---
 
-### ClientSession (Сессия клиента)
+### 2.9. ClientSession (Сессия клиента)
 
 **Назначение:** Отслеживает сессию браузера/устройства клиента. Реализация требования «один активный талон с устройства».
 
@@ -327,20 +345,20 @@ CHECK (
 
 **Бизнес-правила:**
 - Сессия считается неактивной после `expires_at`
-- При создании нового талона все активные талоны с этим `client_session_id` аннулируются
+- При создании нового талона все активные талоны с этим `client_session_id` аннулируются. За исключением талонов в статусе `SERVING`, `SERVED` (логировать предупреждение)
 
 ---
 
-### EventLog (Журнал событий)
+### 2.10. EventLog (Журнал событий)
 
 **Назначение:** Хранит историю всех значимых событий в системе. Используется для аудита, аналитики и отладки.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
 | `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор события |
-| `session_id` | `INTEGER` | `NOT NULL`, `FK → QueueSession(id) ON DELETE CASCADE` | Контекст сессии |
-| `ticket_id` | `INTEGER` | `NULL`, `FK → Ticket(id) ON DELETE SET NULL` | Связанный талон |
-| `actor_user_id` | `INTEGER` | `NULL`, `FK → User(id) ON DELETE SET NULL` | Кто совершил (или SYSTEM) |
+| `session_id` | `INTEGER` | `NOT NULL`, `FK -> QueueSession(id) ON DELETE CASCADE` | Контекст сессии |
+| `ticket_id` | `INTEGER` | `NULL`, `FK -> Ticket(id) ON DELETE SET NULL` | Связанный талон |
+| `actor_user_id` | `INTEGER` | `NULL`, `FK -> User(id) ON DELETE SET NULL` | Кто совершил (или SYSTEM) |
 | `event_type` | `VARCHAR(100)` | `NOT NULL` | Тип события |
 | `timestamp` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата и время события |
 | `details` | `JSONB` | `NULL` | Дополнительные данные (JSON) |
@@ -357,26 +375,16 @@ idx_eventlog_ticket      (ticket_id)               — история талон
 idx_eventlog_type        (event_type)              — аналитика по типам
 ```
 
-**Типы событий:**
-- `TICKET_CREATED` — Создание талона
-- `TICKET_CALLED` — Вызов клиента
-- `SERVICE_STARTED` — Начало обслуживания
-- `SERVICE_COMPLETED` — Завершение обслуживания
-- `TICKET_MOVED` — Перемещение в очереди
-- `TICKET_CANCELLED` — Отмена талона
-- `EXECUTOR_READY` — Исполнитель готов
-- `SESSION_STARTED` — Сессия начата
-- `SESSION_CLOSED` — Сессия закрыта
-- `QUEUE_RENORMALIZED` — Ренормализация sort_order
-- `PRIORITY_CHANGED` — Изменение приоритета клиента 
+**Типы событий:**  
+Описаны в [приложении](#a-перечисляемые-типы-enums)
 
 ---
 
 ## 3. Связи между сущностями
 
-### Диаграмма связей
+### 3.1. Диаграмма связей
 
-### Таблица кардинальностей
+### 3.2. Таблица кардинальностей
 
 | Сущность 1 | Связь | Сущность 2 | Кардинальность | Правило ON DELETE |
 |------------|-------|------------|----------------|-------------------|
@@ -406,42 +414,29 @@ idx_eventlog_type        (event_type)              — аналитика по �
   2. Затем по полю sort_order (ASC)
   3. При равенстве — по времени создания (created_at ASC)
 
-Данный подход в дальнейшем позволяет добиться O(1) перемещение без пересчёта всех записей
-
-```
-Пример:
-  Талон 1: sort_order = 1000.0000000000
-  Талон 2: sort_order = 2000.0000000000
-  Талон 3: sort_order = 3000.0000000000
-
-  При перемещении Талона 3 между 1 и 2:
-  Талон 3: sort_order = 1500.0000000000
-```
-
-**Ренормализация:**
-- Выполняется когда минимальный интервал < 100
-- В фоновом режиме, когда очередь на паузе
-- Логировать в EventLog как `QUEUE_RENORMALIZED`
-
-**Сортировка очереди:**
 ```sql
 ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 ```
+
+Данный подход в дальнейшем позволяет добиться O(1) перемещение без пересчёта всех записей. При перемещении sort_order конкретного талона пересчитывается как среднее между sort_order соседних талонов. Тем самым при сортировке клиент будет находится в необходимом месте  
+
+Ренормализация выполняется в фоновом режиме когда минимальный интервал < 100. Событие логируется в EventLog как `QUEUE_RENORMALIZED`
+
 
 ---
 
 ### 4.2. Добавление позиций в очереди
 
-Назначение sort_order происходит на основании последнего клиента с таким же приоритетом в очереди. Отображение очереди в таком случае остаётся корректным даже при дублировании порядка (sort_order), так как среди группы приоритетов этот порядок остаётся уникален.
+Назначение sort_order новому клиенту происходит на основании последнего клиента с таким же приоритетом в очереди. Отображение очереди в таком случае остаётся корректным даже при дублировании порядка (sort_order) среды разных групп приоритетов, так как среди текущей группы приоритетов этот порядок всё ещё остаётся уникален.
 
 ---
 
 ### 4.3. Приоритетность
 
-Если конфигурацией очереди клиенту не предоставляется выбор типа услуги, то ему автоматически должна присваиваться "базовая услуга".  
+Если конфигурацией очереди клиенту не предоставляется выбор типа услуги, то ему автоматически должна присваиваться "базовая услуга", имеющая приоритет 0.  
 Если выбор услуги предоставлен, клиент получает приоритет (`Ticket.priority_level`), соответствующий приоритету выбранного типа обслуживания (`ServiceType.base_priority_level`)
 При ручном изменении позиции клиента в очереди его приоритет при необходимости должен изменяться в зависимости от новой позиции позиции:
-  - Если клиент перемещается в группу с другим приоритетом, его priority_level обновляется в соответствии с целевой позицией
+  - Если клиент перемещается в группу клиентов с другим приоритетом, его `Ticket.priority_level` обновляется в соответствии с целевой позицией
   - Изменение приоритета логируется в EventLog как PRIORITY_CHANGED
   - Оба изменения (sort_order + priority_level) выполняются в одной транзакции
 
@@ -472,19 +467,19 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 | SERVING | SERVED | Обслуживание завершено |
 
 **Обязательные поля при переходе:**
-- `SERVED` → `service_ended_at` NOT NULL
-- `SKIPPED` → `service_ended_at` NOT NULL
-- `CANCELLED` → `service_ended_at` NOT NULL
+- в `SERVED` -> `service_ended_at` NOT NULL
+- в `SKIPPED` -> `service_ended_at` NOT NULL
+- в `CANCELLED` -> `service_ended_at` NOT NULL
 
 ---
 
 ### 4.5. Конкурентный доступ (Optimistic Locking)
 
 Поле `Ticket.version` увеличивается при каждом обновлении  
-Проверка выполняется `UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?`  
+Проверка выполняется через `UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?`  
 При конфликте вернуть ошибку 409 Conflict, запросить обновление данных
 
-**Сценарии защиты:**
+В дальнейшем это должно позволить предусмотреть следующие сценарии защиты:
 - Оператор vs Оператор (одновременное перемещение)
 - Оператор vs Клиент (вызов vs отмена)
 - Авто vs Оператор (автоматическое распределение vs ручной вызов)
@@ -494,21 +489,21 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 
 ### 4.6. Ограничения по сессии клиента
 
-```
-Правило: Один активный талон на одну ClientSession
-
-Реализация при создании талона:
+Согласно функциональным требованиям установлено правило - один активный талон на одну ClientSession  
+При создании нового талона необходимо:
   1. Найти все активные талоны с этим client_session_id
   2. Перевести их в статус CANCELLED
   3. Создать новый талон
   4. Записать событие в EventLog
-```
 
-**Исключение:** Талоны в статусе `SERVING`, `SERVED` не аннулируются (логировать предупреждение)
+Исключение: Талоны в статусе `SERVING`, `SERVED` не аннулируются (логировать предупреждение)
 
 ---
 
 ### 4.7. Расчёт времени ожидания
+
+До момента завершения обслуживания первого клиента расчёт времени ожидания производится на основе планового среднего времени обслуживания клиентов в очереди `ServiceType.plan_avg_service_time`  
+После завершения обслуживания первого клиента время ожидания рассчитывается как `QueueSession.total_service_time` / `QueueSession.served_count` и записывается в `QueueSession.avg_service_time_actual`. Обновление каждого из этих атрибутов производится автоматически после каждого нового обслуживания  
 
 ---
 
@@ -555,18 +550,25 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 **EventLog.event_type:**
 | Значение | Описание |
 |----------|----------|
-| `TICKET_CREATED` | Создание талона |
-| `TICKET_CALLED` | Вызов клиента |
-| `SERVICE_STARTED` | Начало обслуживания |
-| `SERVICE_COMPLETED` | Завершение обслуживания |
-| `TICKET_MOVED` | Перемещение в очереди |
-| `TICKET_CANCELLED` | Отмена талона |
-| `EXECUTOR_READY` | Исполнитель готов |
-| `EXECUTOR_BUSY` | Исполнитель занят |
-| `SESSION_STARTED` | Сессия начата |
-| `SESSION_CLOSED` | Сессия закрыта |
-| `QUEUE_RENORMALIZED` | Ренормализация sort_order |
-| `PRIORITY_CHANGED` | Изменение приоритета клиента |
+| Код | Описание | Категория |
+|-----|----------|-----------|
+| `TICKET_CREATED` | Создание талона | Талон |
+| `TICKET_CALLED` | Вызов клиента | Талон |
+| `SERVICE_STARTED` | Начало обслуживания | Талон |
+| `SERVICE_SERVED` | Обслуживание завершено успешно | Талон |
+| `SERVICE_SKIPPED` | Клиент пропущен (не явился) | Талон |
+| `TICKET_CANCELLED` | Талон отменён | Талон |
+| `TICKET_MOVED` | Талон перемещён в очереди | Талон |
+| `PRIORITY_CHANGED` | Изменён приоритет талона | Талон |
+| `SESSION_STARTED` | Сессия очереди начата | Сессия |
+| `SESSION_PAUSED` | Сессия приостановлена | Сессия |
+| `SESSION_RESUMED` | Сессия возобновлена | Сессия |
+| `SESSION_CLOSED` | Сессия закрыта | Сессия |
+| `EXECUTOR_READY` | Исполнитель готов к обслуживанию | Исполнитель |
+| `EXECUTOR_NOT_READY` | Исполнитель не готов | Исполнитель |
+| `AUTO_ASSIGNMENT` | Автоматическое назначение клиента | Авто-режим |
+| `AUTO_ASSIGNMENT_FAILED` | Авто-назначение не удалось | Авто-режим |
+| `QUEUE_RENORMALIZED` | Ренормализация sort_order | Система |
 
 ---
 
