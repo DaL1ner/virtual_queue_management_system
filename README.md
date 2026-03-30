@@ -3,8 +3,8 @@
 > **Учебный проект** по курсу «Архитектура приложений и данных»  
 > Веб-приложение для управления виртуальной очередью в сервисных точках
 
-[![GitHub Projects](https://img.shields.io/badge/GitHub-Projects-blue)](https://github.com/users/DaL1ner/projects/1)
-[![Sprint 5](https://img.shields.io/badge/Sprint-5-orange)](https://github.com/DaL1ner/virtual_queue_Project/milestone/5)
+[![GitHub Projects](https://img.shields.io/badge/Доска-задач-blue)](https://github.com/users/DaL1ner/projects/1)
+[![Sprint 5](https://img.shields.io/badge/Спринт-5-orange)](https://github.com/DaL1ner/virtual_queue_Project/milestone/5)
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-green)](https://vuejs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-latest-teal)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue)](https://www.postgresql.org/)
@@ -16,12 +16,11 @@
 - [О проекте](#-о-проекте)
 - [Проблема и решение](#-проблема-и-решение)
 - [Роли пользователей](#-роли-пользователей)
-- [Функциональность MVP](#-функциональность-mvp)
+- [Функциональность MVP](#-функциональность-MVP)
 - [Технологический стек](#-технологический-стек)
 - [Структура проекта](#-структура-проекта)
 - [Быстрый старт](#-быстрый-старт)
-- [Рабочий процесс (Scrum)](#-рабочий-процесс-scrum)
-- [Команда](#-команда)
+- [Команда](#-команда-проекта)
 - [Документация](#-документация)
 
 ---
@@ -167,26 +166,6 @@ git commit -m "feat(business): Добавлены клиент и операто
 git push origin main
 ```
 
----
-
-## 🔄 Рабочий процесс (Scrum)
-
-Наша команда работает по методологии Scrum:
-
-1. **Product Owner** создаёт задачу → попадает в _Backlog_
-2. На планировании спринта команда перемещает задачи в _Sprint Backlog_ + назначает _Milestone_
-3. Разработчик берёт задачу → перемещает в _In Progress_ + назначает себя (_Assignee_)
-4. Разработка → коммиты → отметка чекбоксов в задаче
-5. Разработчик перемещает в _Review_ → другой участник проверяет → оставляет комментарий "LGTM ✅"
-6. Рецензент перемещает в _Done_ → задача закрывается
-7. В конце спринта: итоги записываются в `sprints/sprint-XX.md`, формируется отчёт (презентация)
-
-### Полезные ссылки
-- 📊 [GitHub Projects — Доска задач](https://github.com/users/DaL1ner/projects/1)
-- 🎯 [Текущий спринт (Milestone 5)](https://github.com/DaL1ner/virtual_queue_Project/milestone/5)
-
----
-
 ## 👥 Команда проекта
 
 | Участник | GitHub | Роль |
@@ -222,16 +201,8 @@ git push origin main
 
 ---
 
-## 📄 Лицензия
-
-Учебный проект. Все права защищены.
-
----
-
 <div align="center">
 
-**Virtual Queue Management System** | Курс «Архитектура приложений и данных»
-
-[⬆️ Вернуться к началу](#-система-управления-виртуальной-очередью--virtual-queue-management-system)
+**Virtual Queue Management System**
 
 </div>
