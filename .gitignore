@@ -1,1 +1,16 @@
-Nothing needs to be added to .gitignore since only a README.md file was modified and no build artifacts, dependencies, or temporary files were detected in the changes.
+# Archi temporary files
+*.tmp
+*.log
+*.bak
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Но НЕ игнорируем .archimate файлы!
+# Они нужны для версионности
