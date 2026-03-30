@@ -4,15 +4,17 @@
 
 > **Учебный проект** по курсу «Архитектура приложений и данных»  
 > Веб-приложение для управления виртуальной очередью в сервисных точках
-   
-[Доска задач](https://github.com/users/DaL1ner/projects/1) • 
-[Sprint 5](https://github.com/DaL1ner/virtual_queue_Project/milestone/5)
 
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-green)](https://vuejs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-latest-teal)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue)](https://www.postgresql.org/)
 
 </div>
+
+---
+
+- [**📊 Доска задач**](https://github.com/users/DaL1ner/projects/1)  
+- [**🎯 Sprint 5**](https://github.com/DaL1ner/virtual_queue_Project/milestone/5)
 
 ---
 
