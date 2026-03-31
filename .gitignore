@@ -15,5 +15,5 @@ Thumbs.db
 .vscode/
 *.swp
 
-# Но НЕ игнорируем .archimate файлы!
-# Они нужны для версионности
+.env
+*.pyc

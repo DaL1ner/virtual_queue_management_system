@@ -99,24 +99,56 @@ Virtual Queue Management System – это система управления �
 ## 📁 Структура проекта
 
 ```
-virtual_queue_Project/
-├── archi-model/          # Модели ArchiMate (бизнес-, приложение-, данные-)
-│   ├── 01_business/      # Бизнес-диаграммы
-│   ├── 02_application/   # Диаграммы приложений
-│   └── 03_data/          # Модели данных
-├── backend/              # Backend на FastAPI
-├── frontend/             # Frontend на Vue.js
-│   └── docs/             # Документация по фронтенду
-├── docs/                 # Общая документация
-│   ├── requirements/     # Требования (функциональные, нефункциональные, роли)
-│   ├── views/            # Экспортированные диаграммы
-│   ├── adr/              # Архитектурные решения (Architecture Decision Records)
-│   └── feedback/         # Замечания от преподавателя
-├── sprints/              # Планы и итоги спринтов (sprint-01.md — sprint-05.md)
-├── reports/              # Отчёты по спринтам
-│   ├── presentation/     # Презентации
-│   └── sprint-reviews/   # Ретроспективы спринтов
-└── README.md             # Этот файл
+virtual_queue_project/
+├── .gitignore
+├── .env.example              # Шаблон переменных окружения (DB_URL, SECRET_KEY)
+├── README.md                 # Описание проекта, как запустить (Quick Start)
+├── docker-compose.yml        # Оркестрация сервисов (App, DB, Frontend)
+├── Makefile                  # Команды для разработчика (make up, make migrate)
+│
+├── backend/                  # FastAPI приложение
+│   ├── app/
+│   │   ├── api/              # Роуты (endpoints)
+│   │   ├── core/             # Конфиги, безопасность, логгер
+│   │   ├── models/           # Pydantic схемы (для работы кода с БД)
+│   │   └── services/         # Бизнес-логика
+│   ├── tests/                # Тесты бэкенда
+│   ├── requirements.txt      # Зависимости Python
+│   └── Dockerfile
+│
+├── frontend/                 # Vue.js приложение
+│   ├── src/
+│   │   ├── components/
+│   │   ├── views/
+│   │   └── assets/
+│   ├── public/
+│   ├── tests/                # Тесты фронтенда
+│   ├── package.json
+│   └── Dockerfile
+│
+├── infra/                    # Инфраструктура и скрипты развёртывания
+│   ├── db/
+│   │   ├── init/             # SQL скрипты инициализации (01_schema.sql)
+│   │   └── seeds/            # Тестовые данные
+│   └── nginx/                # Конфиги прокси
+│
+├── design/                   # ИСХОДНИКИ проектирования (Source Files)
+│   ├── architecture/         # ArchiMate (файл .archimate)
+│   ├── data/                 # ER-диаграммы, Логическая модель (Draw.io / .sql)
+│   ├── uml/                  # Диаграммы классов, последовательностей
+│   └── ui/                   # Прототипы интерфейса (Figma links / Images / XD)
+│
+├── docs/                     # ГОТОВАЯ документация (Exported / Markdown)
+│   ├── requirements/         # Текст требований (SRS)
+│   ├── api/                  # Swagger/OpenAPI спецификация (если экспортируете)
+│   ├── architecture/         # Экспортированные картинки из Archi/PNG
+│   └── user-manual/          # Инструкция пользователя
+│
+└── course-work/              # УЧЕБНАЯ ЧАСТЬ (отделено от продукта)
+    ├── sprints/              # Планы спринтов
+    ├── reports/              # Отчёты, презентации
+    ├── feedback/             # Замечания преподавателя
+    └── adr/                  # Architecture Decision Records (можно оставить тут или в docs)
 ```
 
 ---
@@ -182,19 +214,19 @@ git push origin main
 - [📋 Функциональные требования](docs/requirements/functional.md)
 - [📊 Нефункциональные требования](docs/requirements/non-functional.md)
 - [👥 Бизнес-роли](docs/requirements/roles.md)
-- [💾 Концептуальная модель данных](docs/requirements/conceptual-data-model.md)
-- [🗂️ Логическая модель данных](docs/requirements/logical-data-model.md)
+- [💾 Концептуальная модель данных](docs/data/conceptual-data-model.md)
+- [🗂️ Логическая модель данных](docs/data/logical-data-model.md)
 
 ### Архитектура
-- [📐 Архитектурные решения (ADR)](docs/adr/)
-- [📊 Диаграммы и виды](docs/views/)
+- [📐 Архитектурные решения (ADR)](corse-work/adr)
+- [📊 Диаграммы и виды](docs/architecture/views)
 
 ### Отчёты
-- [📊 Презентации](reports/presentation/)
-- [📝 Итоги спринтов](sprints/)
+- [📊 Презентации](corse-work/reports/presentation)
+- [📝 Итоги спринтов](corse-work/sprints)
 
 ### Обратная связь
-- [💬 Замечания преподавателя](docs/feedback/)
+- [💬 Замечания преподавателя](corse-work/feedback)
 
 ---
 
