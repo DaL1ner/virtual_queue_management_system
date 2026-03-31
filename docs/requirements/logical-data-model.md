@@ -1,7 +1,7 @@
 # Логическая модель данных
 ## Virtual Queue Management System
 
-*Версия: 1.1 | Обновлено: 27.03.2026*
+*Версия: 1.2 | Обновлено: 31.03.2026*
 
 ---
 
@@ -139,7 +139,7 @@
 | `is_priority_enabled` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Разрешено ли приоритетное обслуживание |
 | `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Флаг активности конфигурации |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания конфигурации |
-| `created_by` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE RESTRICT` | Администратор-создатель |
+| `created_by_id` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE RESTRICT` | Администратор-создатель |
 
 **Ключи:**
 - Первичный ключ: `id`
@@ -168,9 +168,8 @@ CHECK (distribution_mode IN ('MANUAL', 'AUTO'))
 | `started_at` | `TIMESTAMP` | `NULL` | Фактическое время начала работы |
 | `closed_at` | `TIMESTAMP` | `NULL` | Время завершения сессии |
 | `current_ticket_number` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Счётчик для генерации талонов |
-| `served_count` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Число обслуженных клиентов |
-| `total_service_time_sec` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Сумма времени обслуживаний (сек) |
-| `avg_service_time_actual` | `DECIMAL(5,2)` | `NULL`, `CHECK (>= 0)` | Фактическое среднее (мин) |
+| `served_count` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Кэш. Число обслуженных клиентов |
+| `total_service_time_sec` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Кэш. Сумма времени обслуживаний (сек) |
 | `created_by` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE RESTRICT` | Администратор, запустивший сессию |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания сессии |
 
@@ -184,6 +183,11 @@ CHECK (distribution_mode IN ('MANUAL', 'AUTO'))
 - `PAUSED` - На паузе, не принимает новых
 - `CLOSED` - Завершена
 
+Вычисляемые значения:
+- `served_count` - Кэш. Число обслуженных клиентов
+- `total_service_time_sec` - Кэш. Сумма времени обслуживаний (сек)
+- `avg_service_time_actual` - Вычисляемое. Фактическое среднее время обслуживания (мин)
+
 **Индексы:**
 - `idx_session_queue_status` (`queue_id`, `status`) — поиск активных сессий
 
@@ -195,6 +199,7 @@ CHECK (closed_at IS NULL OR closed_at >= started_at)
 
 **Бизнес-правила:**
 - Только одна сессия со статусом `OPEN` может быть активна для одной `queue_id`
+- `served_count`, `total_service_time_sec` обновляются атомарно вместе с изменением статуса Ticket на SERVED
 - `avg_service_time_actual` рассчитывается: `total_service_time_sec / served_count / 60`
 
 ---
@@ -206,12 +211,12 @@ CHECK (closed_at IS NULL OR closed_at >= started_at)
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
 | `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор талона |
-| `session_id` | `INTEGER` | `NOT NULL`, `FK -> QueueSession(id) ON DELETE CASCADE` | Ссылка на сессию |
+| `queue_session_id` | `INTEGER` | `NOT NULL`, `FK -> QueueSession(id) ON DELETE CASCADE` | Ссылка на сессию |
 | `service_type_id` | `INTEGER` | `NULL`, `FK -> ServiceType(id) ON DELETE SET NULL` | Ссылка на тип услуги |
 | `ticket_number` | `VARCHAR(20)` | `NOT NULL` | Видимый номер (напр. «А-005») |
 | `client_name` | `VARCHAR(100)` | `NOT NULL` | Имя клиента |
 | `client_surname` | `VARCHAR(100)` | `NOT NULL` | Фамилия клиента |
-| `sort_order` | `DECIMAL(20,10)` | `NOT NULL`, `CHECK (>= 0)` | Позиция для сортировки |
+| `sort_order` | `DECIMAL(20,10)` | `NOT NULL`, `CHECK (>= 0)` | Позиция для сортировки в очереди |
 | `priority_level` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Текущий приоритет данного клиента. Изначально соответствует приоритету типа обслуживания |
 | `status` | `ENUM` | `NOT NULL`, `DEFAULT 'WAITING'` | Текущий статус талона |
 | `version` | `INTEGER` | `NOT NULL`, `DEFAULT 1`, `CHECK (>= 1)` | Для оптимистичной блокировки |
@@ -225,7 +230,7 @@ CHECK (closed_at IS NULL OR closed_at >= started_at)
 
 **Ключи:**
 - Первичный ключ: `id`
-- Внешние ключи: `session_id`, `service_type_id`, `served_by_user_id`, `client_session_id`
+- Внешние ключи: `queue_session_id`, `service_type_id`, `served_by_user_id`, `client_session_id`
 
 **Типы status:**
 - `WAITING` - Ожидает вызова
@@ -237,10 +242,10 @@ CHECK (closed_at IS NULL OR closed_at >= started_at)
 
 **Индексы:**
 ```
-idx_ticket_queue_sort     (session_id, status, priority_level DESC, sort_order ASC)
+idx_ticket_queue_sort     (queue_session_id, status, priority_level DESC, sort_order ASC)
 idx_ticket_client_session (client_session_id, status)
-idx_ticket_status_time    (session_id, status, created_at)
-idx_ticket_service_type   (session_id, service_type_id, status)
+idx_ticket_status_time    (queue_session_id, status, created_at)
+idx_ticket_service_type   (queue_session_id, service_type_id, status)
 ```
 
 **Проверочные ограничения:**
@@ -275,7 +280,7 @@ CHECK (
 | `code` | `VARCHAR(50)` | `NOT NULL`, `UNIQUE` | Системный код |
 | `letter` | `CHAR(1)` | `NOT NULL`, `CHECK (LENGTH = 1)` | Буква для номера талона |
 | `base_priority_level` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Базовый приоритет услуги |
-| `plan_avg_service_time_sec` | `INTEGER` | `NULL`, `CHECK (> 0)` | Плановое время (секунды) |
+| `plan_avg_service_time` | `INTEGER` | `NULL`, `CHECK (> 0)` | Плановое время (секунды) |
 | `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Активен ли тип услуги |
 | `is_highlighting` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Выделяется ли в UI |
 | `sort_order` | `INTEGER` | `NOT NULL`, `DEFAULT 0` | Порядок отображения |
@@ -302,7 +307,7 @@ CHECK (
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
 | `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор записи |
-| `session_id` | `INTEGER` | `NOT NULL`, `FK -> QueueSession(id) ON DELETE CASCADE` | Ссылка на сессию |
+| `queue_session_id` | `INTEGER` | `NOT NULL`, `FK -> QueueSession(id) ON DELETE CASCADE` | Ссылка на сессию |
 | `user_id` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE CASCADE` | Исполнитель услуги |
 | `is_ready` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Флаг готовности |
 | `current_ticket_id` | `INTEGER` | `NULL`, `FK -> Ticket(id) ON DELETE SET NULL`, `UNIQUE` | Текущий талон |
@@ -311,15 +316,19 @@ CHECK (
 
 **Ключи:**
 - Первичный ключ: `id`
-- Уникальный составной: `UNIQUE(session_id, user_id)`
-- Внешние ключи: `session_id`, `user_id`, `current_ticket_id`
+- Уникальный составной: `UNIQUE(queue_session_id, user_id)`
+- Внешние ключи: `queue_session_id`, `user_id`, `current_ticket_id`
 
 **Индексы:**
-- `idx_executor_ready` (`session_id`, `is_ready`) WHERE `is_ready = true` — поиск свободных
+- `idx_executor_ready` (`queue_session_id`, `is_ready`) WHERE `is_ready = true` — поиск свободных
+
+Вычисляемые значения:
+- `served_count` - Кэш. Счётчик обслуженных за сессию
 
 **Бизнес-правила:**
 - Один исполнитель может иметь лишь одну запись на сессию
 - `current_ticket_id` заполняется только при статусе `SERVING`
+- `served_count` обновляется атомарно вместе с изменением статуса Ticket, имеющим данного исполнителя, на SERVED
 
 ---
 
@@ -356,21 +365,20 @@ CHECK (
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
 | `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор события |
-| `session_id` | `INTEGER` | `NOT NULL`, `FK -> QueueSession(id) ON DELETE CASCADE` | Контекст сессии |
+| `queue_session_id` | `INTEGER` | `NOT NULL`, `FK -> QueueSession(id) ON DELETE CASCADE` | Контекст сессии |
 | `ticket_id` | `INTEGER` | `NULL`, `FK -> Ticket(id) ON DELETE SET NULL` | Связанный талон |
 | `actor_user_id` | `INTEGER` | `NULL`, `FK -> User(id) ON DELETE SET NULL` | Кто совершил (или SYSTEM) |
 | `event_type` | `VARCHAR(100)` | `NOT NULL` | Тип события |
 | `timestamp` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата и время события |
 | `details` | `JSONB` | `NULL` | Дополнительные данные (JSON) |
-| `ip_address` | `VARCHAR(45)` | `NULL` | IP-адрес актора |
 
 **Ключи:**
 - Первичный ключ: `id`
-- Внешние ключи: `session_id`, `ticket_id`, `actor_user_id`
+- Внешние ключи: `queue_session_id`, `ticket_id`, `actor_user_id`
 
 **Индексы:**
 ```
-idx_eventlog_session_time (session_id, timestamp)  — фильтрация по времени
+idx_eventlog_session_time (queue_session_id, timestamp)  — фильтрация по времени
 idx_eventlog_ticket      (ticket_id)               — история талона
 idx_eventlog_type        (event_type)              — аналитика по типам
 ```
@@ -393,12 +401,11 @@ idx_eventlog_type        (event_type)              — аналитика по �
 | Queue | имеет сессии | QueueSession | 1 : N | RESTRICT (created_by) |
 | Queue | имеет типы услуг | ServiceType | 1 : N | CASCADE |
 | QueueSession | содержит | Ticket | 1 : N | CASCADE |
-| QueueSession | имеет состояния | ExecutorState | 1 : N | CASCADE |
+| QueueSession | имеет статусы исполнителей | ExecutorState | 1 : N | CASCADE |
 | Ticket | принадлежит сессии | ClientSession | N : 1 | SET NULL |
 | Ticket | обслуживается | User | N : 1 | SET NULL |
-| Ticket | имеет тип услуги | ServiceType | N : 1 | SET NULL |
-| ServiceType | принадлежит очереди | Queue | N : 1 | CASCADE |
-| ExecutorState | обслуживает | Ticket | 1 : 1 | SET NULL |
+| Ticket | имеет тип услуги | ServiceType | 1 : 1 | SET NULL |
+| ExecutorState | обслуживает в данный момент | Ticket | 1 : 1 | SET NULL |
 | QueueSession/Ticket/User | генерирует | EventLog | 1 : N | CASCADE/SET NULL |
 
 ---
@@ -413,6 +420,8 @@ idx_eventlog_type        (event_type)              — аналитика по �
   1. Сначала по приоритету (priority_level DESC)
   2. Затем по полю sort_order (ASC)
   3. При равенстве — по времени создания (created_at ASC)
+
+При добавлении нового талона в очередь, его sort_order рассчитывается на основании максимального sort_order среди талонов с таким же приоритетом  
 
 ```sql
 ORDER BY priority_level DESC, sort_order ASC, created_at ASC
@@ -502,8 +511,18 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 
 ### 4.7. Расчёт времени ожидания
 
-До момента завершения обслуживания первого клиента расчёт времени ожидания производится на основе планового среднего времени обслуживания клиентов в очереди `ServiceType.plan_avg_service_time`  
-После завершения обслуживания первого клиента время ожидания рассчитывается как `QueueSession.total_service_time` / `QueueSession.served_count` и записывается в `QueueSession.avg_service_time_actual`. Обновление каждого из этих атрибутов производится автоматически после каждого нового обслуживания  
+Время ожидания каждого клиента рассчитывается как время_ожидания = (`людей_передо_мной` × `среднее_время_обслуживания`) / `активных_исполнителей`.  
+Где:
+  - людей_передо_мной = COUNT(Ticket WHERE status='WAITING' и позиция < текущей)
+  - среднее_время_обслуживания (`avg_service_time_actual`) = `QueueSession.total_service_time_sec` / `QueueSession.served_count`
+  - активных_исполнителей = COUNT(ExecutorState WHERE queue_session_id=? AND (is_ready = true OR current_ticket_id IS NOT NULL))
+    (*число исполнителей, обслуживающих клиентов в данный момент ИЛИ готовых к обслуживанию*)
+
+До момента завершения обслуживания первого клиента в качестве среднего времени обслуживания используется плановое среднее временя обслуживания каждого клиента в очереди `ServiceType.plan_avg_service_time`, зависящего от типа обслуживания.  
+
+Если активных_исполнителей = 0, отображать время ожидания для одного активного исполнителя  
+Кратковременные колебания времени между завершением обслуживания и нажатием «Готов» допустимы  
+Обновление `QueueSession.total_service_time_sec` и `QueueSession.served_count` производится автоматически после каждого нового обслуживания  
 
 ---
 
@@ -581,15 +600,15 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 | Queue | created_by | User(id) | RESTRICT | CASCADE |
 | QueueSession | queue_id | Queue(id) | CASCADE | CASCADE |
 | QueueSession | created_by | User(id) | RESTRICT | CASCADE |
-| Ticket | session_id | QueueSession(id) | CASCADE | CASCADE |
+| Ticket | queue_session_id | QueueSession(id) | CASCADE | CASCADE |
 | Ticket | service_type_id | ServiceType(id) | SET NULL | CASCADE |
 | Ticket | served_by_user_id | User(id) | SET NULL | CASCADE |
 | Ticket | client_session_id | ClientSession(id) | SET NULL | CASCADE |
 | ServiceType | queue_id | Queue(id) | CASCADE | CASCADE |
-| ExecutorState | session_id | QueueSession(id) | CASCADE | CASCADE |
+| ExecutorState | queue_session_id | QueueSession(id) | CASCADE | CASCADE |
 | ExecutorState | user_id | User(id) | CASCADE | CASCADE |
 | ExecutorState | current_ticket_id | Ticket(id) | SET NULL | CASCADE |
-| EventLog | session_id | QueueSession(id) | CASCADE | CASCADE |
+| EventLog | queue_session_id | QueueSession(id) | CASCADE | CASCADE |
 | EventLog | ticket_id | Ticket(id) | SET NULL | CASCADE |
 | EventLog | actor_user_id | User(id) | SET NULL | CASCADE |
 
@@ -599,22 +618,22 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 
 ```sql
 -- Ticket: основной запрос отображения очереди
-CREATE INDEX idx_ticket_queue_sort ON Ticket(session_id, status, priority_level DESC, sort_order ASC, created_at ASC);
+CREATE INDEX idx_ticket_queue_sort ON Ticket(queue_session_id, status, priority_level DESC, sort_order ASC, created_at ASC);
 
 -- Ticket: поиск по сессии клиента
 CREATE INDEX idx_ticket_client_session ON Ticket(client_session_id, status);
 
 -- Ticket: аналитика по статусам
-CREATE INDEX idx_ticket_status_time ON Ticket(session_id, status, created_at);
+CREATE INDEX idx_ticket_status_time ON Ticket(queue_session_id, status, created_at);
 
 -- Ticket: фильтрация по типу услуги
-CREATE INDEX idx_ticket_service_type ON Ticket(session_id, service_type_id, status);
+CREATE INDEX idx_ticket_service_type ON Ticket(queue_session_id, service_type_id, status);
 
 -- ExecutorState: поиск готовых исполнителей
-CREATE INDEX idx_executor_ready ON ExecutorState(session_id, is_ready) WHERE is_ready = true;
+CREATE INDEX idx_executor_ready ON ExecutorState(queue_session_id, is_ready) WHERE is_ready = true;
 
 -- EventLog: фильтрация по сессии и времени
-CREATE INDEX idx_eventlog_session_time ON EventLog(session_id, timestamp);
+CREATE INDEX idx_eventlog_session_time ON EventLog(queue_session_id, timestamp);
 
 -- EventLog: история талона
 CREATE INDEX idx_eventlog_ticket ON EventLog(ticket_id);
