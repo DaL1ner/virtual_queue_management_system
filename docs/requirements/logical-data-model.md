@@ -414,6 +414,7 @@ idx_eventlog_type        (event_type)              — аналитика по �
 | Ticket | обслуживается | User | N : 1 | SET NULL |
 | Ticket | имеет тип услуги | ServiceType | N : 1 | SET NULL |
 | ExecutorState | обслуживает в данный момент | Ticket | 1 : 1 | SET NULL |
+| User | обслуживает в данный момент | ExecutorState | 1 : N | SET NULL |
 | QueueSession/Ticket/User | генерирует | EventLog | 1 : N | CASCADE/SET NULL |
 
 ---
