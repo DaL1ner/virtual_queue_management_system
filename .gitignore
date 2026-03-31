@@ -3,6 +3,9 @@
 *.log
 *.bak
 
+# Draw.io temporary files
+*.bkp
+
 # OS files
 .DS_Store
 Thumbs.db
