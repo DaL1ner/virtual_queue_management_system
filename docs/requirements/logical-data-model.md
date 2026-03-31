@@ -138,6 +138,7 @@
 | `distribution_mode` | `distribution_mode (ENUM)` | `NOT NULL`, `DEFAULT 'MANUAL'` | MANUAL или AUTO |
 | `is_service_type_enabled` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Требовать ли выбор услуги |
 | `is_priority_enabled` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Разрешено ли приоритетное обслуживание |
+| `priority_escalation_wait_min` | `INTEGER` | `DEFAULT NULL`, `CHECK (NULL OR >= 0)` | Время ожидания (мин), после которого приоритет повышается |
 | `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Флаг активности конфигурации |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания конфигурации |
 | `created_by_id` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE RESTRICT` | Администратор-создатель |
@@ -149,6 +150,9 @@
 **Типы distribution_mode:**
 - `MANUAL` - Оператор вызывает клиентов вручную
 - `AUTO` - Система автоматически назначает готовым исполнителям
+
+**Бизнес-правила:**
+- При `priority_escalation_wait_min` = NULL автоматическое повышение приоритета ожидающих длительное время клиентов отключено
 
 **Проверочные ограничения:**
 ```
@@ -284,7 +288,7 @@ CHECK (
 | `code` | `VARCHAR(50)` | `NOT NULL`, `UNIQUE` | Системный код |
 | `letter` | `CHAR(1)` | `NOT NULL` | Буква для номера талона |
 | `base_priority_level` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Базовый приоритет услуги |
-| `plan_avg_service_time` | `INTEGER` | `NULL`, `CHECK (> 0)` | Плановое время (секунды) |
+| `plan_avg_service_time_sec` | `INTEGER` | `NULL`, `CHECK (> 0)` | Плановое время (секунды) |
 | `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Активен ли тип услуги |
 | `is_highlighting` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Выделяется ли в UI |
 | `sort_order` | `INTEGER` | `NOT NULL`, `DEFAULT 0` | Порядок отображения |
@@ -453,6 +457,10 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
   - Изменение приоритета логируется в EventLog как PRIORITY_CHANGED
   - Оба изменения (sort_order + priority_level) выполняются в одной транзакции
 
+**Архитектурная возможность, не реализуемая в MVP:**
+Система поддерживает механизм «старения» приоритета.
+Если `QueueConfig.priority_escalation_wait_min` задано, фоновый процесс автоматически повышает `Ticket.priority_level` на одно значение для клиентов, ожидающих дольше указанного времени. Это предотвращает «голодание» обычных клиентов при постоянном потоке приоритетных.
+
 ---
 
 ### 4.4. Статусы талона (Lifecycle)
@@ -590,6 +598,7 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 | `AUTO_ASSIGNMENT` | Автоматическое назначение клиента |
 | `AUTO_ASSIGNMENT_FAILED` | Авто-назначение не удалось |
 | `QUEUE_RENORMALIZED` | Ренормализация sort_order |
+| `PRIORITY_ESCALATED` | Приоритет клиента повышен автоматически из-за долгого ожидания |
 
 ---
 
