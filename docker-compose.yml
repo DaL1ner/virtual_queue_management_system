@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: vqms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vqms_db
+      POSTGRES_USER: vqms_user
+      POSTGRES_PASSWORD: vqms_password
+      TZ: Europe/Moscow
+      PGTZ: Europe/Moscow
+    ports:
+      - "5432:5432"
+    volumes:
+      - vqms_postgres_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  vqms_postgres_data:
