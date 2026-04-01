@@ -67,6 +67,7 @@
 | `login` | `VARCHAR(100)` | `NOT NULL`, `UNIQUE` | Логин для входа в систему |
 | `password_hash` | `VARCHAR(255)` | `NOT NULL` | Хешированный пароль (bcrypt/argon2) |
 | `full_name` | `VARCHAR(255)` | `NOT NULL` | Полное имя сотрудника |
+| `last_name` | `VARCHAR(255)` | `NOT NULL` | Полная фамилия сотрудника |
 | `email` | `VARCHAR(255)` | `NULL`, `UNIQUE` | Контактный email |
 | `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Флаг активности учётной записи |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания записи |
@@ -320,7 +321,8 @@ CHECK (
 | `is_ready` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Флаг готовности |
 | `current_ticket_id` | `INTEGER` | `NULL`, `FK -> Ticket(id) ON DELETE SET NULL`, `UNIQUE` | Текущий талон |
 | `last_status_change` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время последнего изменения |
-| `served_count` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Счётчик обслуженных за сессию |
+| `total_service_time_sec` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Кэш. Сумма времени обслуживаний данным исполнителем (сек) |
+| `served_count` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Счётчик обслуженных данным исполнителем за сессию |
 
 **Ключи:**
 - Первичный ключ: `id`
@@ -335,8 +337,10 @@ CHECK (
 
 **Бизнес-правила:**
 - Один исполнитель может иметь лишь одну запись на сессию
-- `current_ticket_id` заполняется только при статусе `SERVING`
-- `served_count` обновляется атомарно вместе с изменением статуса Ticket, имеющим данного исполнителя, на SERVED
+- `current_ticket_id` заполняется только при статусе клиента `WAITING`, после чего статус клиента меняется на `CALLED`
+- `current_ticket_id` может быть изменён на заполнен на `NOT NULL` только при значении `NULL`
+- `is_ready` может принимать значение `true` только при `current_ticket_id` = `NULL`
+- `served_count` и `total_service_time_sec` обновляется атомарно вместе с изменением статуса `Ticket`, имеющим данного исполнителя, на `SERVED`
 
 ---
 
@@ -486,7 +490,7 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 |------------|----------|---------|
 | WAITING | CALLED | Оператор или автоматика |
 | WAITING | CANCELLED | Клиент или Оператор |
-| CALLED | SERVING | Исполнитель подтвердил |
+| CALLED | SERVING | Исполнитель подтвердил начало обслуживания |
 | CALLED | SKIPPED | Клиент не явился |
 | SERVING | SERVED | Обслуживание завершено |
 
