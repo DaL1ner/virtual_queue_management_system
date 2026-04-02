@@ -80,6 +80,9 @@
 **Индексы:**
 - `idx_user_login` (`login`) — для быстрого поиска при авторизации
 
+**Триггеры:**
+- `trg_users_set_updated_at` — автоматически обновляет `updated_at` при изменении записи
+
 ---
 
 ### 2.2. Role (Роль)
@@ -158,6 +161,7 @@
 **Проверочные ограничения:**
 ```
 CHECK (distribution_mode IN ('MANUAL', 'AUTO'))
+CHECK (priority_escalation_wait_min IS NULL OR priority_escalation_wait_min >= 0)
 ```
 
 ---
@@ -189,13 +193,14 @@ CHECK (distribution_mode IN ('MANUAL', 'AUTO'))
 - `PAUSED` - На паузе, не принимает новых
 - `CLOSED` - Завершена
 
-Вычисляемые значения:
+**Вычисляемые значения:**
 - `served_count` - Кэш. Число обслуженных клиентов
 - `total_service_time_sec` - Кэш. Сумма времени обслуживаний (сек)
 - `avg_service_time_actual` - Вычисляемое. Фактическое среднее время обслуживания (мин)
 
 **Индексы:**
 - `idx_session_queue_status` (`queue_config_id`, `status`) — поиск активных сессий
+- `uq_queue_sessions_one_open_per_config` (`queue_config_id`) WHERE `status = 'OPEN'` — только одна активная сессия на очередь
 
 **Проверочные ограничения:**
 ```
@@ -238,7 +243,7 @@ CHECK (closed_at IS NULL OR closed_at >= started_at)
 **Ключи:**
 - Первичный ключ: `id`
 - Внешние ключи: `queue_session_id`, `service_type_id`, `served_by_user_id`, `client_session_id`
-- Уникальный составной: `UNIQUE(queue_session_id, ticket_number)` — запрет дублирования
+- Уникальный составной: `UNIQUE(queue_session_id, ticket_number)` — запрет дублирования номеров в сессии
 
 **Типы status:**
 - `WAITING` - Ожидает вызова
@@ -250,30 +255,32 @@ CHECK (closed_at IS NULL OR closed_at >= started_at)
 
 **Индексы:**
 ```
-idx_ticket_queue_sort     (queue_session_id, status, priority_level DESC, sort_order ASC)
+idx_ticket_queue_sort     (queue_session_id, status, priority_level DESC, sort_order ASC, created_at ASC)
 idx_ticket_client_session (client_session_id, status)
 idx_ticket_status_time    (queue_session_id, status, created_at)
 idx_ticket_service_type   (queue_session_id, service_type_id, status)
+uq_tickets_one_active_per_client_session (client_session_id) WHERE status IN ('WAITING', 'CALLED')
 ```
 
 **Проверочные ограничения:**
 ```
 CHECK (status IN ('WAITING', 'CALLED', 'SERVING', 'SERVED', 'SKIPPED', 'CANCELLED'))
-CHECK (
-  (status = 'SERVED' AND service_ended_at IS NOT NULL) OR
-  (status != 'SERVED')
-)
-CHECK (
-  (status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT NULL) OR
-  (status NOT IN ('SERVED', 'SKIPPED', 'CANCELLED'))
-)
+CHECK (called_at IS NULL OR called_at >= created_at)
+CHECK (service_started_at IS NULL OR service_started_at >= created_at)
+CHECK (service_ended_at IS NULL OR service_started_at IS NULL OR service_ended_at >= service_started_at)
+CHECK ((status = 'SERVED' AND service_ended_at IS NOT NULL) OR status != 'SERVED')
+CHECK ((status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT NULL) OR status NOT IN ('SERVED', 'SKIPPED', 'CANCELLED'))
 ```
+
+**Триггеры:**
+- `trg_tickets_set_updated_at` — автоматически обновляет `updated_at` при изменении записи
 
 **Бизнес-правила:**
 - `priority_level` копируется из `ServiceType.base_priority_level` выбранного `ServiceType` при создании талона
 - Если `service_type_id` не назначен - назначается базовый тип обслуживания, имеющий приоритет 0
 - `priority_level` может обновляться при необходимости только при статусе талона `WAITING`
 - При создании нового талона с тем же `client_session_id` — предыдущие аннулируются
+- Только один активный талон (WAITING/CALLED) на одну `client_session_id`
 
 ---
 
@@ -299,6 +306,7 @@ CHECK (
 - Первичный ключ: `id`
 - Уникальные: `code`
 - Внешние ключи: `queue_config_id -> QueueConfig(id)`
+- Уникальный составной: `UNIQUE(queue_config_id, letter)` — запрет дублирования букв в одной очереди
 
 **Индексы:**
 - `idx_servicetype_queue` (`queue_config_id`, `is_active`, `sort_order`) — для списка услуг
@@ -326,14 +334,19 @@ CHECK (
 
 **Ключи:**
 - Первичный ключ: `id`
-- Уникальный составной: `UNIQUE(queue_session_id, user_id)`
+- Уникальный составной: `UNIQUE(queue_session_id, user_id)` - одна запись на одного исполнителя за сессию
 - Внешние ключи: `queue_session_id`, `user_id`, `current_ticket_id`
 
 **Индексы:**
 - `idx_executor_ready` (`queue_session_id`, `is_ready`) WHERE `is_ready = true` — поиск свободных
 
-Вычисляемые значения:
+**Вычисляемые значения:**
 - `served_count` - Кэш. Счётчик обслуженных за сессию
+
+**Проверочные ограничения:**
+```
+CHECK (NOT (is_ready = TRUE AND current_ticket_id IS NOT NULL))
+```
 
 **Бизнес-правила:**
 - Один исполнитель может иметь лишь одну запись на сессию
@@ -504,7 +517,10 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 ### 4.5. Конкурентный доступ (Optimistic Locking)
 
 Поле `Ticket.version` увеличивается при каждом обновлении  
-Проверка выполняется через `UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?`  
+Проверка выполняется через:
+```sql
+UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?
+```
 При конфликте вернуть ошибку 409 Conflict, запросить обновление данных
 
 В дальнейшем это должно позволить предусмотреть следующие сценарии защиты:
@@ -596,6 +612,7 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 | `TICKET_CANCELLED` | Талон отменён |
 | `TICKET_MOVED` | Талон перемещён в очереди |
 | `PRIORITY_CHANGED` | Изменён приоритет талона |
+| `PRIORITY_ESCALATED` | Приоритет клиента повышен автоматически из-за долгого ожидания |
 | `SESSION_STARTED` | Сессия очереди начата |
 | `SESSION_PAUSED` | Сессия приостановлена |
 | `SESSION_RESUMED` | Сессия возобновлена |
@@ -605,7 +622,6 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 | `AUTO_ASSIGNMENT` | Автоматическое назначение клиента |
 | `AUTO_ASSIGNMENT_FAILED` | Авто-назначение не удалось |
 | `QUEUE_RENORMALIZED` | Ренормализация sort_order |
-| `PRIORITY_ESCALATED` | Приоритет клиента повышен автоматически из-за долгого ожидания |
 
 ---
 
@@ -632,42 +648,52 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 
 ---
 
-### C. Рекомендуемые индексы PostgreSQL
+### C. Индексы PostgreSQL
 
 ```sql
 -- Ticket: основной запрос отображения очереди
-CREATE INDEX idx_ticket_queue_sort ON Ticket(queue_session_id, status, priority_level, sort_order, created_at);
-ORDER BY priority_level DESC, sort_order ASC, created_at ASC
+CREATE INDEX idx_ticket_queue_sort 
+    ON tickets(queue_session_id, status, priority_level DESC, sort_order ASC, created_at ASC);
 
 -- Ticket: поиск по сессии клиента
-CREATE INDEX idx_ticket_client_session ON Ticket(client_session_id, status);
+CREATE INDEX idx_ticket_client_session ON tickets(client_session_id, status);
 
 -- Ticket: аналитика по статусам
-CREATE INDEX idx_ticket_status_time ON Ticket(queue_session_id, status, created_at);
+CREATE INDEX idx_ticket_status_time ON tickets(queue_session_id, status, created_at);
 
 -- Ticket: фильтрация по типу услуги
-CREATE INDEX idx_ticket_service_type ON Ticket(queue_session_id, service_type_id, status);
+CREATE INDEX idx_ticket_service_type ON tickets(queue_session_id, service_type_id, status);
 
 -- ExecutorState: поиск готовых исполнителей
-CREATE INDEX idx_executor_ready ON ExecutorState(queue_session_id, is_ready) WHERE is_ready = true;
+CREATE INDEX idx_executor_ready 
+    ON executor_states(queue_session_id, is_ready) WHERE is_ready = true;
 
 -- EventLog: фильтрация по сессии и времени
-CREATE INDEX idx_eventlog_session_time ON EventLog(queue_session_id, timestamp);
+CREATE INDEX idx_eventlog_session_time ON event_logs(queue_session_id, timestamp);
 
 -- EventLog: история талона
-CREATE INDEX idx_eventlog_ticket ON EventLog(ticket_id);
+CREATE INDEX idx_eventlog_ticket ON event_logs(ticket_id);
 
 -- EventLog: аналитика по типам
-CREATE INDEX idx_eventlog_type ON EventLog(event_type);
+CREATE INDEX idx_eventlog_type ON event_logs(event_type);
 
 -- ClientSession: поиск по отпечатку устройства
-CREATE INDEX idx_clientsession_active ON ClientSession(device_fingerprint, is_active);
+CREATE INDEX idx_clientsession_active ON client_sessions(device_fingerprint, is_active);
 
 -- ServiceType: список услуг очереди
-CREATE INDEX idx_servicetype_queue_config ON ServiceType(queue_config_id, is_active, sort_order);
+CREATE INDEX idx_servicetype_queue ON service_types(queue_config_id, is_active, sort_order);
 
 -- QueueSession: поиск активных сессий
-CREATE INDEX idx_session_queue_status ON QueueSession(queue_config_id, status);
+CREATE INDEX idx_session_queue_status ON queue_sessions(queue_config_id, status);
+
+-- Только одна OPEN сессия на очередь
+CREATE UNIQUE INDEX uq_queue_sessions_one_open_per_config 
+    ON queue_sessions(queue_config_id) WHERE status = 'OPEN';
+
+-- Только один активный талон на клиентскую сессию
+CREATE UNIQUE INDEX uq_tickets_one_active_per_client_session 
+    ON tickets(client_session_id)
+    WHERE client_session_id IS NOT NULL AND status IN ('WAITING', 'CALLED');
 ```
 
 ### D. Создание ENUM типов
@@ -675,6 +701,27 @@ CREATE INDEX idx_session_queue_status ON QueueSession(queue_config_id, status);
 CREATE TYPE ticket_status AS ENUM ('WAITING', 'CALLED', 'SERVING', 'SERVED', 'SKIPPED', 'CANCELLED');
 CREATE TYPE session_status AS ENUM ('DRAFT', 'OPEN', 'PAUSED', 'CLOSED');
 CREATE TYPE distribution_mode AS ENUM ('MANUAL', 'AUTO');
+```
+
+### E. Триггеры
+
+```sql
+-- Автоматическое обновление updated_at
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_users_set_updated_at
+    BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_tickets_set_updated_at
+    BEFORE UPDATE ON tickets
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 ```
 
 ---
