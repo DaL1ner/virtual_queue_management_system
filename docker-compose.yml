@@ -1,5 +1,5 @@
 services:
-  postgres:
+  db:
     image: postgres:16
     container_name: vqms_postgres
     restart: unless-stopped
@@ -12,14 +12,39 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - vqms_postgres_data:/var/lib/postgresql/data
-      - ./infra/db/init:/docker-entrypoint-initdb.d:ro
+      - postgres_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U vqms_user -d vqms_db"]
+      interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 10s
+    networks:
+      - vqms_net
+
+  backend:
+    build:
+      context: ./backend
+    container_name: vqms_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: vqms_db
+      DB_USER: vqms_user
+      DB_PASSWORD: vqms_password
+      DATABASE_URL: postgresql://vqms_user:vqms_password@db:5432/vqms_db
+    ports:
+      - "8080:8080"
+    networks:
+      - vqms_net
 
 volumes:
-  vqms_postgres_data:
+  postgres_data:
+
+networks:
+  vqms_net:
+    driver: bridge
