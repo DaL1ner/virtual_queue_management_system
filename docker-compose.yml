@@ -22,25 +22,25 @@ services:
     networks:
       - vqms_net
 
-  backend:
-    build:
-      context: ./backend
-    container_name: vqms_backend
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: vqms_db
-      DB_USER: vqms_user
-      DB_PASSWORD: vqms_password
-      DATABASE_URL: postgresql://vqms_user:vqms_password@db:5432/vqms_db
-    ports:
-      - "8080:8080"
-    networks:
-      - vqms_net
+#  backend:
+#    build:
+#      context: ./backend
+#    container_name: vqms_backend
+#    restart: unless-stopped
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#    environment:
+#      DB_HOST: db
+#      DB_PORT: 5432
+#      DB_NAME: vqms_db
+#      DB_USER: vqms_user
+#      DB_PASSWORD: vqms_password
+#      DATABASE_URL: postgresql://vqms_user:vqms_password@db:5432/vqms_db
+#    ports:
+#      - "8080:8080"
+#    networks:
+#      - vqms_net
 
 volumes:
   postgres_data:
