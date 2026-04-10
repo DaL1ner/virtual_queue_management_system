@@ -1,7 +1,7 @@
 # Логическая модель данных
 ## Virtual Queue Management System
 
-*Версия: 1.2 | Обновлено: 31.03.2026*
+*Версия: 1.2.1 | Обновлено: 10.04.2026*
 
 ---
 
@@ -13,15 +13,16 @@
   - [1. Обзор модели](#1-обзор-модели)
   - [2. Сущности](#2-сущности)
     - [2.1. User (Пользователь системы)](#21-user-пользователь-системы)
-    - [2.2. Role (Роль)](#22-role-роль)
-    - [2.3. UserRole (Связь Пользователь-Роль)](#23-userrole-связь-пользователь-роль)
-    - [2.4. QueueConfig (Конфигурация очереди)](#24-queueconfig-конфигурация-очереди)
-    - [2.5. QueueSession (Сессия очереди)](#25-queuesession-сессия-очереди)
-    - [2.6. Ticket (Талон / Запись в очередь)](#26-ticket-талон--запись-в-очередь)
-    - [2.7. ServiceType (Тип обслуживания)](#27-servicetype-тип-обслуживания)
-    - [2.8. ExecutorState (Состояние исполнителя)](#28-executorstate-состояние-исполнителя)
-    - [2.9. ClientSession (Сессия клиента)](#29-clientsession-сессия-клиента)
-    - [2.10. EventLog (Журнал событий)](#210-eventlog-журнал-событий)
+    - [2.2. UserSession (Сессия системной роли)](#22-usersession-сессия-системной-роли)
+    - [2.3. Role (Роль)](#23-role-роль)
+    - [2.4. UserRole (Связь Пользователь-Роль)](#24-userrole-связь-пользователь-роль)
+    - [2.5. QueueConfig (Конфигурация очереди)](#25-queueconfig-конфигурация-очереди)
+    - [2.6. QueueSession (Сессия очереди)](#26-queuesession-сессия-очереди)
+    - [2.7. Ticket (Талон / Запись в очередь)](#27-ticket-талон--запись-в-очередь)
+    - [2.8. ServiceType (Тип обслуживания)](#28-servicetype-тип-обслуживания)
+    - [2.9. ExecutorState (Состояние исполнителя)](#29-executorstate-состояние-исполнителя)
+    - [2.10. ClientSession (Сессия клиента)](#210-clientsession-сессия-клиента)
+    - [2.11. EventLog (Журнал событий)](#211-eventlog-журнал-событий)
   - [3. Связи между сущностями](#3-связи-между-сущностями)
     - [3.1. Диаграмма связей в нотации Мартина](#31-диаграмма-связей-в-нотации-мартина)
     - [3.2. Таблица кардинальностей](#32-таблица-кардинальностей)
@@ -86,7 +87,44 @@
 
 ---
 
-### 2.2. Role (Роль)
+### 2.2. UserSession (Сессия системной роли)
+
+**Назначение:** Хранение активных сессий авторизованных сотрудников системы.
+
+| Атрибут | Тип данных | Ограничения | Описание |
+|---------|------------|-------------|----------|
+| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор |
+| `user_id` | `INTEGER` | `NOT NULL`, `FK → User(id) ON DELETE CASCADE` | Пользователь |
+| `token` | `VARCHAR(255)` | `NOT NULL`, `UNIQUE` | Токен сессии |
+| `ip_address` | `VARCHAR(45)` | `NULL` | IP-адрес входа |
+| `user_agent` | `TEXT` | `NULL` | Браузер/устройство |
+| `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время создания |
+| `expires_at` | `TIMESTAMP` | `NOT NULL` | Время истечения |
+| `last_activity_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Последняя активность |
+| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Флаг активности |
+
+**Ключи:**
+- Первичный ключ: `id`
+- Уникальные: `token`
+- Внешние ключи: `user_id → User(id)`
+
+**Индексы:**
+```sql
+idx_usersession_token (token)
+idx_usersession_user (user_id, is_active)
+idx_usersession_expires (expires_at)
+```
+
+**Бизнес-правила:**
+- Сессия создаётся при успешной авторизации
+- Сессия продлевается при активности пользователя
+- Сессия инвалидируется при выходе из системы
+- Сессия инвалидируется при входе в один аккаунт с другого устройства
+- Все сессии пользователя инвалидируются при смене пароля
+
+---
+
+### 2.3. Role (Роль)
 
 **Назначение:** Справочник системных ролей. Определяет права доступа к функциям системы.
 
@@ -109,7 +147,7 @@
 
 ---
 
-### 2.3. UserRole (Связь Пользователь-Роль)
+### 2.4. UserRole (Связь Пользователь-Роль)
 
 **Назначение:** Реализация связи «Многие-ко-Многим» между пользователями и ролями.
 
@@ -131,7 +169,7 @@
 
 ---
 
-### 2.4. QueueConfig (Конфигурация очереди)
+### 2.5. QueueConfig (Конфигурация очереди)
 
 **Назначение:** Шаблон очереди с настройками, не меняющимися в рамках сессии.
 
@@ -167,7 +205,7 @@ CHECK (priority_escalation_wait_min IS NULL OR priority_escalation_wait_min >= 0
 
 ---
 
-### 2.5. QueueSession (Сессия очереди)
+### 2.6. QueueSession (Сессия очереди)
 
 **Назначение:** Конкретный запуск очереди во времени. Позволяет хранить историю работы.
 
@@ -216,7 +254,7 @@ CHECK (closed_at IS NULL OR closed_at >= started_at)
 
 ---
 
-### 2.6. Ticket (Талон / Запись в очередь)
+### 2.7. Ticket (Талон / Запись в очередь)
 
 **Назначение:** Ключевая сущность системы. Представляет клиента в очереди.
 
@@ -286,7 +324,7 @@ CHECK ((status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT
 
 ---
 
-### 2.7. ServiceType (Тип обслуживания)
+### 2.8. ServiceType (Тип обслуживания)
 
 **Назначение:** Справочник типов услуг. Определяет приоритет и плановое время для каждой услуги.
 
@@ -319,7 +357,7 @@ CHECK ((status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT
 
 ---
 
-### 2.8. ExecutorState (Состояние исполнителя)
+### 2.9. ExecutorState (Состояние исполнителя)
 
 **Назначение:** Хранит состояние готовности исполнителя в рамках конкретной сессии очереди.
 
@@ -332,7 +370,7 @@ CHECK ((status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT
 | `current_ticket_id` | `INTEGER` | `NULL`, `FK -> Ticket(id) ON DELETE SET NULL`, `UNIQUE` | Текущий талон |
 | `last_status_change` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время последнего изменения |
 | `total_service_time_sec` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Кэш. Сумма времени обслуживаний данным исполнителем (сек) |
-| `served_count` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Счётчик обслуженных данным исполнителем за сессию |
+| `served_count` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Кэш. Счётчик обслуженных данным исполнителем за сессию |
 
 **Ключи:**
 - Первичный ключ: `id`
@@ -344,6 +382,7 @@ CHECK ((status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT
 
 **Вычисляемые значения:**
 - `served_count` - Кэш. Счётчик обслуженных за сессию
+- `total_service_time_sec` - Кэш. Сумма времени всех обслуживаний исполнителя
 
 **Проверочные ограничения:**
 ```
@@ -360,7 +399,7 @@ CHECK (NOT (is_ready = TRUE AND current_ticket_id IS NOT NULL))
 
 ---
 
-### 2.9. ClientSession (Сессия клиента)
+### 2.10. ClientSession (Сессия клиента)
 
 **Назначение:** Отслеживает сессию браузера/устройства клиента. Реализация требования «один активный талон с устройства».
 
@@ -386,7 +425,7 @@ CHECK (NOT (is_ready = TRUE AND current_ticket_id IS NOT NULL))
 
 ---
 
-### 2.10. EventLog (Журнал событий)
+### 2.11. EventLog (Журнал событий)
 
 **Назначение:** Хранит историю всех значимых событий в системе. Используется для аудита, аналитики и отладки.
 
@@ -427,6 +466,7 @@ idx_eventlog_type        (event_type)              — аналитика по �
 | Сущность 1 | Связь | Сущность 2 | Кардинальность | Правило ON DELETE |
 |------------|-------|------------|----------------|-------------------|
 | User | имеет | UserRole | 1 : N | CASCADE |
+| User | имеет сессии | UserSession | 1 : N | CASCADE |
 | UserRole | относится к | Role | N : 1 | CASCADE |
 | QueueConfig | имеет сессии | QueueSession | 1 : N | RESTRICT (created_by) |
 | QueueConfig | имеет типы услуг | ServiceType | 1 : N | CASCADE |
@@ -638,6 +678,7 @@ UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?
 | Таблица | Поле | Ссылается на | ON DELETE | ON UPDATE |
 |---------|------|--------------|-----------|-----------|
 | UserRole | user_id | User(id) | CASCADE | CASCADE |
+| UserSession | user_id | User(id) | CASCADE | CASCADE |
 | UserRole | role_id | Role(id) | CASCADE | CASCADE |
 | QueueConfig | created_by | User(id) | RESTRICT | CASCADE |
 | QueueSession | queue_config_id | QueueConfig(id) | CASCADE | CASCADE |

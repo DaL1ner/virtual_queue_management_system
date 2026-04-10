@@ -35,6 +35,18 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMP NOT NULL,
+    last_activity_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
 CREATE TABLE IF NOT EXISTS roles (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
@@ -188,6 +200,9 @@ CREATE TABLE IF NOT EXISTS event_logs (
 -- INDEXES
 -- =========================
 CREATE INDEX IF NOT EXISTS idx_user_login ON users(login);
+CREATE INDEX IF NOT EXISTS idx_usersession_token ON user_sessions(token);
+CREATE INDEX IF NOT EXISTS idx_usersession_user ON user_sessions(user_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_usersession_expires ON user_sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_userrole_user ON user_roles(user_id);
 CREATE INDEX IF NOT EXISTS idx_userrole_role ON user_roles(role_id);
 CREATE INDEX IF NOT EXISTS idx_clientsession_active ON client_sessions(device_fingerprint, is_active);
@@ -239,6 +254,20 @@ BEFORE UPDATE ON tickets
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
+CREATE OR REPLACE FUNCTION set_last_activity_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.last_activity_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_user_sessions_set_last_activity_at ON user_sessions;
+CREATE TRIGGER trg_user_sessions_set_last_activity_at
+BEFORE UPDATE ON user_sessions
+FOR EACH ROW
+EXECUTE FUNCTION set_last_activity_at();
+
 -- =========================
 -- SEED ROLES
 -- =========================
@@ -246,8 +275,25 @@ INSERT INTO roles (name, code, description)
 VALUES
     ('Администратор', 'ADMIN', 'Управляет конфигурацией очереди, ролями и запуском сессий'),
     ('Оператор', 'OPERATOR', 'Управляет потоком очереди, вызывает, перемещает и отменяет клиентов'),
-    ('Исполнитель услуги', 'EXECUTOR', 'Работает с вызванным клиентом и переводит его по статусам обслуживания'),
-    ('Наблюдатель очереди', 'OBSERVER', 'Только просматривает очередь без права изменения данных'),
-    ('Неавторизованный клиент', 'UNAUTHORIZED_CLIENT', 'Клиент, который проходит упрощённую авторизацию, чтобы встать в очередь'),
-    ('Клиент очереди', 'CLIENT', 'Основной клиент системы, который получает талон и отслеживает очередь')
+    ('Исполнитель услуги', 'EXECUTOR', 'Работает с вызванным клиентом и переводит его по статусам обслуживания')
 ON CONFLICT (code) DO NOTHING;
+
+-- =========================
+-- SEED DEFAULT QUEUE CONFIG + BASE SERVICE TYPE
+-- =========================
+-- Базовый пользователь-администратор для создания конфигурации (если ещё не существует)
+INSERT INTO users (login, password_hash, full_name, last_name, email, is_active)
+VALUES
+    ('admin', '$2a$10$placeholder_hash_change_me', 'Администратор', 'Системный', 'admin@local.local', TRUE)
+ON CONFLICT (login) DO NOTHING;
+
+INSERT INTO queue_configs (name, description, distribution_mode, is_service_type_enabled, is_priority_enabled, created_by_id)
+SELECT 'Основная очередь', 'Очередь по умолчанию', 'MANUAL', FALSE, TRUE,
+       (SELECT id FROM users WHERE login = 'admin')
+WHERE NOT EXISTS (SELECT 1 FROM queue_configs WHERE name = 'Основная очередь');
+
+INSERT INTO service_types (queue_config_id, name, code, letter, base_priority_level, plan_avg_service_time_sec, is_active, sort_order)
+SELECT
+    (SELECT id FROM queue_configs WHERE name = 'Основная очередь'),
+    'Базовая услуга', 'BASE', 'А', 0, 300, TRUE, 0
+WHERE NOT EXISTS (SELECT 1 FROM service_types WHERE code = 'BASE');
