@@ -14,7 +14,7 @@
 ---
 
 - [**📊 Доска задач**](https://github.com/users/DaL1ner/projects/1)  
-- [**🎯 Sprint 6**](https://github.com/DaL1ner/virtual_queue_Project/milestone/6)
+- [**🎯 Sprint 8**](https://github.com/DaL1ner/virtual_queue_Project/milestone/8)
 
 ---
 
