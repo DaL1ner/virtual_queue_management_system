@@ -15,7 +15,7 @@
     - [2.1. User (Пользователь системы)](#21-user-пользователь-системы)
     - [2.2. UserSession (Сессия системной роли)](#22-usersession-сессия-системной-роли)
     - [2.3. Role (Роль)](#23-role-роль)
-    - [2.4. UserRole (Связь Пользователь-Роль)](#24-userrole-связь-пользователь-роль)
+    - [2.4. UserRole (Связь Сотрудник-Роль)](#24-userrole-связь-сотрудник-роль)
     - [2.5. QueueConfig (Конфигурация очереди)](#25-queueconfig-конфигурация-очереди)
     - [2.6. QueueSession (Сессия очереди)](#26-queuesession-сессия-очереди)
     - [2.7. Ticket (Талон / Запись в очередь)](#27-ticket-талон--запись-в-очередь)
@@ -147,9 +147,9 @@ idx_usersession_expires (expires_at)
 
 ---
 
-### 2.4. UserRole (Связь Пользователь-Роль)
+### 2.4. UserRole (Связь Сотрудник-Роль)
 
-**Назначение:** Реализация связи «Многие-ко-Многим» между пользователями и ролями.
+**Назначение:** Реализация связи «Многие-ко-Многим» между сотрудниками и ролями.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
@@ -178,7 +178,7 @@ idx_usersession_expires (expires_at)
 | `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор очереди |
 | `name` | `VARCHAR(255)` | `NOT NULL` | Отображаемое название очереди |
 | `description` | `TEXT` | `NULL` | Подробное описание очереди |
-| `distribution_mode` | `distribution_mode (ENUM)` | `NOT NULL`, `DEFAULT 'MANUAL'` | MANUAL или AUTO |
+| `distribution_mode` | `distribution_mode (ENUM)` | `NOT NULL`, `DEFAULT 'MANUAL'` | Режим вызова клиентов: ручной или автоматический |
 | `is_service_type_enabled` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Требовать ли выбор услуги |
 | `is_priority_enabled` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Разрешено ли приоритетное обслуживание |
 | `priority_escalation_wait_min` | `INTEGER` | `DEFAULT NULL`, `CHECK (NULL OR >= 0)` | Время ожидания (мин), после которого приоритет повышается |
