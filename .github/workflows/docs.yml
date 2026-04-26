@@ -23,7 +23,10 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: pip install -r docs/requirements.txt
+        run: |
+          pip install --upgrade pip
+          pip install -r docs/requirements.txt
+          pip list | grep -i mkdocs 
       - name: Generate OpenAPI spec
         run: python scripts/dump_openapi.py || echo "⚠️ OpenAPI skipped (app not ready yet)"
       - name: Build MkDocs
