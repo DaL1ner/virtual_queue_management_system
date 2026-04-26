@@ -23,10 +23,7 @@ theme:
 plugins:
   - search
   - mermaid2
-  - swagger-ui-tag:
-      spec_url: /reference/api/openapi.json
-      default_models_expand_depth: 1
-      native_scrollbars: true
+  - swagger-ui-tag
 
 nav:
   - Tutorials:
