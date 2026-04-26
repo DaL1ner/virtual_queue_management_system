@@ -22,6 +22,19 @@ services:
     networks:
       - vqms_net
 
+  docs:
+    container_name: vqms_docs
+    build:
+      context: .
+      dockerfile: Dockerfile.docs
+    volumes:
+      - .:/docs
+    ports:
+      - "8000:8000"
+    command: serve -a 0.0.0.0:8000 -f /docs/mkdocs.yml
+    profiles:
+      - docs
+
 #  backend:
 #    build:
 #      context: ./backend

@@ -459,7 +459,7 @@ idx_eventlog_type        (event_type)              — аналитика по �
 
 ### 3.1. Диаграмма связей в нотации Мартина
 
-![Диаграмма логической модели данных в нотации Мартина](logical-data-model.png)
+![Диаграмма логической модели данных в нотации Мартина](/docs\explanation\diagrams\src\data\logical-data-model.png)
 
 ### 3.2. Таблица кардинальностей
 
@@ -533,7 +533,7 @@ sort_order = MAX(sort_order) + 1000
 
 ### 4.4. Статусы талона (Lifecycle)
 
-![Диаграмма состояний талона UML](/docs\uml\ticket_state.jpg)
+![Диаграмма состояний талона UML](/docs\explanation\diagrams\src\uml\ticket_state.jpg)
 
 **Ограничения переходов:**
 

@@ -1,0 +1,8 @@
+FROM squidfunk/mkdocs-material:latest
+
+# Копируем зависимости и устанавливаем их
+COPY docs/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Возвращаем рабочую директорию
+WORKDIR /docs

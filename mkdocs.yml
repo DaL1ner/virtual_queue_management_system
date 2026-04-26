@@ -1,0 +1,58 @@
+site_name: Virtual Queue Management System
+docs_dir: docs
+theme:
+  name: material
+  language: ru
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.indexes
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - mermaid2
+  - swagger-ui-tag:
+      spec_url: /reference/api/openapi.json
+      default_models_expand_depth: 1
+      native_scrollbars: true
+
+nav:
+  - Tutorials:
+    - tutorials/getting-started.md
+  - How-to:
+    - howto/run-locally.md
+    - howto/run-migrations.md
+  - Reference:
+    - reference/api/index.md
+    - reference/code/index.md
+  - Explanation:
+    - explanation/architecture-overview.md
+    - explanation/dictionary.md
+    - explanation/requirements/functional.md
+    - explanation/requirements/non-functional.md
+    - explanation/data-model/logical-data-model.md
+    #- explanation/diagrams/index.md
+    #- explanation/adr/index.md
+
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: swagger-ui
+          class: swagger-ui
+          format: !!python/name:mermaid2.fence_mermaid_custom
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
