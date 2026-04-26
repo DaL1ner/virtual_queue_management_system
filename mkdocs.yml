@@ -1,4 +1,5 @@
 site_name: Virtual Queue Management System
+site_url: https://dal1ner.github.io/virtual_queue_management_system/
 docs_dir: docs
 theme:
   name: material

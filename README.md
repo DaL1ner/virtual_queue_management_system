@@ -124,7 +124,7 @@ Virtual Queue Management System – это система управления �
 
 ## 📚 Документация
 
-[Описание проекта]([docs\explanation\architecture-overview.md](https://dal1ner.github.io/virtual_queue_management_system/))
+[Описание проекта](https://dal1ner.github.io/virtual_queue_management_system/)
 
 
 ---
