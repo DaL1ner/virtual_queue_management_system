@@ -847,7 +847,7 @@
     <element xsi:type="archimate:ApplicationService" name="Сервис управления сессиями очередей" id="id-c7c5ef077557425ebbc4a59c5e404cff"/>
     <element xsi:type="archimate:ApplicationService" name="Сервис настройки очереди" id="id-12eaaad2595e463da8899430d4d41352"/>
     <element xsi:type="archimate:ApplicationService" name="Сервис управления операторами и исполнителями" id="id-d82f5506b6d14c8ca4fb42d31143a68b"/>
-    <element xsi:type="archimate:ApplicationService" name="Сервис просмотра истории событий" id="id-6c029506fe2b41a68fd4f3c178a4ea01"/>
+    <element xsi:type="archimate:ApplicationService" name="Сервис истории событий" id="id-6c029506fe2b41a68fd4f3c178a4ea01"/>
     <element xsi:type="archimate:ApplicationFunction" name="Перевод клиента в статус &quot;отменён&quot;" id="id-fa196b56d752414d949a892c219f46df"/>
     <element xsi:type="archimate:ApplicationComponent" name="Управление сессиями очередей" id="id-ddfd78d44e08426288e060e7e4643948"/>
     <element xsi:type="archimate:ApplicationService" name="Сервис ввода информации" id="id-f5f26e4450f440a09c0a33d2443ecd85"/>
@@ -9139,7 +9139,7 @@
           </child>
         </child>
         <child xsi:type="archimate:DiagramObject" id="id-3315e771eda44b27a26ea2bce8c8df65" targetConnections="id-a80dde8481624714a14e3fdc80e9a4f4" archimateElement="id-6c029506fe2b41a68fd4f3c178a4ea01">
-          <bounds x="2641" y="617" width="120" height="69"/>
+          <bounds x="2641" y="621" width="120" height="62"/>
           <sourceConnection xsi:type="archimate:Connection" id="id-3852672e73104935afbadc39c5304abc" source="id-3315e771eda44b27a26ea2bce8c8df65" target="id-c8cc3693b34d41b2b98e8ed64b4b859f" archimateRelationship="id-e7743f7e5b5740bd9b0167ed1febe591">
             <bendpoint startX="-1" startY="-51" endX="1062" endY="135"/>
             <bendpoint startX="-1081" startY="-51" endX="-18" endY="135"/>
