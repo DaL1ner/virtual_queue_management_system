@@ -30,10 +30,10 @@ nav:
     - tutorials/getting-started.md
   - How-to:
     - howto/run-locally.md
-    - howto/run-migrations.md
+    #- howto/run-migrations.md
   - Reference:
     - reference/api/index.md
-    - reference/code/index.md
+    #- reference/code/index.md
   - Explanation:
     - explanation/architecture-overview.md
     - explanation/dictionary.md
