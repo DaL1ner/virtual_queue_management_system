@@ -116,13 +116,9 @@ CREATE TABLE IF NOT EXISTS queue_sessions (
     started_at TIMESTAMP NULL,
     closed_at TIMESTAMP NULL,
     current_ticket_number INTEGER NOT NULL DEFAULT 0,
-    served_count INTEGER NOT NULL DEFAULT 0,
-    total_service_time_sec INTEGER NOT NULL DEFAULT 0,
     created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT chk_queue_sessions_current_ticket_number CHECK (current_ticket_number >= 0),
-    CONSTRAINT chk_queue_sessions_served_count CHECK (served_count >= 0),
-    CONSTRAINT chk_queue_sessions_total_service_time_sec CHECK (total_service_time_sec >= 0),
     CONSTRAINT chk_queue_sessions_dates CHECK (
         closed_at IS NULL OR started_at IS NULL OR closed_at >= started_at
     )
@@ -176,11 +172,7 @@ CREATE TABLE IF NOT EXISTS executor_states (
     is_ready BOOLEAN NOT NULL DEFAULT FALSE,
     current_ticket_id INTEGER NULL UNIQUE REFERENCES tickets(id) ON DELETE SET NULL ON UPDATE CASCADE,
     last_status_change TIMESTAMP NOT NULL DEFAULT NOW(),
-    total_service_time_sec INTEGER NOT NULL DEFAULT 0,
-    served_count INTEGER NOT NULL DEFAULT 0,
     CONSTRAINT uq_executor_states_session_user UNIQUE (queue_session_id, user_id),
-    CONSTRAINT chk_executor_states_total_service_time_sec CHECK (total_service_time_sec >= 0),
-    CONSTRAINT chk_executor_states_served_count CHECK (served_count >= 0),
     CONSTRAINT chk_executor_states_ready_only_without_ticket CHECK (
         NOT (is_ready = TRUE AND current_ticket_id IS NOT NULL)
     )
@@ -213,6 +205,10 @@ CREATE INDEX IF NOT EXISTS idx_ticket_queue_sort
 CREATE INDEX IF NOT EXISTS idx_ticket_client_session ON tickets(client_session_id, status);
 CREATE INDEX IF NOT EXISTS idx_ticket_status_time ON tickets(queue_session_id, status, created_at);
 CREATE INDEX IF NOT EXISTS idx_ticket_service_type ON tickets(queue_session_id, service_type_id, status);
+CREATE INDEX IF NOT EXISTS idx_ticket_served_agg
+    ON tickets(queue_session_id, status)
+    INCLUDE (service_started_at, service_ended_at)
+    WHERE status = 'SERVED';
 CREATE INDEX IF NOT EXISTS idx_executor_ready
     ON executor_states(queue_session_id, is_ready)
     WHERE is_ready = TRUE;

@@ -15,6 +15,7 @@
 
 - [**📊 Доска задач**](https://github.com/users/DaL1ner/projects/1)  
 - [**🎯 Sprint 9**](https://github.com/DaL1ner/virtual_queue_Project/milestone/10)
+- [**📖 Документация**](https://dal1ner.github.io/virtual_queue_management_system/)
 
 ---
 
@@ -33,7 +34,6 @@
     - [Интерфейс оператора/исполнителя](#интерфейс-оператораисполнителя)
   - [📁 Структура проекта](#-структура-проекта)
   - [👥 Команда проекта](#-команда-проекта)
-  - [📚 Документация](#-документация)
 
 ---
 
@@ -119,13 +119,6 @@ Virtual Queue Management System – это система управления �
 | Developer | [@alerent8-bit](https://github.com/alerent8-bit) | Разработчик |
 | Developer | [@anastasia1233455](https://github.com/anastasia1233455) | Разработчик |
 | Developer | [@derizhable](https://github.com/derizhable) | Разработчик |
-
----
-
-## 📚 Документация
-
-[Описание проекта](https://dal1ner.github.io/virtual_queue_management_system/)
-
 
 ---
 

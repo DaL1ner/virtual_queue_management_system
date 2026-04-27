@@ -1,46 +1,7 @@
 # Логическая модель данных
 ## Virtual Queue Management System
 
-*Версия: 1.2.1 | Обновлено: 10.04.2026*
-
----
-
-## Оглавление
-
-- [Логическая модель данных](#логическая-модель-данных)
-  - [Virtual Queue Management System](#virtual-queue-management-system)
-  - [Оглавление](#оглавление)
-  - [1. Обзор модели](#1-обзор-модели)
-  - [2. Сущности](#2-сущности)
-    - [2.1. User (Пользователь системы)](#21-user-пользователь-системы)
-    - [2.2. UserSession (Сессия системной роли)](#22-usersession-сессия-системной-роли)
-    - [2.3. Role (Роль)](#23-role-роль)
-    - [2.4. UserRole (Связь Сотрудник-Роль)](#24-userrole-связь-сотрудник-роль)
-    - [2.5. QueueConfig (Конфигурация очереди)](#25-queueconfig-конфигурация-очереди)
-    - [2.6. QueueSession (Сессия очереди)](#26-queuesession-сессия-очереди)
-    - [2.7. Ticket (Талон / Запись в очередь)](#27-ticket-талон--запись-в-очередь)
-    - [2.8. ServiceType (Тип обслуживания)](#28-servicetype-тип-обслуживания)
-    - [2.9. ExecutorState (Состояние исполнителя)](#29-executorstate-состояние-исполнителя)
-    - [2.10. ClientSession (Сессия клиента)](#210-clientsession-сессия-клиента)
-    - [2.11. EventLog (Журнал событий)](#211-eventlog-журнал-событий)
-  - [3. Связи между сущностями](#3-связи-между-сущностями)
-    - [3.1. Диаграмма связей в нотации Мартина](#31-диаграмма-связей-в-нотации-мартина)
-    - [3.2. Таблица кардинальностей](#32-таблица-кардинальностей)
-  - [4. Бизнес-правила и ограничения](#4-бизнес-правила-и-ограничения)
-    - [4.1. Управление позицией в очереди (sort\_order)](#41-управление-позицией-в-очереди-sort_order)
-    - [4.2. Добавление позиций в очереди (sort\_order)](#42-добавление-позиций-в-очереди-sort_order)
-    - [4.3. Приоритетность](#43-приоритетность)
-    - [4.4. Статусы талона (Lifecycle)](#44-статусы-талона-lifecycle)
-    - [4.5. Конкурентный доступ (Optimistic Locking)](#45-конкурентный-доступ-optimistic-locking)
-    - [4.6. Ограничения по сессии клиента](#46-ограничения-по-сессии-клиента)
-    - [4.7. Расчёт времени ожидания](#47-расчёт-времени-ожидания)
-    - [4.8. Безопасность данных](#48-безопасность-данных)
-  - [5. Приложения](#5-приложения)
-    - [A. Перечисляемые типы (Enums)](#a-перечисляемые-типы-enums)
-    - [B. Сводная таблица внешних ключей](#b-сводная-таблица-внешних-ключей)
-    - [C. Индексы PostgreSQL](#c-индексы-postgresql)
-    - [D. Создание ENUM типов](#d-создание-enum-типов)
-    - [E. Триггеры](#e-триггеры)
+*Версия: 1.3 | Обновлено: 27.04.2026*
 
 ---
 
@@ -49,6 +10,7 @@
 Данная логическая модель данных разработана для системы управления виртуальной очередью. Модель является детализацией концептуальной модели
 
 **Ключевые архитектурные решения:**
+
 - Разделение конфигурации очереди (`QueueConfig`) и сессии (`QueueSession`) для хранения истории
 - Приоритет определяется типом услуги (`ServiceType`), а не выбирается клиентом
 - Позиция в очереди через `sort_order` (DECIMAL) для O(1) перемещения
@@ -76,13 +38,16 @@
 | `updated_at` | `TIMESTAMP` | `NULL`, `DEFAULT NOW()` | Дата последнего обновления |
 
 **Ключи:**
+
 - Первичный ключ: `id`
 - Уникальные: `login`, `email`
 
 **Индексы:**
+
 - `idx_user_login` (`login`) — для быстрого поиска при авторизации
 
 **Триггеры:**
+
 - `trg_users_set_updated_at` — автоматически обновляет `updated_at` при изменении записи
 
 ---
@@ -104,11 +69,13 @@
 | `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Флаг активности |
 
 **Ключи:**
+
 - Первичный ключ: `id`
 - Уникальные: `token`
 - Внешние ключи: `user_id → User(id)`
 
 **Индексы:**
+
 ```sql
 idx_usersession_token (token)
 idx_usersession_user (user_id, is_active)
@@ -116,6 +83,7 @@ idx_usersession_expires (expires_at)
 ```
 
 **Бизнес-правила:**
+
 - Сессия создаётся при успешной авторизации
 - Сессия продлевается при активности пользователя
 - Сессия инвалидируется при выходе из системы
@@ -137,10 +105,12 @@ idx_usersession_expires (expires_at)
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания роли |
 
 **Ключи:**
+
 - Первичный ключ: `id`
 - Уникальные: `name`, `code`
 
 **Предустановленные роли:**
+
 - `ADMIN` — Администратор системы
 - `OPERATOR` — Оператор очереди
 - `EXECUTOR` — Исполнитель услуги
@@ -160,10 +130,12 @@ idx_usersession_expires (expires_at)
 | `assigned_by` | `INTEGER` | `NULL`, `FK -> User(id) ON DELETE SET NULL` | Кто назначил роль |
 
 **Ключи:**
+
 - Первичный ключ: `id`
 - Уникальный составной: `UNIQUE(user_id, role_id)` — запрет дублирования
 
 **Индексы:**
+
 - `idx_userrole_user` (`user_id`) — поиск ролей пользователя
 - `idx_userrole_role` (`role_id`) — поиск пользователей по роли
 
@@ -187,17 +159,21 @@ idx_usersession_expires (expires_at)
 | `created_by_id` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE RESTRICT` | Администратор-создатель |
 
 **Ключи:**
+
 - Первичный ключ: `id`
 - Внешние ключи: `created_by -> User(id)`
 
 **Типы distribution_mode:**
+
 - `MANUAL` - Оператор вызывает клиентов вручную
 - `AUTO` - Система автоматически назначает готовым исполнителям
 
 **Бизнес-правила:**
+
 - При `priority_escalation_wait_min` = NULL автоматическое повышение приоритета ожидающих длительное время клиентов отключено
 
 **Проверочные ограничения:**
+
 ```
 CHECK (distribution_mode IN ('MANUAL', 'AUTO'))
 CHECK (priority_escalation_wait_min IS NULL OR priority_escalation_wait_min >= 0)
@@ -217,40 +193,40 @@ CHECK (priority_escalation_wait_min IS NULL OR priority_escalation_wait_min >= 0
 | `started_at` | `TIMESTAMP` | `NULL` | Фактическое время начала работы |
 | `closed_at` | `TIMESTAMP` | `NULL` | Время завершения сессии |
 | `current_ticket_number` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Счётчик для генерации талонов |
-| `served_count` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Кэш. Число обслуженных клиентов |
-| `total_service_time_sec` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Кэш. Сумма времени обслуживаний (сек) |
 | `created_by` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE RESTRICT` | Администратор, запустивший сессию |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания сессии |
 
 **Ключи:**
+
 - Первичный ключ: `id`
 - Внешние ключи: `queue_config_id -> QueueConfig(id)`, `created_by -> User(id)`
 
 **Типы status:**
+
 - `DRAFT` - Черновик, не активна
 - `OPEN` - Активна, принимает клиентов
 - `PAUSED` - На паузе, не принимает новых
 - `CLOSED` - Завершена
 
 **Вычисляемые значения:**
-- `served_count` - Кэш. Число обслуженных клиентов
-- `total_service_time_sec` - Кэш. Сумма времени обслуживаний (сек)
-- `avg_service_time_actual` - Вычисляемое. Фактическое среднее время обслуживания (мин)
+
+- `avg_service_time_actual` - рассчитывается как среднее `AVG(service_ended_at - service_started_at)` по всем талонам со статусом `SERVED` в рамках сессии
 
 **Индексы:**
+
 - `idx_session_queue_status` (`queue_config_id`, `status`) — поиск активных сессий
 - `uq_queue_sessions_one_open_per_config` (`queue_config_id`) WHERE `status = 'OPEN'` — только одна активная сессия на очередь
 
 **Проверочные ограничения:**
+
 ```
 CHECK (status IN ('DRAFT', 'OPEN', 'PAUSED', 'CLOSED'))
 CHECK (closed_at IS NULL OR closed_at >= started_at)
 ```
 
 **Бизнес-правила:**
+
 - Только одна сессия со статусом `OPEN` может быть активна для одной `queue_config_id`
-- `served_count`, `total_service_time_sec` обновляются атомарно вместе с изменением статуса Ticket на SERVED
-- `avg_service_time_actual` рассчитывается: `total_service_time_sec / served_count / 60`
 
 ---
 
@@ -280,11 +256,13 @@ CHECK (closed_at IS NULL OR closed_at >= started_at)
 | `cancel_reason` | `TEXT` | `NULL` | Причина отмены/пропуска |
 
 **Ключи:**
+
 - Первичный ключ: `id`
 - Внешние ключи: `queue_session_id`, `service_type_id`, `served_by_user_id`, `client_session_id`
 - Уникальный составной: `UNIQUE(queue_session_id, ticket_number)` — запрет дублирования номеров в сессии
 
 **Типы status:**
+
 - `WAITING` - Ожидает вызова
 - `CANCELLED` - Отменён клиентом или оператором
 - `CALLED` - Вызван, ожидает подтверждения
@@ -293,6 +271,7 @@ CHECK (closed_at IS NULL OR closed_at >= started_at)
 - `SKIPPED` - Пропущен (не явился)
 
 **Индексы:**
+
 ```
 idx_ticket_queue_sort     (queue_session_id, status, priority_level DESC, sort_order ASC, created_at ASC)
 idx_ticket_client_session (client_session_id, status)
@@ -302,6 +281,7 @@ uq_tickets_one_active_per_client_session (client_session_id) WHERE status IN ('W
 ```
 
 **Проверочные ограничения:**
+
 ```
 CHECK (status IN ('WAITING', 'CALLED', 'SERVING', 'SERVED', 'SKIPPED', 'CANCELLED'))
 CHECK (called_at IS NULL OR called_at >= created_at)
@@ -312,9 +292,11 @@ CHECK ((status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT
 ```
 
 **Триггеры:**
+
 - `trg_tickets_set_updated_at` — автоматически обновляет `updated_at` при изменении записи
 
 **Бизнес-правила:**
+
 - `priority_level` копируется из `ServiceType.base_priority_level` выбранного `ServiceType` при создании талона
 - Если `service_type_id` не назначен - назначается базовый тип обслуживания, имеющий приоритет 0
 - `priority_level` может обновляться при необходимости только при статусе талона `WAITING`
@@ -343,15 +325,18 @@ CHECK ((status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания |
 
 **Ключи:**
+
 - Первичный ключ: `id`
 - Уникальные: `code`
 - Внешние ключи: `queue_config_id -> QueueConfig(id)`
 - Уникальный составной: `UNIQUE(queue_config_id, letter)` — запрет дублирования букв в одной очереди
 
 **Индексы:**
+
 - `idx_servicetype_queue` (`queue_config_id`, `is_active`, `sort_order`) — для списка услуг
 
 **Бизнес-правила:**
+
 - Если `QueueConfig.is_service_type_enabled = false`, используется базовая услуга по умолчанию
 - Приоритет талона `Ticket.priority_level` определяется приоритетом выбранной услуги `ServiceType.base_priority_level`. Базовая услуга имеет приоритет 0
 
@@ -369,33 +354,34 @@ CHECK ((status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT
 | `is_ready` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Флаг готовности |
 | `current_ticket_id` | `INTEGER` | `NULL`, `FK -> Ticket(id) ON DELETE SET NULL`, `UNIQUE` | Текущий талон |
 | `last_status_change` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время последнего изменения |
-| `total_service_time_sec` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Кэш. Сумма времени обслуживаний данным исполнителем (сек) |
-| `served_count` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Кэш. Счётчик обслуженных данным исполнителем за сессию |
 
 **Ключи:**
+
 - Первичный ключ: `id`
 - Уникальный составной: `UNIQUE(queue_session_id, user_id)` - одна запись на одного исполнителя за сессию
 - Внешние ключи: `queue_session_id`, `user_id`, `current_ticket_id`
 
 **Индексы:**
+
 - `idx_executor_ready` (`queue_session_id`, `is_ready`) WHERE `is_ready = true` — поиск свободных
 
 **Вычисляемые значения:**
-- `served_count` - Кэш. Счётчик обслуженных за сессию
-- `total_service_time_sec` - Кэш. Сумма времени всех обслуживаний исполнителя
+
+- Статистика по исполнителю (число обслуженных, среднее время) рассчитывается агрегацией по таблице `tickets` при необходимости.
 
 **Проверочные ограничения:**
+
 ```
 CHECK (NOT (is_ready = TRUE AND current_ticket_id IS NOT NULL))
 ```
 
 **Бизнес-правила:**
+
 - Один исполнитель может иметь лишь одну запись на сессию
 - `current_ticket_id` заполняется только при статусе клиента `WAITING`, после чего статус клиента меняется на `CALLED`
 - `current_ticket_id` может быть изменён на `NOT NULL` только при значении `NULL`
 - `is_ready` может принимать значение `true` только при `current_ticket_id` = `NULL`
 - `is_ready`, `current_ticket_id` и `ticket.ticket_status` обновляются вместе атомарно
-- `served_count` и `total_service_time_sec` обновляется атомарно вместе с изменением статуса `Ticket`, имеющим данного исполнителя, на `SERVED`
 
 ---
 
@@ -414,12 +400,15 @@ CHECK (NOT (is_ready = TRUE AND current_ticket_id IS NOT NULL))
 | `user_agent` | `TEXT` | `NULL` | Информация о браузере/устройстве |
 
 **Ключи:**
+
 - Первичный ключ: `id`
 
 **Индексы:**
+
 - `idx_clientsession_active` (`device_fingerprint`, `is_active`) — поиск активной сессии
 
 **Бизнес-правила:**
+
 - Сессия считается неактивной после `expires_at`
 - При создании нового талона все активные талоны с этим `device_fingerprint` аннулируются. За исключением талонов в статусе `SERVING`, `SERVED` (логировать предупреждение)
 
@@ -440,10 +429,12 @@ CHECK (NOT (is_ready = TRUE AND current_ticket_id IS NOT NULL))
 | `details` | `JSONB` | `NULL` | Дополнительные данные (JSON) |
 
 **Ключи:**
+
 - Первичный ключ: `id`
 - Внешние ключи: `queue_session_id`, `ticket_id`, `actor_user_id`
 
 **Индексы:**
+
 ```
 idx_eventlog_session_time (queue_session_id, timestamp)  — фильтрация по времени
 idx_eventlog_ticket      (ticket_id)               — история талона
@@ -488,6 +479,7 @@ idx_eventlog_type        (event_type)              — аналитика по �
 Атрибут sort_order использует десятичные числа с шагом 1000  
 
 Позиция клиента в очереди определяется путём сортировки всех активных талонов в состоянии ожидания:
+
   1. Сначала по приоритету (priority_level DESC)
   2. Затем по полю sort_order (ASC)
   3. При равенстве — по времени создания (created_at ASC)
@@ -506,6 +498,7 @@ ORDER BY priority_level DESC, sort_order ASC, created_at ASC
 ### 4.2. Добавление позиций в очереди (sort_order)
 
 Назначение sort_order новому клиенту происходит на основании последнего клиента в очереди (независимо от приоритета). Отображение очереди в таком случае остаётся корректным даже при дублировании порядка (sort_order) среди разных групп приоритетов, так как:
+
 - Сортировка производится сначала по priority_level, затем по sort_order внутри группы приоритета.
 - sort_order уникален в рамках всей очереди
 - Внутри группы приоритета sort_order остаётся уникальным и возрастающим
@@ -521,11 +514,12 @@ sort_order = MAX(sort_order) + 1000
 Если конфигурацией очереди клиенту не предоставляется выбор типа услуги, то ему автоматически должна присваиваться "базовая услуга", имеющая приоритет 0.  
 Если выбор услуги предоставлен, клиент получает приоритет (`Ticket.priority_level`), соответствующий приоритету выбранного типа обслуживания (`ServiceType.base_priority_level`)
 При ручном изменении позиции клиента в очереди его приоритет при необходимости должен изменяться в зависимости от новой позиции позиции:
+
   - Если клиент перемещается в группу клиентов с другим приоритетом, его `Ticket.priority_level` обновляется в соответствии с целевой позицией
   - Изменение приоритета логируется в EventLog как PRIORITY_CHANGED
   - Оба изменения (sort_order + priority_level) выполняются в одной транзакции
 
-**Архитектурная возможность, не реализуемая в MVP:**
+**Архитектурная возможность, не реализуемая в MVP:**  
 Система поддерживает механизм «старения» приоритета.
 Если `QueueConfig.priority_escalation_wait_min` задано, фоновый процесс автоматически повышает `Ticket.priority_level` на одно значение для клиентов, ожидающих дольше указанного времени. Это предотвращает «голодание» обычных клиентов при постоянном потоке приоритетных.
 
@@ -546,6 +540,7 @@ sort_order = MAX(sort_order) + 1000
 | SERVING | SERVED | Обслуживание завершено |
 
 **Обязательные поля при переходе:**
+
 - в `SERVED` -> `service_ended_at` NOT NULL
 - в `SKIPPED` -> `service_ended_at` NOT NULL
 - в `CANCELLED` -> `service_ended_at` NOT NULL
@@ -562,6 +557,7 @@ UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?
 При конфликте вернуть ошибку 409 Conflict, запросить обновление данных
 
 В дальнейшем это должно позволить предусмотреть следующие сценарии защиты:
+
 - Оператор vs Оператор (одновременное перемещение)
 - Оператор vs Клиент (вызов vs отмена)
 - Авто vs Оператор (автоматическое распределение vs ручной вызов)
@@ -573,6 +569,7 @@ UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?
 
 Согласно функциональным требованиям установлено правило - один активный талон на одну ClientSession  
 При создании нового талона необходимо:
+
   1. Найти все активные талоны с этим client_session_id
   2. Перевести их в статус CANCELLED
   3. Создать новый талон
@@ -584,18 +581,20 @@ UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?
 
 ### 4.7. Расчёт времени ожидания
 
-Время ожидания каждого клиента рассчитывается как время_ожидания = (`людей_передо_мной` × `среднее_время_обслуживания`) / `активных_исполнителей`.  
-Где:
-  - людей_передо_мной = COUNT(Ticket WHERE status='WAITING' и позиция < текущей)
-  - среднее_время_обслуживания (`avg_service_time_actual`) = `QueueSession.total_service_time_sec` / `QueueSession.served_count`
-  - активных_исполнителей = COUNT(ExecutorState WHERE queue_session_id=? AND (is_ready = true OR current_ticket_id IS NOT NULL))
-    (*число исполнителей, обслуживающих клиентов в данный момент ИЛИ готовых к обслуживанию*)
+Время ожидания каждого клиента рассчитывается как:
+```
+время_ожидания = (людей_передо_мной × среднее_время_обслуживания) / активных_исполнителей
+```
 
-До момента завершения обслуживания первого клиента в качестве среднего времени обслуживания используется плановое среднее временя обслуживания каждого клиента в очереди `ServiceType.plan_avg_service_time`, зависящего от типа обслуживания.  
+Где:
+- `людей_передо_мной` - `COUNT(*)` по `tickets` со статусом `WAITING` и позицией < текущей   
+- `среднее_время_обслуживания` - `AVG(EXTRACT(EPOCH FROM (service_ended_at - service_started_at)))` по `tickets` со статусом `SERVED` в рамках `queue_session_id`  
+- `активных_исполнителей` - `COUNT(*)` по `executor_states` где `is_ready = true` ИЛИ `current_ticket_id IS NOT NULL`  
+
+До момента завершения обслуживания первого клиента в качестве среднего времени обслуживания используется плановое среднее временя обслуживания каждого клиента в очереди `ServiceType.plan_avg_service_time` для соответствующего типа услуги.  
 
 Если активных_исполнителей = 0, отображать время ожидания для одного активного исполнителя  
 Кратковременные колебания времени между завершением обслуживания и нажатием «Готов» допустимы  
-Обновление `QueueSession.total_service_time_sec` и `QueueSession.served_count` производится автоматически после каждого нового обслуживания  
 
 ---
 
@@ -616,6 +615,7 @@ UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?
 ### A. Перечисляемые типы (Enums)
 
 **Ticket.status:**
+
 | Значение | Описание |
 |----------|----------|
 | `WAITING` | Ожидает вызова |
@@ -626,6 +626,7 @@ UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?
 | `CANCELLED` | Отменён клиентом или оператором |
 
 **QueueSession.status:**
+
 | Значение | Описание |
 |----------|----------|
 | `DRAFT` | Черновик, не активна |
@@ -634,12 +635,14 @@ UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?
 | `CLOSED` | Завершена |
 
 **QueueConfig.distribution_mode:**
+
 | Значение | Описание |
 |----------|----------|
 | `MANUAL` | Оператор вызывает клиентов вручную |
 | `AUTO` | Система автоматически назначает готовым исполнителям |
 
 **EventLog.event_type:**
+
 | Значение | Описание |
 |----------|----------|
 | `TICKET_CREATED` | Создание талона |
@@ -733,6 +736,12 @@ CREATE UNIQUE INDEX uq_queue_sessions_one_open_per_config
 CREATE UNIQUE INDEX uq_tickets_one_active_per_client_session 
     ON tickets(client_session_id)
     WHERE client_session_id IS NOT NULL AND status IN ('WAITING', 'CALLED');
+
+-- Ускорение расчёта среднего времени обслуживания (агрегация по завершённым талонам)
+CREATE INDEX idx_ticket_served_agg 
+ON tickets(queue_session_id, status) 
+INCLUDE (service_started_at, service_ended_at)
+WHERE status = 'SERVED';
 ```
 
 ### D. Создание ENUM типов
