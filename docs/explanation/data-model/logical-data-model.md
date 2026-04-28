@@ -77,9 +77,9 @@
 **Индексы:**
 
 ```sql
-idx_usersession_token (token)
-idx_usersession_user (user_id, is_active)
-idx_usersession_expires (expires_at)
+idx_usersession_token (token)  
+idx_usersession_user (user_id, is_active)  
+idx_usersession_expires (expires_at)  
 ```
 
 **Бизнес-правила:**
@@ -519,7 +519,8 @@ sort_order = MAX(sort_order) + 1000
   - Изменение приоритета логируется в EventLog как PRIORITY_CHANGED
   - Оба изменения (sort_order + priority_level) выполняются в одной транзакции
 
-**Архитектурная возможность, не реализуемая в MVP:**  
+**Архитектурная возможность, не реализуемая в MVP:**
+
 Система поддерживает механизм «старения» приоритета.
 Если `QueueConfig.priority_escalation_wait_min` задано, фоновый процесс автоматически повышает `Ticket.priority_level` на одно значение для клиентов, ожидающих дольше указанного времени. Это предотвращает «голодание» обычных клиентов при постоянном потоке приоритетных.
 
@@ -551,9 +552,11 @@ sort_order = MAX(sort_order) + 1000
 
 Поле `Ticket.version` увеличивается при каждом обновлении  
 Проверка выполняется через:
+
 ```sql
 UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?
 ```
+
 При конфликте вернуть ошибку 409 Conflict, запросить обновление данных
 
 В дальнейшем это должно позволить предусмотреть следующие сценарии защиты:
@@ -582,11 +585,13 @@ UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?
 ### 4.7. Расчёт времени ожидания
 
 Время ожидания каждого клиента рассчитывается как:
+
 ```
 время_ожидания = (людей_передо_мной × среднее_время_обслуживания) / активных_исполнителей
 ```
 
 Где:
+
 - `людей_передо_мной` - `COUNT(*)` по `tickets` со статусом `WAITING` и позицией < текущей   
 - `среднее_время_обслуживания` - `AVG(EXTRACT(EPOCH FROM (service_ended_at - service_started_at)))` по `tickets` со статусом `SERVED` в рамках `queue_session_id`  
 - `активных_исполнителей` - `COUNT(*)` по `executor_states` где `is_ready = true` ИЛИ `current_ticket_id IS NOT NULL`  
@@ -745,6 +750,7 @@ WHERE status = 'SERVED';
 ```
 
 ### D. Создание ENUM типов
+
 ```sql
 CREATE TYPE ticket_status AS ENUM ('WAITING', 'CALLED', 'SERVING', 'SERVED', 'SKIPPED', 'CANCELLED');
 CREATE TYPE session_status AS ENUM ('DRAFT', 'OPEN', 'PAUSED', 'CLOSED');

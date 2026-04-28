@@ -1,8 +1,8 @@
 # 🏃 Sprint #08: Начало формирования слоя Technology
 
 **Даты**: [14.04.26] — [21.04.26]  
-**Цель**: Начать формирование слоя технологий Archimate
-**Milestone**: [Ссылка](https://github.com/DaL1ner/virtual_queue_Project/milestone/8)
+**Цель**: Начать формирование слоя технологий Archimate  
+**Milestone**: [Ссылка](https://github.com/DaL1ner/virtual_queue_Project/milestone/9)
 
 ## 📋 Задачи спринта
 | Задача (Issue #) | Ответственный | Оценка | Статус |
