@@ -27,6 +27,7 @@ plugins:
   - swagger-ui-tag
 
 nav:
+  - Home: index.md
   - Tutorials:
     - tutorials/getting-started.md
   - How-to:
