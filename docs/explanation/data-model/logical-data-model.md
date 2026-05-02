@@ -192,7 +192,6 @@ CHECK (priority_escalation_wait_min IS NULL OR priority_escalation_wait_min >= 0
 | `status` | `session_status (ENUM)` | `NOT NULL`, `DEFAULT 'DRAFT'` | DRAFT, OPEN, PAUSED, CLOSED |
 | `started_at` | `TIMESTAMP` | `NULL` | Фактическое время начала работы |
 | `closed_at` | `TIMESTAMP` | `NULL` | Время завершения сессии |
-| `current_ticket_number` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Счётчик для генерации талонов |
 | `created_by` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE RESTRICT` | Администратор, запустивший сессию |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания сессии |
 
@@ -239,7 +238,7 @@ CHECK (closed_at IS NULL OR closed_at >= started_at)
 | `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор талона |
 | `queue_session_id` | `INTEGER` | `NOT NULL`, `FK -> QueueSession(id) ON DELETE CASCADE` | Ссылка на сессию |
 | `service_type_id` | `INTEGER` | `NULL`, `FK -> ServiceType(id) ON DELETE SET NULL` | Ссылка на тип услуги |
-| `ticket_number` | `VARCHAR(20)` | `NOT NULL` | Видимый номер (напр. «А-005») |
+| `ticket_number` | `VARCHAR(20)` | `NOT NULL` | Видимый номер (напр. «А-005»). Формируется атомарно при вставке |
 | `client_name` | `VARCHAR(100)` | `NOT NULL` | Имя клиента |
 | `client_surname` | `VARCHAR(100)` | `NOT NULL` | Фамилия клиента |
 | `sort_order` | `DECIMAL(20,10)` | `NOT NULL`, `CHECK (>= 0)` | Позиция для сортировки в очереди |
@@ -303,6 +302,7 @@ CHECK ((status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT
 - При создании нового талона с тем же `client_session_id` — предыдущие аннулируются
 - Только один активный талон (WAITING/CALLED) на одну `client_session_id`
 - `served_by_user_id` заполняется после завершения обслуживания и перевода талона в статус `SERVED` или `SKIPPED`
+- Числовая часть `ticket_number` формируется механизмом последовательностей СУБД в той же транзакции, что и создание нового талона
 
 ---
 
@@ -603,7 +603,70 @@ UPDATE Ticket SET version = version + 1 WHERE id = ? AND version = ?
 
 ---
 
-### 4.8. Безопасность данных
+### 4.8. Стратегия генерации номеров талонов (Native Sequences)
+
+Численная часть номера талона (например, "А-002") соответствует числу созданных талонов (включая данный).  
+Вместо постоянного подсчёта количества талонов или добавления счётчика для обеспечения этого используется встроенный механизм формирования последовательностей СУБД.  
+  
+При создании новой сессии очереди (`QueueSession`) для неё создаётся собственная последовательность (Sequence) в БД. Причём происходит это до того, как статус сессии становится OPEN.
+
+```sql
+BEGIN;
+  -- 1. Создаем последовательность
+  EXECUTE 'CREATE SEQUENCE IF NOT EXISTS sq_ticket_' || :session_id || ' START 1';
+  
+  -- 2. Меняем статус сессии на активную
+  UPDATE queue_sessions 
+  SET status = 'OPEN', started_at = NOW() 
+  WHERE id = :session_id;
+COMMIT;
+```
+
+При завершении сессии очереди последовательность удаляется сразу после закрытия очереди, но рамках той же транзакции.
+
+```sql
+BEGIN;
+  -- 1. Сначала закрываем сессию логически
+  UPDATE queue_sessions 
+  SET status = 'CLOSED', closed_at = NOW() 
+  WHERE id = :session_id;
+  
+  -- 2. Затем удаляем последовательность
+  EXECUTE 'DROP SEQUENCE IF EXISTS sq_ticket_' || :session_id;
+COMMIT;
+```
+
+При добавлении нового талона в очередь получение текучего номера последовательности и вставка талона происходят в одной транзакции
+
+```sql
+-- Внутри одной транзакции создания талона:
+
+-- 1: Получаем следующее число из последовательности сессии
+SELECT nextval('sq_ticket_' || :session_id) INTO :next_num;
+
+-- 2: Формируем строковый номер (буква услуги + номер)
+SET :formatted_number = :service_letter || '-' || LPAD(:next_num::text, 3, '0');
+
+-- 3: Вставляем талон
+INSERT INTO tickets (
+    queue_session_id, 
+    service_type_id, 
+    ticket_number, -- Используем сформированный номер
+    sort_order, 
+    priority_level,
+    ...
+) VALUES (
+    :session_id, 
+    :service_id, 
+    :formatted_number, 
+    ..., 
+    ...
+);
+```
+
+---
+
+### 4.9. Безопасность данных
 
 | Требование | Реализация |
 |------------|------------|
