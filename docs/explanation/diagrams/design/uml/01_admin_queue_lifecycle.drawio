@@ -1,0 +1,330 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.6.1 Chrome/142.0.7444.265 Electron/39.8.0 Safari/537.36" version="29.6.1">
+  <diagram id="72" name="Жизненный цикл очереди">
+    <mxGraphModel dx="1720" dy="1313" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1680" pageHeight="1240" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="4" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=42;fontStyle=0;fontColor=#000000;" value="UML -диаграмма последовательности - Процесс&lt;br&gt;управления жизненным циклом очереди" vertex="1">
+          <mxGeometry height="95" width="1540" x="70" y="12" as="geometry" />
+        </mxCell>
+        <mxCell id="5" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;strokeWidth=1;dashed=1;dashPattern=8 8;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="80" y="205" as="sourcePoint" />
+            <mxPoint x="80" y="1065" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;strokeWidth=1;dashed=1;dashPattern=8 8;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="360" y="205" as="sourcePoint" />
+            <mxPoint x="360" y="1065" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;strokeWidth=1;dashed=1;dashPattern=8 8;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="610" y="205" as="sourcePoint" />
+            <mxPoint x="610" y="1065" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="8" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;strokeWidth=1;dashed=1;dashPattern=8 8;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="850" y="205" as="sourcePoint" />
+            <mxPoint x="850" y="1065" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;strokeWidth=1;dashed=1;dashPattern=8 8;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1095" y="205" as="sourcePoint" />
+            <mxPoint x="1095" y="1065" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="10" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;strokeWidth=1;dashed=1;dashPattern=8 8;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1325" y="205" as="sourcePoint" />
+            <mxPoint x="1325" y="1065" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="11" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;strokeWidth=1;dashed=1;dashPattern=8 8;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1560" y="205" as="sourcePoint" />
+            <mxPoint x="1560" y="1065" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="12" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#ffffff;strokeColor=#000000;fontSize=14;" value="Администратор" vertex="1">
+          <mxGeometry height="85" width="45" x="56" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="13" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#ffffff;strokeColor=#000000;fontSize=14;" value="Администратор" vertex="1">
+          <mxGeometry height="85" width="45" x="56" y="1075" as="geometry" />
+        </mxCell>
+        <mxCell id="14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=15;align=center;verticalAlign=middle;" value="Веб-приложение&lt;br&gt;(фронтенд)" vertex="1">
+          <mxGeometry height="60" width="170" x="275" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=15;align=center;verticalAlign=middle;" value="Веб-приложение&lt;br&gt;(фронтенд)" vertex="1">
+          <mxGeometry height="60" width="170" x="275" y="1085" as="geometry" />
+        </mxCell>
+        <mxCell id="16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=15;align=center;verticalAlign=middle;" value="Бэкенд" vertex="1">
+          <mxGeometry height="60" width="140" x="540" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="17" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=15;align=center;verticalAlign=middle;" value="Бэкенд" vertex="1">
+          <mxGeometry height="60" width="140" x="540" y="1085" as="geometry" />
+        </mxCell>
+        <mxCell id="18" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=15;align=center;verticalAlign=middle;" value="Сервис авторизации&lt;br&gt;и сессий" vertex="1">
+          <mxGeometry height="60" width="185" x="757.5" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="19" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=15;align=center;verticalAlign=middle;" value="Сервис авторизации&lt;br&gt;и сессий" vertex="1">
+          <mxGeometry height="60" width="185" x="757.5" y="1085" as="geometry" />
+        </mxCell>
+        <mxCell id="20" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=15;align=center;verticalAlign=middle;" value="Сервис управления&lt;br&gt;сессиями очередей" vertex="1">
+          <mxGeometry height="60" width="210" x="990" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=15;align=center;verticalAlign=middle;" value="Сервис управления&lt;br&gt;сессиями очередей" vertex="1">
+          <mxGeometry height="60" width="210" x="990" y="1085" as="geometry" />
+        </mxCell>
+        <mxCell id="22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=15;align=center;verticalAlign=middle;" value="Сервис доступа&lt;br&gt;к данным" vertex="1">
+          <mxGeometry height="60" width="165" x="1242.5" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="23" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=15;align=center;verticalAlign=middle;" value="Сервис доступа&lt;br&gt;к данным" vertex="1">
+          <mxGeometry height="60" width="165" x="1242.5" y="1085" as="geometry" />
+        </mxCell>
+        <mxCell id="24" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=15;align=center;verticalAlign=middle;" value="База Данных" vertex="1">
+          <mxGeometry height="60" width="145" x="1487.5" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="25" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=15;align=center;verticalAlign=middle;" value="База Данных" vertex="1">
+          <mxGeometry height="60" width="145" x="1487.5" y="1085" as="geometry" />
+        </mxCell>
+        <mxCell id="26" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="Открытие экрана&lt;br&gt;&quot;Управление очередями&quot;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="80" y="230" as="sourcePoint" />
+            <mxPoint x="360" y="230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="27" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="353" y="212" as="geometry" />
+        </mxCell>
+        <mxCell id="28" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="Запрос списка&lt;br&gt;сессий очереди">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="360" y="263" as="sourcePoint" />
+            <mxPoint x="610" y="263" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="29" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="603" y="245" as="geometry" />
+        </mxCell>
+        <mxCell id="30" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="Проверка токена,&lt;br&gt;сессии и роли ADMIN">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="610" y="296" as="sourcePoint" />
+            <mxPoint x="850" y="296" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="31" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="843" y="278" as="geometry" />
+        </mxCell>
+        <mxCell id="32" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Доступ разрешен">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="850" y="329" as="sourcePoint" />
+            <mxPoint x="610" y="329" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="33" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="Получение списка&lt;br&gt;сессий очереди">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="610" y="362" as="sourcePoint" />
+            <mxPoint x="1095" y="362" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="34" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="1088" y="344" as="geometry" />
+        </mxCell>
+        <mxCell id="35" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="Чтение списка&lt;br&gt;сессий">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1095" y="395" as="sourcePoint" />
+            <mxPoint x="1325" y="395" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="36" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="1318" y="377" as="geometry" />
+        </mxCell>
+        <mxCell id="37" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="SELECT queue_sessions">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1325" y="428" as="sourcePoint" />
+            <mxPoint x="1560" y="428" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="38" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="1553" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="39" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Список сессий очереди">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1560" y="461" as="sourcePoint" />
+            <mxPoint x="1325" y="461" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="40" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Данные сессий">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1325" y="494" as="sourcePoint" />
+            <mxPoint x="1095" y="494" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="41" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Список сессий&lt;br&gt;и статусы">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1095" y="527" as="sourcePoint" />
+            <mxPoint x="610" y="527" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="42" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Список сессий очереди">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="610" y="560" as="sourcePoint" />
+            <mxPoint x="360" y="560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="43" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Показ текущих очередей">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="360" y="593" as="sourcePoint" />
+            <mxPoint x="80" y="593" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="44" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="Выбор действия:&lt;br&gt;запуск / пауза /&lt;br&gt;возобновление / завершение">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="80" y="626" as="sourcePoint" />
+            <mxPoint x="360" y="626" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="45" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="353" y="608" as="geometry" />
+        </mxCell>
+        <mxCell id="46" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="Отправка команды&lt;br&gt;изменения статуса">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="360" y="659" as="sourcePoint" />
+            <mxPoint x="610" y="659" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="47" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="603" y="641" as="geometry" />
+        </mxCell>
+        <mxCell id="48" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="Проверка прав&lt;br&gt;администратора">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="610" y="692" as="sourcePoint" />
+            <mxPoint x="850" y="692" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="49" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="843" y="674" as="geometry" />
+        </mxCell>
+        <mxCell id="50" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Права подтверждены">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="850" y="725" as="sourcePoint" />
+            <mxPoint x="610" y="725" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="51" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="Изменение статуса&lt;br&gt;сессии очереди">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="610" y="758" as="sourcePoint" />
+            <mxPoint x="1095" y="758" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="52" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="1088" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="53" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="Получение текущего&lt;br&gt;статуса">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1095" y="791" as="sourcePoint" />
+            <mxPoint x="1325" y="791" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="54" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="1318" y="773" as="geometry" />
+        </mxCell>
+        <mxCell id="55" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="SELECT status&lt;br&gt;FROM queue_sessions">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1325" y="824" as="sourcePoint" />
+            <mxPoint x="1560" y="824" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="56" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="1553" y="806" as="geometry" />
+        </mxCell>
+        <mxCell id="57" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Текущий статус">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1560" y="857" as="sourcePoint" />
+            <mxPoint x="1325" y="857" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="58" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Текущий статус">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1325" y="890" as="sourcePoint" />
+            <mxPoint x="1095" y="890" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="59" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;align=center;verticalAlign=middle;" value="Проверка допустимости&lt;br&gt;перехода" vertex="1">
+          <mxGeometry height="40" width="185" x="1120" y="907" as="geometry" />
+        </mxCell>
+        <mxCell id="60" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="Сохранение нового&lt;br&gt;статуса">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1095" y="956" as="sourcePoint" />
+            <mxPoint x="1325" y="956" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="61" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="1318" y="938" as="geometry" />
+        </mxCell>
+        <mxCell id="62" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;" value="UPDATE queue_sessions">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1325" y="989" as="sourcePoint" />
+            <mxPoint x="1560" y="989" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="63" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="48" width="14" x="1553" y="971" as="geometry" />
+        </mxCell>
+        <mxCell id="64" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Статус обновлен">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1560" y="1022" as="sourcePoint" />
+            <mxPoint x="1325" y="1022" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="65" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Изменения сохранены">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1325" y="1055" as="sourcePoint" />
+            <mxPoint x="1095" y="1055" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="66" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Статус изменен">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1095" y="1088" as="sourcePoint" />
+            <mxPoint x="610" y="1088" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="67" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Результат изменения:&lt;br&gt;успех">
+          <mxGeometry relative="1" x="-0.12" y="19" as="geometry">
+            <mxPoint x="1" as="offset" />
+            <mxPoint x="610" y="1121" as="sourcePoint" />
+            <mxPoint x="360" y="1121" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="68" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Показ результата:&lt;br&gt;новый статус">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="360" y="1154" as="sourcePoint" />
+            <mxPoint x="80" y="1154" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="69" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Ошибка: переход&lt;br&gt;недопустим">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1095" y="1187" as="sourcePoint" />
+            <mxPoint x="610" y="1187" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="70" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Ошибка изменения&lt;br&gt;статуса">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="610" y="1220" as="sourcePoint" />
+            <mxPoint x="360" y="1220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="71" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.2;fontSize=13;labelBackgroundColor=#f7f7f7;dashed=1;dashPattern=6 4;" value="Показ причины ошибки">
+          <mxGeometry relative="1" x="-1" y="142" as="geometry">
+            <mxPoint x="80" y="-25" as="offset" />
+            <mxPoint x="360" y="1253" as="sourcePoint" />
+            <mxPoint x="80" y="1253" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

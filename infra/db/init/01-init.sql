@@ -115,10 +115,8 @@ CREATE TABLE IF NOT EXISTS queue_sessions (
     status session_status NOT NULL DEFAULT 'DRAFT',
     started_at TIMESTAMP NULL,
     closed_at TIMESTAMP NULL,
-    current_ticket_number INTEGER NOT NULL DEFAULT 0,
     created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    CONSTRAINT chk_queue_sessions_current_ticket_number CHECK (current_ticket_number >= 0),
     CONSTRAINT chk_queue_sessions_dates CHECK (
         closed_at IS NULL OR started_at IS NULL OR closed_at >= started_at
     )
