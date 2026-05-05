@@ -13,8 +13,7 @@
 
 ---
 
-- [**📊 Доска задач**](https://github.com/users/DaL1ner/projects/1)  
-- [**🎯 Sprint 9**](https://github.com/DaL1ner/virtual_queue_Project/milestone/10)
+- [**📊 Доска задач**](https://github.com/users/DaL1ner/projects/1)
 - [**📖 Документация**](https://dal1ner.github.io/virtual_queue_management_system/)
 
 ---

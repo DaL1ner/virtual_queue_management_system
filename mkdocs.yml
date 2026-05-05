@@ -42,6 +42,7 @@ nav:
     - explanation/requirements/functional.md
     - explanation/requirements/non-functional.md
     - explanation/data-model/logical-data-model.md
+    - explanation/development-perspective.md
     #- explanation/diagrams/index.md
     #- explanation/adr/index.md
 
