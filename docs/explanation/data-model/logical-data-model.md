@@ -1,7 +1,4 @@
 # Логическая модель данных
-## Virtual Queue Management System
-
-*Версия: 1.4 | Обновлено: 02.05.2026*
 
 ---
 
@@ -528,7 +525,7 @@ sort_order = MAX(sort_order) + 1000
 
 ### 4.4. Статусы талона (Lifecycle)
 
-![Диаграмма состояний талона UML](../diagrams/src/uml/ticket_state.jpg)
+![Диаграмма состояний талона в нотации UML](../diagrams/src/uml/ticket_state.jpg)
 
 **Ограничения переходов:**
 

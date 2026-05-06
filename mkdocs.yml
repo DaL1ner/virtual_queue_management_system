@@ -38,11 +38,12 @@ nav:
     #- reference/code/index.md
   - Explanation:
     - explanation/architecture-overview.md
-    - explanation/dictionary.md
+    - explanation/requirements/roles.md
     - explanation/requirements/functional.md
     - explanation/requirements/non-functional.md
     - explanation/data-model/logical-data-model.md
     - explanation/development-perspective.md
+    - explanation/dictionary.md
     #- explanation/diagrams/index.md
     #- explanation/adr/index.md
 
