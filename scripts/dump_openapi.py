@@ -27,14 +27,16 @@ PORT = 5000  # Порт для локального запуска
 
 def run_command(cmd: list[str], cwd: Path = None, timeout: int = 60) -> subprocess.CompletedProcess:
     """Запуск команды с обработкой ошибок."""
-    return subprocess.run(
-        cmd,
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        creation_flag=0x08000000 if sys.platform == "win32" else 0  # CREATE_NO_WINDOW на Windows
-    )
+    kwargs: dict = {
+        "args": cmd,
+        "cwd": cwd,
+        "capture_output": True,
+        "text": True,
+        "timeout": timeout,
+    }
+    if sys.platform == "win32":
+        kwargs["creationflags"] = 0x08000000  # CREATE_NO_WINDOW
+    return subprocess.run(**kwargs)
 
 
 def wait_for_server(url: str, max_retries: int = 10, delay: float = 2.0) -> bool:
@@ -81,14 +83,16 @@ def dump_openapi():
 
     # Шаг 3: Запуск приложения в фоне
     print(f"\n🏃 Запуск приложения на порту {PORT}...")
-    process = subprocess.Popen(
-        ["dotnet", "run", "--no-build", "--no-launch-profile", f"--urls=http://localhost:{PORT}"],
-        cwd=BACKEND_DIR,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        creation_flag=0x08000000 if sys.platform == "win32" else 0
-    )
+    popen_kwargs: dict = {
+        "args": ["dotnet", "run", "--no-build", "--no-launch-profile", f"--urls=http://localhost:{PORT}"],
+        "cwd": BACKEND_DIR,
+        "stdout": subprocess.PIPE,
+        "stderr": subprocess.PIPE,
+        "text": True,
+    }
+    if sys.platform == "win32":
+        popen_kwargs["creationflags"] = 0x08000000  # CREATE_NO_WINDOW
+    process = subprocess.Popen(**popen_kwargs)
 
     try:
         # Ждем пока сервер запустится
