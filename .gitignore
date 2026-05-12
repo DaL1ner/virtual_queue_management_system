@@ -1,83 +1,52 @@
+```
 # Build artifacts
+bin/
+obj/
 *.dll
 *.exe
 *.pdb
 *.so
 *.dylib
-*.o
-*.obj
-*.out
-bin/
-obj/
-out/
+*.jar
+*.war
+*.class
 
-# ASP.NET Core
-appsettings.Development.json
-appsettings.Production.json
-launchSettings.json
-
-# Entity Framework
-*.efcore
-
-# Entity Framework Migrations (keep if needed, but typically versioned)
-# Migrations/
-
-# NuGet
+# Dependencies
 packages/
-*.nupkg
-*.nuspec
+node_modules/
+vendor/
 
-# Visual Studio
-.vs/
-.vscode/
-*.suo
-*.user
-*.sln
-*.slnx
-*.csproj.user
-
-# JetBrains Rider
-.idea/
-*.sln.iml
-
-# Visual Studio output
+# Logs
 *.log
-logs/
 
 # Environment
 .env
 .env.local
-.env.*
+*.env.*
 
 # Editors
+.vscode/
+.idea/
 *.swp
 *.swo
-*~
 
-# OS
+# OS generated files
 .DS_Store
 Thumbs.db
 
-# Testing
-test-results/
+# Test and coverage
 coverage/
-
-# Docker
-.dockerenv
-!Dockerfile
-!docker-compose.yml
+htmlcov/
+*.coverage
+.testcoverage
 
 # Temporary files
 *.tmp
-*.bak
+temp/
+tmp/
 
-# Draw.io
-*.bkp
-
-# Node/Python (if used in tooling)
-node_modules/
-venv/
-.venv/
-__pycache__/
-*.egg-info/
-.Python
+# Configuration specific to build systems
+target/
+build/
+dist/
+```
