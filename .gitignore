@@ -1,19 +1,57 @@
-# Archi temporary files
-*.tmp
+```
+# Build artifacts
+*.dll
+*.exe
+*.pdb
+*.so
+*.dylib
+*.o
+*.obj
+*.out
+*.sln
+*.csproj.user
+bin/
+obj/
+out/
+
+# Dependencies
+packages/
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.egg-info/
+.Python
+
+# Logs
 *.log
-*.bak
+logs/
 
-# Draw.io temporary files
-*.bkp
+# Environment
+.env
+.env.local
+.env.*
 
-# OS files
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
 Thumbs.db
 
-# IDE
-.idea/
-.vscode/
-*.swp
+# Testing
+test-results/
+coverage/
 
-.env
-*.pyc
+# Docker
+.dockerenv
+!Dockerfile
+!docker-compose.yml
+
+# Temporary files
+*.tmp
+*~
+```

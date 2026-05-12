@@ -35,25 +35,27 @@ services:
     profiles:
       - docs
 
-#  backend:
-#    build:
-#      context: ./backend
-#    container_name: vqms_backend
-#    restart: unless-stopped
-#    depends_on:
-#      db:
-#        condition: service_healthy
-#    environment:
-#      DB_HOST: db
-#      DB_PORT: 5432
-#      DB_NAME: vqms_db
-#      DB_USER: vqms_user
-#      DB_PASSWORD: vqms_password
-#      DATABASE_URL: postgresql://vqms_user:vqms_password@db:5432/vqms_db
-#    ports:
-#      - "8080:8080"
-#    networks:
-#      - vqms_net
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vqms_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: vqms_db
+      DB_USER: vqms_user
+      DB_PASSWORD: vqms_password
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=vqms_db;Username=vqms_user;Password=vqms_password"
+    ports:
+      - "8080:8080"
+    networks:
+      - vqms_net
 
 volumes:
   postgres_data:
