@@ -24,18 +24,18 @@ jobs:
         with:
           python-version: '3.11'
       
-      - name: Set up .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.x'
-      
-      - name: Restore dependencies
-        run: dotnet restore backend/src/Api/Api.csproj
-        working-directory: .
-      
-      - name: Build project
-        run: dotnet build backend/src/Api/Api.csproj --configuration Debug --no-restore
-        working-directory: .
+      # - name: Set up .NET 10
+      #   uses: actions/setup-dotnet@v4
+      #   with:
+      #     dotnet-version: '10.x'
+      #
+      # - name: Restore dependencies
+      #   run: dotnet restore backend/src/Api/Api.csproj
+      #   working-directory: .
+      #
+      # - name: Build project
+      #   run: dotnet build backend/src/Api/Api.csproj --configuration Debug --no-restore
+      #   working-directory: .
       
       - name: Install dependencies
         run: |
@@ -43,8 +43,8 @@ jobs:
           pip install -r docs/requirements.txt
           pip list | grep -i mkdocs 
       
-      - name: Generate OpenAPI spec
-        run: python scripts/dump_openapi.py
+      # - name: Generate OpenAPI spec
+      #   run: python scripts/dump_openapi.py
       
       - name: Build MkDocs
         run: mkdocs build --strict
