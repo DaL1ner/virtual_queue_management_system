@@ -3,10 +3,10 @@ name: Build & Deploy Docs
 on:
   push:
     branches: [main]
-    paths: ['docs/**', 'src/**', 'mkdocs.yml', 'scripts/**']
+    paths: ['docs/**', 'backend/**', 'mkdocs.yml', 'scripts/**']
   pull_request:
     branches: [main]
-    paths: ['docs/**', 'src/**', 'mkdocs.yml']
+    paths: ['docs/**', 'backend/**', 'mkdocs.yml', 'scripts/**']
 
 permissions:
   contents: read
@@ -18,19 +18,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+      
+      - name: Restore dependencies
+        run: dotnet restore backend/src/Api/Api.csproj
+        working-directory: .
+      
+      - name: Build project
+        run: dotnet build backend/src/Api/Api.csproj --configuration Debug --no-restore
+        working-directory: .
+      
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r docs/requirements.txt
           pip list | grep -i mkdocs 
+      
       - name: Generate OpenAPI spec
-        run: python scripts/dump_openapi.py || echo "⚠️ OpenAPI skipped (app not ready yet)"
+        run: python scripts/dump_openapi.py
+      
       - name: Build MkDocs
         run: mkdocs build --strict
+      
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

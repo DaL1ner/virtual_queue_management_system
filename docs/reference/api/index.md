@@ -4,4 +4,5 @@
 
 <swagger-ui src="/reference/api/openapi.json" />
 
-> 💡 После создания первого роута в FastAPI запустите `python scripts/dump_openapi.py`, чтобы обновить спецификацию.
+> 💡 Спецификация генерируется автоматически из ASP.NET Core приложения.
+> Для локальной генерации запустите: `python scripts/dump_openapi.py`

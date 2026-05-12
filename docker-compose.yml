@@ -34,6 +34,8 @@ services:
     command: serve -a 0.0.0.0:8000 -f /docs/mkdocs.yml
     profiles:
       - docs
+  #docker compose --profile docs up
+  #http://localhost:8000
 
   backend:
     build:

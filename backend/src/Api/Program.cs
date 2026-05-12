@@ -1,4 +1,6 @@
 using Serilog;
+using Infrastructure.DependencyInjection;
+using Api.Endpoints;
 
 namespace Api;
 
@@ -22,15 +24,7 @@ public static class Program
 
         // Add services to the container
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen(options =>
-        {
-            options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-            {
-                Title = "VQMS API",
-                Version = "v1",
-                Description = "Virtual Queue Management System API"
-            });
-        });
+        builder.Services.AddSwaggerGen();
 
         // Add Infrastructure layer
         builder.Services.AddInfrastructure(builder.Configuration);
