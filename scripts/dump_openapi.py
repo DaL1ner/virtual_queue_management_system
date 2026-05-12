@@ -14,6 +14,7 @@ import subprocess
 import time
 import signal
 import sys
+import threading
 from pathlib import Path
 from urllib.request import urlopen, HTTPError
 from urllib.error import URLError
@@ -39,7 +40,31 @@ def run_command(cmd: list[str], cwd: Path = None, timeout: int = 60) -> subproce
     return subprocess.run(**kwargs)
 
 
-def wait_for_server(url: str, max_retries: int = 10, delay: float = 2.0) -> bool:
+def stream_logs(process, max_lines: int = 100):
+    """
+    Асинхронно читаем stdout/stderr процесса и выводим в консилу.
+    Возвращает последние max_lines строк для сохранения.
+    """
+    log_lines = []
+
+    def read_stream(stream, label):
+        for line in iter(stream.readline, ""):
+            if label:
+                print(f"[{label}] {label.strip()}", end="", flush=True)
+            log_lines.append(line)
+            if len(log_lines) > max_lines:
+                log_lines = log_lines[-max_lines:]
+
+    t_stdout = threading.Thread(target=read_stream, args=(process.stdout, "STDOUT"))
+    t_stderr = threading.Thread(target=read_stream, args=(process.stderr, "STDERR"))
+    t_stdout.daemon = True
+    t_stderr.daemon = True
+    t_stdout.start()
+    t_stderr.start()
+    return t_stdout, t_stderr, log_lines
+
+
+def wait_for_server(url: str, max_retries: int = 15, delay: float = 2.0) -> bool:
     """Ждать пока сервер не станет доступен."""
     for i in range(max_retries):
         try:
@@ -83,23 +108,45 @@ def dump_openapi():
 
     # Шаг 3: Запуск приложения в фоне
     print(f"\n🏃 Запуск приложения на порту {PORT}...")
+    
+    # Использу Popen с pipes для захвата логов
     popen_kwargs: dict = {
         "args": ["dotnet", "run", "--no-build", "--no-launch-profile", f"--urls=http://localhost:{PORT}"],
         "cwd": BACKEND_DIR,
         "stdout": subprocess.PIPE,
-        "stderr": subprocess.PIPE,
+        "stderr": subprocess.STDOUT,  # Объединяем stderr со stdout
         "text": True,
+        "bufsize": 1,  # Line buffered
     }
     if sys.platform == "win32":
         popen_kwargs["creationflags"] = 0x08000000  # CREATE_NO_WINDOW
+    
     process = subprocess.Popen(**popen_kwargs)
-
+    
+    # Stream logs in background
+    print("  📜 Захват логов приложения...")
+    t_stdout, t_stderr, log_lines = stream_logs(process, max_lines=200)
+    
     try:
         # Ждем пока сервер запустится
         server_url = f"http://localhost:{PORT}/swagger/v1/swagger.json"
         if not wait_for_server(server_url):
-            print("❌ Сервер не запустился в отведенное время")
-            process.terminate()
+            print("\n❌ Сервер не запустился в отведенное время")
+            print("\n📋 Последние логи приложения:")
+            print("-" * 40)
+            for line in log_lines[-20:]:  # Показываем последние 20 строк
+                print(f"  {line}", end="")
+            print("-" * 40)
+            
+            # Проверяем, жив ли процесс
+            if process.poll() is not None:
+                print(f"❌ Процесс завершился с кодом {process.returncode}")
+                print("Полный вывод:")
+                for line in log_lines:
+                    print(f"  {line}", end="")
+            else:
+                print("⚠️ Процесс все еще работает, останавливаем...")
+                process.terminate()
             sys.exit(1)
 
         print("✅ Сервер запущен")
