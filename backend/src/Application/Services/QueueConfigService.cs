@@ -3,6 +3,7 @@ namespace Application.Services;
 using Domain.Entities;
 using Domain.Enums;
 using Application.DTOs;
+using Application.Events;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,12 +13,12 @@ using Microsoft.EntityFrameworkCore;
 public class QueueConfigService
 {
     private readonly AppDbContext _context;
-    private readonly EventLogService _eventLogService;
+    private readonly IEventPublisher _eventPublisher;
 
-    public QueueConfigService(AppDbContext context, EventLogService eventLogService)
+    public QueueConfigService(AppDbContext context, IEventPublisher eventPublisher)
     {
         _context = context;
-        _eventLogService = eventLogService;
+        _eventPublisher = eventPublisher;
     }
 
     /// <summary>
@@ -97,14 +98,8 @@ public class QueueConfigService
         _context.QueueConfigs.Add(config);
         await _context.SaveChangesAsync();
 
-        // Логирование события
-        await _eventLogService.LogAsync(
-            config.Id,
-            null,
-            createdById,
-            EventType.QueueConfigCreated,
-            new { config.Name, config.DistributionMode }
-        );
+        // Публикация события
+        await _eventPublisher.PublishAsync(new QueueConfigCreatedEvent(config.Id, config.Name, createdById));
 
         return MapToDto(config);
     }
@@ -170,14 +165,8 @@ public class QueueConfigService
 
         await _context.SaveChangesAsync();
 
-        // Логирование события
-        await _eventLogService.LogAsync(
-            config.Id,
-            null,
-            actorUserId,
-            EventType.QueueConfigUpdated,
-            new { id, actorUserId }
-        );
+        // Публикация события
+        await _eventPublisher.PublishAsync(new QueueConfigUpdatedEvent(config.Id, actorUserId));
 
         return MapToDto(config);
     }

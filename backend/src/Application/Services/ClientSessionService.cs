@@ -3,6 +3,7 @@ namespace Application.Services;
 using Domain.Entities;
 using Domain.Enums;
 using Application.DTOs;
+using Application.Events;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,12 +13,12 @@ using Microsoft.EntityFrameworkCore;
 public class ClientSessionService
 {
     private readonly AppDbContext _context;
-    private readonly EventLogService _eventLogService;
+    private readonly IEventPublisher _eventPublisher;
 
-    public ClientSessionService(AppDbContext context, EventLogService eventLogService)
+    public ClientSessionService(AppDbContext context, IEventPublisher eventPublisher)
     {
         _context = context;
-        _eventLogService = eventLogService;
+        _eventPublisher = eventPublisher;
     }
 
     /// <summary>
@@ -112,14 +113,9 @@ public class ClientSessionService
             await _context.SaveChangesAsync();
         }
 
-        // Логирование
-        await _eventLogService.LogAsync(
-            0, // Session ID not applicable for client sessions
-            null,
-            actorUserId,
-            EventType.ClientSessionInvalidated,
-            new { sessionId, actorUserId }
-        );
+        // Публикация доменного события
+        await _eventPublisher.PublishAsync(new ClientSessionInvalidatedEvent(
+            sessionId, null, actorUserId));
     }
 
     /// <summary>

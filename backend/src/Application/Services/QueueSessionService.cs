@@ -3,6 +3,7 @@ namespace Application.Services;
 using Domain.Entities;
 using Domain.Enums;
 using Application.DTOs;
+using Application.Events;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,12 +13,12 @@ using Microsoft.EntityFrameworkCore;
 public class QueueSessionService
 {
     private readonly AppDbContext _context;
-    private readonly EventLogService _eventLogService;
+    private readonly IEventPublisher _eventPublisher;
 
-    public QueueSessionService(AppDbContext context, EventLogService eventLogService)
+    public QueueSessionService(AppDbContext context, IEventPublisher eventPublisher)
     {
         _context = context;
-        _eventLogService = eventLogService;
+        _eventPublisher = eventPublisher;
     }
 
     /// <summary>
@@ -79,14 +80,9 @@ public class QueueSessionService
         // Инициализация состояний исполнителей (если есть пользователи с ролью Executor)
         // TODO: Реализовать при добавлении UserRole/Role сущностей
 
-        // Логирование события
-        await _eventLogService.LogAsync(
-            session.Id,
-            null,
-            createdById,
-            EventType.QueueSessionCreated,
-            new { session.Id, configId, createdById }
-        );
+        // Публикация доменного события
+        await _eventPublisher.PublishAsync(new QueueSessionCreatedEvent(
+            session.Id, configId, createdById));
 
         return await GetByIdAsync(session.Id);
     }
@@ -185,14 +181,9 @@ public class QueueSessionService
         session.Status = newStatus;
         await _context.SaveChangesAsync();
 
-        // Логирование события
-        await _eventLogService.LogAsync(
-            session.Id,
-            null,
-            actorUserId,
-            EventType.QueueSessionStatusChanged,
-            new { sessionId, oldStatus, newStatus, actorUserId }
-        );
+        // Публикация доменного события
+        await _eventPublisher.PublishAsync(new QueueSessionStatusChangedEvent(
+            session.Id, newStatus, oldStatus, actorUserId));
 
         return MapToDto(session);
     }
