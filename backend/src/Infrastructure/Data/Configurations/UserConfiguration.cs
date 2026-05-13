@@ -12,7 +12,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasKey(u => u.Id);
 
+        builder.Property(u => u.Id)
+            .HasColumnName("id");
+
         builder.Property(u => u.Login)
+            .HasColumnName("login")
             .IsRequired()
             .HasMaxLength(100);
 
@@ -20,32 +24,39 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsUnique();
 
         builder.Property(u => u.PasswordHash)
+            .HasColumnName("password_hash")
             .IsRequired()
             .HasMaxLength(255);
 
         builder.Property(u => u.FullName)
+            .HasColumnName("full_name")
             .IsRequired()
             .HasMaxLength(255);
 
         builder.Property(u => u.LastName)
+            .HasColumnName("last_name")
             .IsRequired()
             .HasMaxLength(255);
 
         builder.Property(u => u.Email)
+            .HasColumnName("email")
             .HasMaxLength(255);
 
         builder.HasIndex(u => u.Email)
             .IsUnique();
 
         builder.Property(u => u.IsActive)
+            .HasColumnName("is_active")
             .IsRequired()
             .HasDefaultValue(true);
 
         builder.Property(u => u.CreatedAt)
+            .HasColumnName("created_at")
             .IsRequired()
             .HasDefaultValueSql("NOW()");
 
-        builder.Property(u => u.UpdatedAt);
+        builder.Property(u => u.UpdatedAt)
+            .HasColumnName("updated_at");
 
         // Navigation: UserRoles
         builder.HasMany(u => u.UserRoles)

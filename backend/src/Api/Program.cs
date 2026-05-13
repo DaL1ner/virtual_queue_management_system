@@ -1,5 +1,6 @@
 using Serilog;
 using Infrastructure.DependencyInjection;
+using Application.DependencyInjection;
 using Api.Endpoints;
 
 namespace Api;
@@ -28,6 +29,9 @@ public static class Program
 
         // Add Infrastructure layer
         builder.Services.AddInfrastructure(builder.Configuration);
+
+        // Add Application layer services
+        builder.Services.AddApplication();
 
         // Add Health Checks
         builder.Services.AddHealthChecks()
@@ -64,6 +68,8 @@ public static class Program
         // Map endpoints
         app.MapHealthEndpoints();
         app.MapHealthChecks("/healthz");
+        app.MapQueueConfigEndpoints();
+        app.MapQueueSessionEndpoints();
 
         // Root endpoint
         app.MapGet("/", () => Results.Ok(new { Message = "Welcome to VQMS API", Version = "1.0.0" }))

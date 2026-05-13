@@ -1,0 +1,312 @@
+namespace Application.Services;
+
+using Domain.Entities;
+using Domain.Enums;
+using Application.DTOs;
+using Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+
+/// <summary>
+/// Сервис для управления жизненным циклом сессий очередей
+/// </summary>
+public class QueueSessionService
+{
+    private readonly AppDbContext _context;
+    private readonly EventLogService _eventLogService;
+
+    public QueueSessionService(AppDbContext context, EventLogService eventLogService)
+    {
+        _context = context;
+        _eventLogService = eventLogService;
+    }
+
+    /// <summary>
+    /// Возвращает активную сессию (Status = OPEN) для конфигурации
+    /// </summary>
+    public async Task<QueueSessionDto?> GetActiveSessionByConfigIdAsync(int configId)
+    {
+        var session = await _context.QueueSessions
+            .Include(q => q.QueueConfig)
+            .Include(q => q.CreatedBy)
+            .Include(q => q.Tickets)
+            .Include(q => q.ExecutorStates)
+            .FirstOrDefaultAsync(q => q.QueueConfigId == configId && q.Status == SessionStatus.Open);
+
+        if (session == null)
+            return null;
+
+        return MapToDto(session);
+    }
+
+    /// <summary>
+    /// Создание сессии из конфигурации
+    /// </summary>
+    public async Task<QueueSessionDto> CreateFromConfigAsync(int configId, int createdById)
+    {
+        // Проверка что конфигурация существует и активна
+        var config = await _context.QueueConfigs
+            .Include(q => q.CreatedBy)
+            .FirstOrDefaultAsync(q => q.Id == configId && q.IsActive);
+
+        if (config == null)
+        {
+            throw new NotFoundException($"QueueConfig with id {configId} not found");
+        }
+
+        // Проверка что нет другой активной сессии для этой конфигурации
+        var existingActiveSession = await _context.QueueSessions
+            .AnyAsync(q => q.QueueConfigId == configId && q.Status == SessionStatus.Open);
+
+        if (existingActiveSession)
+        {
+            throw new BadRequestException("There is already an active session for this configuration");
+        }
+
+        var session = new QueueSession
+        {
+            QueueConfigId = configId,
+            Status = SessionStatus.Draft,
+            CreatedById = createdById
+        };
+
+        _context.QueueSessions.Add(session);
+        await _context.SaveChangesAsync();
+
+        // Создание нативной последовательности PostgreSQL
+        await _context.Database.ExecuteSqlRawAsync(
+            $"CREATE SEQUENCE IF NOT EXISTS sq_ticket_{session.Id} START WITH 1;");
+
+        // Инициализация состояний исполнителей (если есть пользователи с ролью Executor)
+        // TODO: Реализовать при добавлении UserRole/Role сущностей
+
+        // Логирование события
+        await _eventLogService.LogAsync(
+            session.Id,
+            null,
+            createdById,
+            EventType.QueueSessionCreated,
+            new { session.Id, configId, createdById }
+        );
+
+        return await GetByIdAsync(session.Id);
+    }
+
+    /// <summary>
+    /// Возвращает сессию по ID
+    /// </summary>
+    public async Task<QueueSessionDto?> GetByIdAsync(int id)
+    {
+        var session = await _context.QueueSessions
+            .Include(q => q.QueueConfig)
+            .Include(q => q.CreatedBy)
+            .Include(q => q.Tickets)
+            .Include(q => q.ExecutorStates)
+            .FirstOrDefaultAsync(q => q.Id == id);
+
+        if (session == null)
+            return null;
+
+        return MapToDto(session);
+    }
+
+    /// <summary>
+    /// Изменение статуса сессии с валидацией переходов
+    /// </summary>
+    public async Task<QueueSessionDto> ChangeStatusAsync(
+        int sessionId,
+        SessionStatus newStatus,
+        int actorUserId)
+    {
+        var session = await _context.QueueSessions
+            .Include(q => q.QueueConfig)
+            .Include(q => q.CreatedBy)
+            .Include(q => q.Tickets)
+            .Include(q => q.ExecutorStates)
+            .FirstOrDefaultAsync(q => q.Id == sessionId);
+
+        if (session == null)
+        {
+            throw new NotFoundException($"QueueSession with id {sessionId} not found");
+        }
+
+        var oldStatus = session.Status;
+        
+        // Валидация переходов
+        ValidateStatusTransition(oldStatus, newStatus);
+
+        // DRAFT -> OPEN: нельзя если есть другие активные сессии этой конфигурации
+        if (oldStatus == SessionStatus.Draft && newStatus == SessionStatus.Open)
+        {
+            var activeSession = await _context.QueueSessions
+                .AnyAsync(q => q.QueueConfigId == session.QueueConfigId && 
+                              q.Id != sessionId && 
+                              q.Status == SessionStatus.Open);
+
+            if (activeSession)
+            {
+                throw new BadRequestException("There is already an active session for this configuration");
+            }
+        }
+
+        // При переходе в OPEN: установка StartedAt
+        if (newStatus == SessionStatus.Open)
+        {
+            session.StartedAt = DateTime.UtcNow;
+        }
+
+        // При переходе в CLOSED
+        if (newStatus == SessionStatus.Closed)
+        {
+            session.ClosedAt = DateTime.UtcNow;
+
+            // Удаление последовательности
+            await _context.Database.ExecuteSqlRawAsync(
+                $"DROP SEQUENCE IF EXISTS sq_ticket_{sessionId}");
+
+            // Закрытие всех WAITING и CALLED талонов (автоматический SKIPPED)
+            var pendingTickets = await _context.Tickets
+                .Where(t => t.QueueSessionId == sessionId && 
+                           (t.Status == TicketStatus.Waiting || t.Status == TicketStatus.Called))
+                .ToListAsync();
+
+            foreach (var ticket in pendingTickets)
+            {
+                ticket.Status = TicketStatus.Skipped;
+                ticket.UpdatedAt = DateTime.UtcNow;
+            }
+
+            if (pendingTickets.Count > 0)
+            {
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        // Установка нового статуса
+        session.Status = newStatus;
+        await _context.SaveChangesAsync();
+
+        // Логирование события
+        await _eventLogService.LogAsync(
+            session.Id,
+            null,
+            actorUserId,
+            EventType.QueueSessionStatusChanged,
+            new { sessionId, oldStatus, newStatus, actorUserId }
+        );
+
+        return MapToDto(session);
+    }
+
+    /// <summary>
+    /// Агрегация метрик по талонам и исполнителям
+    /// </summary>
+    public async Task<QueueSessionStatsDto> GetStatisticsAsync(int sessionId)
+    {
+        var session = await _context.QueueSessions
+            .Include(q => q.Tickets)
+            .FirstOrDefaultAsync(q => q.Id == sessionId);
+
+        if (session == null)
+        {
+            throw new NotFoundException($"QueueSession with id {sessionId} not found");
+        }
+
+        var tickets = session.Tickets;
+
+        var totalTickets = tickets.Count;
+        var waitingTickets = tickets.Count(t => t.Status == TicketStatus.Waiting);
+        var calledTickets = tickets.Count(t => t.Status == TicketStatus.Called);
+        var servingTickets = tickets.Count(t => t.Status == TicketStatus.Serving);
+        var servedTickets = tickets.Count(t => t.Status == TicketStatus.Served);
+        var skippedTickets = tickets.Count(t => t.Status == TicketStatus.Skipped);
+        var cancelledTickets = tickets.Count(t => t.Status == TicketStatus.Cancelled);
+
+        // Среднее время обслуживания
+        double? avgServiceTime = null;
+        var servedTicketsWithTimes = tickets
+            .Where(t => t.Status == TicketStatus.Served && 
+                       t.ServiceStartedAt.HasValue && 
+                       t.ServiceEndedAt.HasValue)
+            .ToList();
+
+        if (servedTicketsWithTimes.Count > 0)
+        {
+            var totalSeconds = servedTicketsWithTimes.Sum(t => 
+                (t.ServiceEndedAt.Value - t.ServiceStartedAt.Value!).TotalSeconds);
+            avgServiceTime = totalSeconds / servedTicketsWithTimes.Count;
+        }
+
+        // Длительность сессии
+        TimeSpan? sessionDuration = null;
+        if (session.StartedAt.HasValue)
+        {
+            var endTime = session.ClosedAt ?? DateTime.UtcNow;
+            sessionDuration = endTime - session.StartedAt.Value;
+        }
+
+        return new QueueSessionStatsDto(
+            totalTickets,
+            waitingTickets,
+            calledTickets,
+            servingTickets,
+            servedTickets,
+            skippedTickets,
+            cancelledTickets,
+            avgServiceTime,
+            sessionDuration
+        );
+    }
+
+    /// <summary>
+    /// Валидация переходов статусов
+    /// </summary>
+    private void ValidateStatusTransition(SessionStatus current, SessionStatus next)
+    {
+        var validTransitions = new Dictionary<SessionStatus, HashSet<SessionStatus>>
+        {
+            [SessionStatus.Draft] = new HashSet<SessionStatus> { SessionStatus.Open, SessionStatus.Closed },
+            [SessionStatus.Open] = new HashSet<SessionStatus> { SessionStatus.Paused, SessionStatus.Closed },
+            [SessionStatus.Paused] = new HashSet<SessionStatus> { SessionStatus.Open, SessionStatus.Closed },
+            [SessionStatus.Closed] = new HashSet<SessionStatus> { SessionStatus.Draft }
+        };
+
+        if (!validTransitions.TryGetValue(current, out var allowed))
+        {
+            throw new BadRequestException($"No valid transitions from status {current}");
+        }
+
+        if (!allowed.Contains(next))
+        {
+            throw new BadRequestException(
+                $"Invalid status transition from {current} to {next}");
+        }
+    }
+
+    /// <summary>
+    /// Преобразование в QueueSessionDto
+    /// </summary>
+    private QueueSessionDto MapToDto(QueueSession session)
+    {
+        var activeTicketsCount = session.Tickets
+            .Count(t => t.Status == TicketStatus.Waiting || 
+                       t.Status == TicketStatus.Called || 
+                       t.Status == TicketStatus.Serving);
+
+        var servedTicketsCount = session.Tickets
+            .Count(t => t.Status == TicketStatus.Served);
+
+        return new QueueSessionDto(
+            session.Id,
+            session.QueueConfigId,
+            session.QueueConfig?.Name ?? string.Empty,
+            session.Status,
+            session.StartedAt,
+            session.ClosedAt,
+            session.CreatedById,
+            session.CreatedBy?.FullName,
+            session.CreatedAt,
+            activeTicketsCount,
+            servedTicketsCount
+        );
+    }
+}
