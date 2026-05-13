@@ -5,9 +5,9 @@
 > **Учебный проект** по курсу «Архитектура приложений и данных»  
 > Веб-приложение для управления виртуальной очередью в сервисных точках
 
-[![Vue.js](https://img.shields.io/badge/Vue.js-3.x-green)](https://vuejs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-latest-teal)](https://fastapi.tiangolo.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue)](https://www.postgresql.org/)
+[![Vue.js](https://img.shields.io/badge/Vue.js-4FC08D?logo=vuedotjs&logoColor=fff)](https://vuejs.org/)
+[![.NET](https://img.shields.io/badge/.NET-512BD4?logo=dotnet&logoColor=fff)](https://fastapi.tiangolo.com/)
+[![PostgreSQL](https://img.shields.io/badge/Postgres-%23316192.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
 </div>
 
@@ -81,8 +81,8 @@ Virtual Queue Management System – это система управления �
 
 | Категория | Технологии |
 |-----------|------------|
-| **Frontend** | Vue.js 3, Bootstrap |
-| **Backend** | FastAPI (Python) |
+| **Frontend** | Vue.js 3, Vite, Bootstrap |
+| **Backend** | .NET |
 | **База данных** | PostgreSQL |
 | **Контейнеризация** | Docker |
 | **Деплой** | Render |
