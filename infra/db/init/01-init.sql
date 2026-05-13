@@ -3,22 +3,8 @@
 -- Built from the logical data model.
 
 -- =========================
--- ENUM TYPES
+-- ENUM TYPES (удалены, заменены на VARCHAR)
 -- =========================
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'distribution_mode') THEN
-        CREATE TYPE distribution_mode AS ENUM ('MANUAL', 'AUTO');
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'session_status') THEN
-        CREATE TYPE session_status AS ENUM ('DRAFT', 'OPEN', 'PAUSED', 'CLOSED');
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ticket_status') THEN
-        CREATE TYPE ticket_status AS ENUM ('WAITING', 'CALLED', 'SERVING', 'SERVED', 'SKIPPED', 'CANCELLED');
-    END IF;
-END $$;
 
 -- =========================
 -- TABLES
@@ -78,7 +64,7 @@ CREATE TABLE IF NOT EXISTS queue_configs (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    distribution_mode distribution_mode NOT NULL DEFAULT 'MANUAL',
+    distribution_mode VARCHAR(20) NOT NULL DEFAULT 'MANUAL',
     is_service_type_enabled BOOLEAN NOT NULL DEFAULT FALSE,
     is_priority_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     priority_escalation_wait_min INTEGER DEFAULT NULL,
@@ -112,7 +98,7 @@ CREATE TABLE IF NOT EXISTS service_types (
 CREATE TABLE IF NOT EXISTS queue_sessions (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     queue_config_id INTEGER NOT NULL REFERENCES queue_configs(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    status session_status NOT NULL DEFAULT 'DRAFT',
+    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
     started_at TIMESTAMP NULL,
     closed_at TIMESTAMP NULL,
     created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -131,7 +117,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     client_surname VARCHAR(100) NOT NULL,
     sort_order NUMERIC(20,10) NOT NULL,
     priority_level INTEGER NOT NULL DEFAULT 0,
-    status ticket_status NOT NULL DEFAULT 'WAITING',
+    status VARCHAR(20) NOT NULL DEFAULT 'WAITING',
     version INTEGER NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     called_at TIMESTAMP NULL,
@@ -178,7 +164,7 @@ CREATE TABLE IF NOT EXISTS executor_states (
 
 CREATE TABLE IF NOT EXISTS event_logs (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    queue_session_id INTEGER NOT NULL REFERENCES queue_sessions(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    queue_session_id INTEGER REFERENCES queue_sessions(id) ON DELETE CASCADE ON UPDATE CASCADE,
     ticket_id INTEGER NULL REFERENCES tickets(id) ON DELETE SET NULL ON UPDATE CASCADE,
     actor_user_id INTEGER NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
     event_type VARCHAR(100) NOT NULL,

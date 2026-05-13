@@ -4,7 +4,7 @@ using Domain.Enums;
 
 public class EventLog : BaseEntity
 {
-    public int QueueSessionId { get; set; }
+    public int? QueueSessionId { get; set; }
     public int? TicketId { get; set; }
     public int? ActorUserId { get; set; }
     public EventType EventType { get; set; }

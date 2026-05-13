@@ -43,14 +43,17 @@ public static class QueueSessionEndpoints
         var config = configs.FirstOrDefault();
         if (config == null)
             return Results.BadRequest("No active queue configuration found");
-
-        var created = await queueSessionService.CreateFromConfigAsync(config.Id, createdById: 0);
+        // TODO: Заменить на получение ID из контекста аутентификации
+        // Временно используем ID пользователя admin (id = 1)
+        var created = await queueSessionService.CreateFromConfigAsync(config.Id, createdById: 1);
         return Results.Created("", created);
     }
 
     private static async Task<IResult> ChangeSessionStatus(int id, QueueSessionService service)
     {
-        var updated = await service.ChangeStatusAsync(id, newStatus: Domain.Enums.SessionStatus.Paused, actorUserId: 0);
+        // TODO: Заменить на получение ID из контекста аутентификации
+        // Временно используем ID пользователя admin (id = 1)
+        var updated = await service.ChangeStatusAsync(id, newStatus: Domain.Enums.SessionStatus.Paused, actorUserId: 1);
         return Results.Ok(updated);
     }
 }

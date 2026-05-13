@@ -177,7 +177,7 @@ public class EventLogDomainEventHandler :
     {
         var eventLog = new EventLog
         {
-            QueueSessionId = 0,
+            QueueSessionId = null,
             TicketId = null,
             ActorUserId = notification.CreatedById,
             EventType = EventType.QueueConfigCreated,
@@ -193,7 +193,7 @@ public class EventLogDomainEventHandler :
     {
         var eventLog = new EventLog
         {
-            QueueSessionId = 0,
+            QueueSessionId = null,
             TicketId = null,
             ActorUserId = notification.ActorUserId,
             EventType = EventType.QueueConfigUpdated,

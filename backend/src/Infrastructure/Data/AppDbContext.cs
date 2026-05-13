@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Domain.Entities;
 using Domain.Enums;
+using Infrastructure.Data.Converters;
 
 namespace Infrastructure.Data;
 
@@ -52,8 +53,8 @@ public class AppDbContext : DbContext
             
             entity.Property(qc => qc.DistributionMode)
                 .HasColumnName("distribution_mode")
-                .HasConversion<string>()
-                .HasMaxLength(50);
+                .HasConversion(new DistributionModeToStringConverter())
+                .HasMaxLength(20);
             
             entity.Property(qc => qc.IsServiceTypeEnabled)
                 .HasColumnName("is_service_type_enabled")
@@ -91,7 +92,8 @@ public class AppDbContext : DbContext
             
             entity.Property(qs => qs.Status)
                 .HasColumnName("status")
-                .HasConversion<int>();
+                .HasConversion(new SessionStatusToStringConverter())
+                .HasMaxLength(20);
             
             entity.Property(qs => qs.StartedAt)
                 .HasColumnName("started_at");
@@ -112,7 +114,7 @@ public class AppDbContext : DbContext
             entity.HasIndex(qs => new { qs.QueueConfigId, qs.Status })
                 .HasName("uq_queue_sessions_one_open_per_config")
                 .IsUnique()
-                .HasFilter("WHERE status = 1");
+                .HasFilter("WHERE status = 'OPEN'");
         });
         
         modelBuilder.Entity<Ticket>(entity =>
@@ -154,7 +156,8 @@ public class AppDbContext : DbContext
             
             entity.Property(t => t.Status)
                 .HasColumnName("status")
-                .HasConversion<int>();
+                .HasConversion(new TicketStatusToStringConverter())
+                .HasMaxLength(20);
             
             entity.Property(t => t.Version)
                 .HasColumnName("version")
@@ -193,7 +196,7 @@ public class AppDbContext : DbContext
             entity.HasIndex(t => new { t.ClientSessionId, t.Status })
                 .HasName("uq_tickets_one_active_per_client_session")
                 .IsUnique()
-                .HasFilter("WHERE status IN (0, 1, 2)");
+                .HasFilter("WHERE status IN ('WAITING', 'CALLED')");
         });
         
         modelBuilder.Entity<ServiceType>(entity =>
@@ -344,7 +347,8 @@ public class AppDbContext : DbContext
                 .HasDefaultValueSql("NOW()");
             
             entity.Property(el => el.Details)
-                .HasColumnName("details");
+                .HasColumnName("details")
+                .HasColumnType("jsonb");
             
             entity.HasIndex(el => el.QueueSessionId);
             entity.HasIndex(el => el.TicketId);

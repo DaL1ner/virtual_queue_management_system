@@ -37,13 +37,17 @@ public static class QueueConfigEndpoints
 
     private static async Task<IResult> CreateQueueConfig(CreateQueueConfigDto dto, QueueConfigService service)
     {
-        var created = await service.CreateAsync(dto, createdById: 0);
+        // TODO: Заменить на получение ID из контекста аутентификации
+        // Временно используем ID пользователя admin (id = 1)
+        var created = await service.CreateAsync(dto, createdById: 1);
         return Results.Created("", created);
     }
 
     private static async Task<IResult> UpdateQueueConfig(int id, UpdateQueueConfigDto dto, QueueConfigService service)
     {
-        var updated = await service.UpdateAsync(id, dto, actorUserId: 0);
+        // TODO: Заменить на получение ID из контекста аутентификации
+        // Временно используем ID пользователя admin (id = 1)
+        var updated = await service.UpdateAsync(id, dto, actorUserId: 1);
         return Results.Ok(updated);
     }
 }
