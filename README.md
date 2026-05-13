@@ -6,8 +6,11 @@
 > Веб-приложение для управления виртуальной очередью в сервисных точках
 
 [![Vue.js](https://img.shields.io/badge/Vue.js-4FC08D?logo=vuedotjs&logoColor=fff)](https://vuejs.org/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff)](https://vite-docs.ru/)
+[![Bootstrap](https://img.shields.io/badge/Bootstrap-7952B3?logo=bootstrap&logoColor=fff)](https://getbootstrap.ru/)
 [![.NET](https://img.shields.io/badge/.NET-512BD4?logo=dotnet&logoColor=fff)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/Postgres-%23316192.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=fff)](https://www.docker.com/)
 
 </div>
 
@@ -86,7 +89,7 @@ Virtual Queue Management System – это система управления �
 | **База данных** | PostgreSQL |
 | **Контейнеризация** | Docker |
 | **Деплой** | Render |
-| **Обновление данных** | Polling |
+| **Обновление данных** | WebSocket |
 
 ---
 
