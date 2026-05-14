@@ -16,21 +16,21 @@
 
 ## 2. Сущности
 
-### 2.1. User (Пользователь системы)
+### 2.1. users (Пользователь системы)
 
 **Назначение:** Хранение учётных данных сотрудников (Администраторы, Операторы, Исполнители).
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
-| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор пользователя |
+| `id` | `INTEGER` | `PK`, `GENERATED ALWAYS AS IDENTITY` | Уникальный идентификатор пользователя |
 | `login` | `VARCHAR(100)` | `NOT NULL`, `UNIQUE` | Логин для входа в систему |
 | `password_hash` | `VARCHAR(255)` | `NOT NULL` | Хешированный пароль (bcrypt/argon2) |
 | `full_name` | `VARCHAR(255)` | `NOT NULL` | Полное имя сотрудника |
 | `last_name` | `VARCHAR(255)` | `NOT NULL` | Полная фамилия сотрудника |
 | `email` | `VARCHAR(255)` | `NULL`, `UNIQUE` | Контактный email |
-| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Флаг активности учётной записи |
+| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT TRUE` | Флаг активности учётной записи |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания записи |
-| `updated_at` | `TIMESTAMP` | `NULL`, `DEFAULT NOW()` | Дата последнего обновления |
+| `updated_at` | `TIMESTAMP` | `DEFAULT NOW()` | Дата последнего обновления |
 
 **Ключи:**
 
@@ -47,34 +47,34 @@
 
 ---
 
-### 2.2. UserSession (Сессия системной роли)
+### 2.2. user_sessions (Сессия системной роли)
 
 **Назначение:** Хранение активных сессий авторизованных сотрудников системы.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
-| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор |
-| `user_id` | `INTEGER` | `NOT NULL`, `FK → User(id) ON DELETE CASCADE` | Пользователь |
+| `id` | `INTEGER` | `PK`, `GENERATED ALWAYS AS IDENTITY` | Уникальный идентификатор |
+| `user_id` | `INTEGER` | `NOT NULL`, `FK → users(id) ON DELETE CASCADE ON UPDATE CASCADE` | Пользователь |
 | `token` | `VARCHAR(255)` | `NOT NULL`, `UNIQUE` | Токен сессии |
 | `ip_address` | `VARCHAR(45)` | `NULL` | IP-адрес входа |
 | `user_agent` | `TEXT` | `NULL` | Браузер/устройство |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время создания |
 | `expires_at` | `TIMESTAMP` | `NOT NULL` | Время истечения |
 | `last_activity_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Последняя активность |
-| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Флаг активности |
+| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT TRUE` | Флаг активности |
 
 **Ключи:**
 
 - Первичный ключ: `id`
 - Уникальные: `token`
-- Внешние ключи: `user_id → User(id)`
+- Внешние ключи: `user_id → users(id)`
 
 **Индексы:**
 
 ```sql
-idx_usersession_token (token)  
-idx_usersession_user (user_id, is_active)  
-idx_usersession_expires (expires_at)  
+idx_usersession_token (token)
+idx_usersession_user (user_id, is_active)
+idx_usersession_expires (expires_at)
 ```
 
 **Бизнес-правила:**
@@ -87,13 +87,13 @@ idx_usersession_expires (expires_at)
 
 ---
 
-### 2.3. Role (Роль)
+### 2.3. roles (Роль)
 
 **Назначение:** Справочник системных ролей. Определяет права доступа к функциям системы.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
-| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор роли |
+| `id` | `INTEGER` | `PK`, `GENERATED ALWAYS AS IDENTITY` | Уникальный идентификатор роли |
 | `name` | `VARCHAR(100)` | `NOT NULL`, `UNIQUE` | Отображаемое название роли |
 | `code` | `VARCHAR(50)` | `NOT NULL`, `UNIQUE` | Системный код для проверки прав |
 | `description` | `TEXT` | `NULL` | Описание полномочий роли |
@@ -112,22 +112,22 @@ idx_usersession_expires (expires_at)
 
 ---
 
-### 2.4. UserRole (Связь Сотрудник-Роль)
+### 2.4. user_roles (Связь Сотрудник-Роль)
 
 **Назначение:** Реализация связи «Многие-ко-Многим» между сотрудниками и ролями.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
-| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор записи |
-| `user_id` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE CASCADE` | Ссылка на пользователя |
-| `role_id` | `INTEGER` | `NOT NULL`, `FK -> Role(id) ON DELETE CASCADE` | Ссылка на роль |
+| `id` | `INTEGER` | `PK`, `GENERATED ALWAYS AS IDENTITY` | Уникальный идентификатор записи |
+| `user_id` | `INTEGER` | `NOT NULL`, `FK -> users(id) ON DELETE CASCADE ON UPDATE CASCADE` | Ссылка на пользователя |
+| `role_id` | `INTEGER` | `NOT NULL`, `FK -> roles(id) ON DELETE CASCADE ON UPDATE CASCADE` | Ссылка на роль |
 | `assigned_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата назначения роли |
-| `assigned_by` | `INTEGER` | `NULL`, `FK -> User(id) ON DELETE SET NULL` | Кто назначил роль |
+| `assigned_by` | `INTEGER` | `NULL`, `FK -> users(id) ON DELETE SET NULL ON UPDATE CASCADE` | Кто назначил роль |
 
 **Ключи:**
 
 - Первичный ключ: `id`
-- Уникальный составной: `UNIQUE(user_id, role_id)` — запрет дублирования
+- Уникальный составной: `CONSTRAINT uq_user_roles_user_role UNIQUE (user_id, role_id)` — запрет дублирования
 
 **Индексы:**
 
@@ -136,27 +136,27 @@ idx_usersession_expires (expires_at)
 
 ---
 
-### 2.5. QueueConfig (Конфигурация очереди)
+### 2.5. queue_configs (Конфигурация очереди)
 
 **Назначение:** Шаблон очереди с настройками, не меняющимися в рамках сессии.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
-| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор очереди |
+| `id` | `INTEGER` | `PK`, `GENERATED ALWAYS AS IDENTITY` | Уникальный идентификатор очереди |
 | `name` | `VARCHAR(255)` | `NOT NULL` | Отображаемое название очереди |
 | `description` | `TEXT` | `NULL` | Подробное описание очереди |
-| `distribution_mode` | `distribution_mode (ENUM)` | `NOT NULL`, `DEFAULT 'MANUAL'` | Режим вызова клиентов: ручной или автоматический |
-| `is_service_type_enabled` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Требовать ли выбор услуги |
-| `is_priority_enabled` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Разрешено ли приоритетное обслуживание |
-| `priority_escalation_wait_min` | `INTEGER` | `DEFAULT NULL`, `CHECK (NULL OR >= 0)` | Время ожидания (мин), после которого приоритет повышается |
-| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Флаг активности конфигурации |
+| `distribution_mode` | `VARCHAR(20)` | `NOT NULL`, `DEFAULT 'MANUAL'` | Режим вызова клиентов: ручной или автоматический |
+| `is_service_type_enabled` | `BOOLEAN` | `NOT NULL`, `DEFAULT FALSE` | Требовать ли выбор услуги |
+| `is_priority_enabled` | `BOOLEAN` | `NOT NULL`, `DEFAULT TRUE` | Разрешено ли приоритетное обслуживание |
+| `priority_escalation_wait_min` | `INTEGER` | `DEFAULT NULL` | Время ожидания (мин), после которого приоритет повышается |
+| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT TRUE` | Флаг активности конфигурации |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания конфигурации |
-| `created_by_id` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE RESTRICT` | Администратор-создатель |
+| `created_by_id` | `INTEGER` | `NOT NULL`, `FK -> users(id) ON DELETE RESTRICT ON UPDATE CASCADE` | Администратор-создатель |
 
 **Ключи:**
 
 - Первичный ключ: `id`
-- Внешние ключи: `created_by -> User(id)`
+- Внешние ключи: `created_by_id -> users(id)`
 
 **Типы distribution_mode:**
 
@@ -176,24 +176,24 @@ CHECK (priority_escalation_wait_min IS NULL OR priority_escalation_wait_min >= 0
 
 ---
 
-### 2.6. QueueSession (Сессия очереди)
+### 2.6. queue_sessions (Сессия очереди)
 
 **Назначение:** Конкретный запуск очереди во времени. Позволяет хранить историю работы.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
-| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор сессии |
-| `queue_config_id` | `INTEGER` | `NOT NULL`, `FK -> QueueConfig(id) ON DELETE CASCADE` | Ссылка на конфигурацию |
-| `status` | `session_status (ENUM)` | `NOT NULL`, `DEFAULT 'DRAFT'` | DRAFT, OPEN, PAUSED, CLOSED |
+| `id` | `INTEGER` | `PK`, `GENERATED ALWAYS AS IDENTITY` | Уникальный идентификатор сессии |
+| `queue_config_id` | `INTEGER` | `NOT NULL`, `FK -> queue_configs(id) ON DELETE CASCADE ON UPDATE CASCADE` | Ссылка на конфигурацию |
+| `status` | `VARCHAR(20)` | `NOT NULL`, `DEFAULT 'DRAFT'` | DRAFT, OPEN, PAUSED, CLOSED |
 | `started_at` | `TIMESTAMP` | `NULL` | Фактическое время начала работы |
 | `closed_at` | `TIMESTAMP` | `NULL` | Время завершения сессии |
-| `created_by` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE RESTRICT` | Администратор, запустивший сессию |
+| `created_by` | `INTEGER` | `NOT NULL`, `FK -> users(id) ON DELETE RESTRICT ON UPDATE CASCADE` | Администратор, запустивший сессию |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания сессии |
 
 **Ключи:**
 
 - Первичный ключ: `id`
-- Внешние ключи: `queue_config_id -> QueueConfig(id)`, `created_by -> User(id)`
+- Внешние ключи: `queue_config_id -> queue_configs(id)`, `created_by -> users(id)`
 
 **Типы status:**
 
@@ -224,36 +224,36 @@ CHECK (closed_at IS NULL OR closed_at >= started_at)
 
 ---
 
-### 2.7. Ticket (Талон / Запись в очередь)
+### 2.7. tickets (Талон / Запись в очередь)
 
 **Назначение:** Ключевая сущность системы. Представляет клиента в очереди.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
-| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор талона |
-| `queue_session_id` | `INTEGER` | `NOT NULL`, `FK -> QueueSession(id) ON DELETE CASCADE` | Ссылка на сессию |
-| `service_type_id` | `INTEGER` | `NULL`, `FK -> ServiceType(id) ON DELETE SET NULL` | Ссылка на тип услуги |
+| `id` | `INTEGER` | `PK`, `GENERATED ALWAYS AS IDENTITY` | Уникальный идентификатор талона |
+| `queue_session_id` | `INTEGER` | `NOT NULL`, `FK -> queue_sessions(id) ON DELETE CASCADE ON UPDATE CASCADE` | Ссылка на сессию |
+| `service_type_id` | `INTEGER` | `NULL`, `FK -> service_types(id) ON DELETE SET NULL ON UPDATE CASCADE` | Ссылка на тип услуги |
 | `ticket_number` | `VARCHAR(20)` | `NOT NULL` | Видимый номер (напр. «А-005»). Формируется атомарно при вставке |
 | `client_name` | `VARCHAR(100)` | `NOT NULL` | Имя клиента |
 | `client_surname` | `VARCHAR(100)` | `NOT NULL` | Фамилия клиента |
-| `sort_order` | `DECIMAL(20,10)` | `NOT NULL`, `CHECK (>= 0)` | Позиция для сортировки в очереди |
+| `sort_order` | `NUMERIC(20,10)` | `NOT NULL`, `CHECK (>= 0)` | Позиция для сортировки в очереди |
 | `priority_level` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Текущий приоритет данного клиента. Изначально соответствует приоритету типа обслуживания |
-| `status` | `ticket_status (ENUM)` | `NOT NULL`, `DEFAULT 'WAITING'` | Текущий статус талона |
+| `status` | `VARCHAR(20)` | `NOT NULL`, `DEFAULT 'WAITING'` | Текущий статус талона |
 | `version` | `INTEGER` | `NOT NULL`, `DEFAULT 1`, `CHECK (>= 1)` | Для оптимистичной блокировки |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время записи |
 | `called_at` | `TIMESTAMP` | `NULL` | Время вызова |
 | `service_started_at` | `TIMESTAMP` | `NULL` | Начало обслуживания |
 | `service_ended_at` | `TIMESTAMP` | `NULL` | Завершение обслуживания |
-| `updated_at` | `TIMESTAMP` | `NULL`, `DEFAULT NOW()` | Дата последнего изменения |
-| `served_by_user_id` | `INTEGER` | `NULL`, `FK -> User(id) ON DELETE SET NULL` | Исполнитель |
-| `client_session_id` | `INTEGER` | `NULL`, `FK -> ClientSession(id) ON DELETE SET NULL` | Сессия устройства |
+| `updated_at` | `TIMESTAMP` | `DEFAULT NOW()` | Дата последнего изменения |
+| `served_by_user_id` | `INTEGER` | `NULL`, `FK -> users(id) ON DELETE SET NULL ON UPDATE CASCADE` | Исполнитель |
+| `client_session_id` | `INTEGER` | `NULL`, `FK -> client_sessions(id) ON DELETE SET NULL ON UPDATE CASCADE` | Сессия устройства |
 | `cancel_reason` | `TEXT` | `NULL` | Причина отмены/пропуска |
 
 **Ключи:**
 
 - Первичный ключ: `id`
 - Внешние ключи: `queue_session_id`, `service_type_id`, `served_by_user_id`, `client_session_id`
-- Уникальный составной: `UNIQUE(queue_session_id, ticket_number)` — запрет дублирования номеров в сессии
+- Уникальный составной: `CONSTRAINT uq_tickets_queue_ticket_number UNIQUE (queue_session_id, ticket_number)` — запрет дублирования номеров в сессии
 
 **Типы status:**
 
@@ -301,21 +301,21 @@ CHECK ((status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT
 
 ---
 
-### 2.8. ServiceType (Тип обслуживания)
+### 2.8. service_types (Тип обслуживания)
 
 **Назначение:** Справочник типов услуг. Определяет приоритет и плановое время для каждой услуги.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
-| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор типа услуги |
-| `queue_config_id` | `INTEGER` | `NOT NULL`, `FK -> QueueConfig(id) ON DELETE CASCADE` | Ссылка на конфигурацию |
+| `id` | `INTEGER` | `PK`, `GENERATED ALWAYS AS IDENTITY` | Уникальный идентификатор типа услуги |
+| `queue_config_id` | `INTEGER` | `NOT NULL`, `FK -> queue_configs(id) ON DELETE CASCADE ON UPDATE CASCADE` | Ссылка на конфигурацию |
 | `name` | `VARCHAR(255)` | `NOT NULL` | Название услуги |
 | `code` | `VARCHAR(50)` | `NOT NULL`, `UNIQUE` | Системный код |
 | `letter` | `CHAR(1)` | `NOT NULL` | Буква для номера талона |
 | `base_priority_level` | `INTEGER` | `NOT NULL`, `DEFAULT 0`, `CHECK (>= 0)` | Базовый приоритет услуги |
 | `plan_avg_service_time_sec` | `INTEGER` | `NULL`, `CHECK (> 0)` | Плановое время (секунды) |
-| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Активен ли тип услуги |
-| `is_highlighting` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Выделяется ли в UI |
+| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT TRUE` | Активен ли тип услуги |
+| `is_highlighting` | `BOOLEAN` | `NOT NULL`, `DEFAULT FALSE` | Выделяется ли в UI |
 | `sort_order` | `INTEGER` | `NOT NULL`, `DEFAULT 0` | Порядок отображения |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата создания |
 
@@ -323,8 +323,8 @@ CHECK ((status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT
 
 - Первичный ключ: `id`
 - Уникальные: `code`
-- Внешние ключи: `queue_config_id -> QueueConfig(id)`
-- Уникальный составной: `UNIQUE(queue_config_id, letter)` — запрет дублирования букв в одной очереди
+- Внешние ключи: `queue_config_id -> queue_configs(id)`
+- Уникальный составной: `CONSTRAINT uq_service_types_queue_letter UNIQUE (queue_config_id, letter)` — запрет дублирования букв в одной очереди
 
 **Индексы:**
 
@@ -337,23 +337,23 @@ CHECK ((status IN ('SERVED', 'SKIPPED', 'CANCELLED') AND service_ended_at IS NOT
 
 ---
 
-### 2.9. ExecutorState (Состояние исполнителя)
+### 2.9. executor_states (Состояние исполнителя)
 
 **Назначение:** Хранит состояние готовности исполнителя в рамках конкретной сессии очереди.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
-| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор записи |
-| `queue_session_id` | `INTEGER` | `NOT NULL`, `FK -> QueueSession(id) ON DELETE CASCADE` | Ссылка на сессию |
-| `user_id` | `INTEGER` | `NOT NULL`, `FK -> User(id) ON DELETE CASCADE` | Исполнитель услуги |
-| `is_ready` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Флаг готовности |
-| `current_ticket_id` | `INTEGER` | `NULL`, `FK -> Ticket(id) ON DELETE SET NULL`, `UNIQUE` | Текущий талон |
+| `id` | `INTEGER` | `PK`, `GENERATED ALWAYS AS IDENTITY` | Уникальный идентификатор записи |
+| `queue_session_id` | `INTEGER` | `NOT NULL`, `FK -> queue_sessions(id) ON DELETE CASCADE ON UPDATE CASCADE` | Ссылка на сессию |
+| `user_id` | `INTEGER` | `NOT NULL`, `FK -> users(id) ON DELETE CASCADE ON UPDATE CASCADE` | Исполнитель услуги |
+| `is_ready` | `BOOLEAN` | `NOT NULL`, `DEFAULT FALSE` | Флаг готовности |
+| `current_ticket_id` | `INTEGER` | `NULL`, `FK -> tickets(id) ON DELETE SET NULL ON UPDATE CASCADE`, `UNIQUE` | Текущий талон |
 | `last_status_change` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время последнего изменения |
 
 **Ключи:**
 
 - Первичный ключ: `id`
-- Уникальный составной: `UNIQUE(queue_session_id, user_id)` - одна запись на одного исполнителя за сессию
+- Уникальный составной: `CONSTRAINT uq_executor_states_session_user UNIQUE (queue_session_id, user_id)` - одна запись на одного исполнителя за сессию
 - Внешние ключи: `queue_session_id`, `user_id`, `current_ticket_id`
 
 **Индексы:**
@@ -380,17 +380,17 @@ CHECK (NOT (is_ready = TRUE AND current_ticket_id IS NOT NULL))
 
 ---
 
-### 2.10. ClientSession (Сессия клиента)
+### 2.10. client_sessions (Сессия клиента)
 
 **Назначение:** Отслеживает сессию браузера/устройства клиента. Реализация требования «один активный талон с устройства».
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
-| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор сессии |
+| `id` | `INTEGER` | `PK`, `GENERATED ALWAYS AS IDENTITY` | Уникальный идентификатор сессии |
 | `device_fingerprint` | `VARCHAR(255)` | `NOT NULL` | Идентификатор устройства/браузера |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время создания сессии |
 | `expires_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT (NOW() + INTERVAL '24 hours')` | Время истечения сессии |
-| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Флаг активности сессии |
+| `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT TRUE` | Флаг активности сессии |
 | `ip_address` | `VARCHAR(45)` | `NULL` | IP-адрес клиента (IPv6 compatible) |
 | `user_agent` | `TEXT` | `NULL` | Информация о браузере/устройстве |
 
@@ -409,18 +409,18 @@ CHECK (NOT (is_ready = TRUE AND current_ticket_id IS NOT NULL))
 
 ---
 
-### 2.11. EventLog (Журнал событий)
+### 2.11. event_logs (Журнал событий)
 
 **Назначение:** Хранит историю всех значимых событий в системе. Используется для аудита, аналитики и отладки.
 
 | Атрибут | Тип данных | Ограничения | Описание |
 |---------|------------|-------------|----------|
-| `id` | `INTEGER` | `PK`, `AUTO_INCREMENT` | Уникальный идентификатор события |
-| `queue_session_id` | `INTEGER` | `NOT NULL`, `FK -> QueueSession(id) ON DELETE CASCADE` | Контекст сессии |
-| `ticket_id` | `INTEGER` | `NULL`, `FK -> Ticket(id) ON DELETE SET NULL` | Связанный талон |
-| `actor_user_id` | `INTEGER` | `NULL`, `FK -> User(id) ON DELETE SET NULL` | Кто совершил (или SYSTEM) |
+| `id` | `INTEGER` | `PK`, `GENERATED ALWAYS AS IDENTITY` | Уникальный идентификатор события |
+| `queue_session_id` | `INTEGER` | `NULL`, `FK -> queue_sessions(id) ON DELETE CASCADE ON UPDATE CASCADE` | Контекст сессии |
+| `ticket_id` | `INTEGER` | `NULL`, `FK -> tickets(id) ON DELETE SET NULL ON UPDATE CASCADE` | Связанный талон |
+| `actor_user_id` | `INTEGER` | `NULL`, `FK -> users(id) ON DELETE SET NULL ON UPDATE CASCADE` | Кто совершил (или SYSTEM) |
 | `event_type` | `VARCHAR(100)` | `NOT NULL` | Тип события |
-| `timestamp` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата и время события |
+| `"timestamp"` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Дата и время события |
 | `details` | `JSONB` | `NULL` | Дополнительные данные (JSON) |
 
 **Ключи:**
@@ -451,19 +451,19 @@ idx_eventlog_type        (event_type)              — аналитика по �
 
 | Сущность 1 | Связь | Сущность 2 | Кардинальность | Правило ON DELETE |
 |------------|-------|------------|----------------|-------------------|
-| User | имеет | UserRole | 1 : N | CASCADE |
-| User | имеет сессии | UserSession | 1 : N | CASCADE |
-| UserRole | относится к | Role | N : 1 | CASCADE |
-| QueueConfig | имеет сессии | QueueSession | 1 : N | RESTRICT (created_by) |
-| QueueConfig | имеет типы услуг | ServiceType | 1 : N | CASCADE |
-| QueueSession | содержит | Ticket | 1 : N | CASCADE |
-| QueueSession | имеет статусы исполнителей | ExecutorState | 1 : N | CASCADE |
-| Ticket | принадлежит сессии | ClientSession | N : 1 | SET NULL |
-| Ticket | обслуживается | User | N : 1 | SET NULL |
-| Ticket | имеет тип услуги | ServiceType | N : 1 | SET NULL |
-| ExecutorState | обслуживает в данный момент | Ticket | 1 : 1 | SET NULL |
-| User | обслуживает в данный момент | ExecutorState | 1 : N | SET NULL |
-| QueueSession/Ticket/User | генерирует | EventLog | 1 : N | CASCADE/SET NULL |
+| users | имеет | user_roles | 1 : N | CASCADE |
+| users | имеет сессии | user_sessions | 1 : N | CASCADE |
+| user_roles | относится к | roles | N : 1 | CASCADE |
+| queue_configs | имеет сессии | queue_sessions | 1 : N | RESTRICT (created_by) |
+| queue_configs | имеет типы услуг | service_types | 1 : N | CASCADE |
+| queue_sessions | содержит | tickets | 1 : N | CASCADE |
+| queue_sessions | имеет статусы исполнителей | executor_states | 1 : N | CASCADE |
+| tickets | принадлежит сессии | client_sessions | N : 1 | SET NULL |
+| tickets | обслуживается | users | N : 1 | SET NULL |
+| tickets | имеет тип услуги | service_types | N : 1 | SET NULL |
+| executor_states | обслуживает в данный момент | tickets | 1 : 1 | SET NULL |
+| users | обслуживает в данный момент | executor_states | 1 : N | SET NULL |
+| queue_sessions/tickets/users | генерирует | event_logs | 1 : N | CASCADE/SET NULL |
 
 ---
 
@@ -733,23 +733,23 @@ INSERT INTO tickets (
 
 | Таблица | Поле | Ссылается на | ON DELETE | ON UPDATE |
 |---------|------|--------------|-----------|-----------|
-| UserRole | user_id | User(id) | CASCADE | CASCADE |
-| UserSession | user_id | User(id) | CASCADE | CASCADE |
-| UserRole | role_id | Role(id) | CASCADE | CASCADE |
-| QueueConfig | created_by | User(id) | RESTRICT | CASCADE |
-| QueueSession | queue_config_id | QueueConfig(id) | CASCADE | CASCADE |
-| QueueSession | created_by | User(id) | RESTRICT | CASCADE |
-| Ticket | queue_session_id | QueueSession(id) | CASCADE | CASCADE |
-| Ticket | service_type_id | ServiceType(id) | SET NULL | CASCADE |
-| Ticket | served_by_user_id | User(id) | SET NULL | CASCADE |
-| Ticket | client_session_id | ClientSession(id) | SET NULL | CASCADE |
-| ServiceType | queue_config_id | QueueConfig(id) | CASCADE | CASCADE |
-| ExecutorState | queue_session_id | QueueSession(id) | CASCADE | CASCADE |
-| ExecutorState | user_id | User(id) | CASCADE | CASCADE |
-| ExecutorState | current_ticket_id | Ticket(id) | SET NULL | CASCADE |
-| EventLog | queue_session_id | QueueSession(id) | CASCADE | CASCADE |
-| EventLog | ticket_id | Ticket(id) | SET NULL | CASCADE |
-| EventLog | actor_user_id | User(id) | SET NULL | CASCADE |
+| user_roles | user_id | users(id) | CASCADE | CASCADE |
+| user_sessions | user_id | users(id) | CASCADE | CASCADE |
+| user_roles | role_id | roles(id) | CASCADE | CASCADE |
+| queue_configs | created_by_id | users(id) | RESTRICT | CASCADE |
+| queue_sessions | queue_config_id | queue_configs(id) | CASCADE | CASCADE |
+| queue_sessions | created_by_id | users(id) | RESTRICT | CASCADE |
+| tickets | queue_session_id | queue_sessions(id) | CASCADE | CASCADE |
+| tickets | service_type_id | service_types(id) | SET NULL | CASCADE |
+| tickets | served_by_user_id | users(id) | SET NULL | CASCADE |
+| tickets | client_session_id | client_sessions(id) | SET NULL | CASCADE |
+| service_types | queue_config_id | queue_configs(id) | CASCADE | CASCADE |
+| executor_states | queue_session_id | queue_sessions(id) | CASCADE | CASCADE |
+| executor_states | user_id | users(id) | CASCADE | CASCADE |
+| executor_states | current_ticket_id | tickets(id) | SET NULL | CASCADE |
+| event_logs | queue_session_id | queue_sessions(id) | CASCADE | CASCADE |
+| event_logs | ticket_id | tickets(id) | SET NULL | CASCADE |
+| event_logs | actor_user_id | users(id) | SET NULL | CASCADE |
 
 ---
 
@@ -757,7 +757,7 @@ INSERT INTO tickets (
 
 ```sql
 -- Ticket: основной запрос отображения очереди
-CREATE INDEX idx_ticket_queue_sort 
+CREATE INDEX idx_ticket_queue_sort
     ON tickets(queue_session_id, status, priority_level DESC, sort_order ASC, created_at ASC);
 
 -- Ticket: поиск по сессии клиента
@@ -770,11 +770,11 @@ CREATE INDEX idx_ticket_status_time ON tickets(queue_session_id, status, created
 CREATE INDEX idx_ticket_service_type ON tickets(queue_session_id, service_type_id, status);
 
 -- ExecutorState: поиск готовых исполнителей
-CREATE INDEX idx_executor_ready 
-    ON executor_states(queue_session_id, is_ready) WHERE is_ready = true;
+CREATE INDEX idx_executor_ready
+    ON executor_states(queue_session_id, is_ready) WHERE is_ready = TRUE;
 
 -- EventLog: фильтрация по сессии и времени
-CREATE INDEX idx_eventlog_session_time ON event_logs(queue_session_id, timestamp);
+CREATE INDEX idx_eventlog_session_time ON event_logs(queue_session_id, "timestamp");
 
 -- EventLog: история талона
 CREATE INDEX idx_eventlog_ticket ON event_logs(ticket_id);
@@ -792,27 +792,29 @@ CREATE INDEX idx_servicetype_queue ON service_types(queue_config_id, is_active, 
 CREATE INDEX idx_session_queue_status ON queue_sessions(queue_config_id, status);
 
 -- Только одна OPEN сессия на очередь
-CREATE UNIQUE INDEX uq_queue_sessions_one_open_per_config 
+CREATE UNIQUE INDEX uq_queue_sessions_one_open_per_config
     ON queue_sessions(queue_config_id) WHERE status = 'OPEN';
 
 -- Только один активный талон на клиентскую сессию
-CREATE UNIQUE INDEX uq_tickets_one_active_per_client_session 
+CREATE UNIQUE INDEX uq_tickets_one_active_per_client_session
     ON tickets(client_session_id)
     WHERE client_session_id IS NOT NULL AND status IN ('WAITING', 'CALLED');
 
 -- Ускорение расчёта среднего времени обслуживания (агрегация по завершённым талонам)
-CREATE INDEX idx_ticket_served_agg 
-ON tickets(queue_session_id, status) 
+CREATE INDEX idx_ticket_served_agg
+ON tickets(queue_session_id, status)
 INCLUDE (service_started_at, service_ended_at)
 WHERE status = 'SERVED';
 ```
 
-### D. Создание ENUM типов
+### D. Ограничения CHECK для полей со статусами
+
+Вместо PostgreSQL ENUM типов используются поля типа `VARCHAR(20)` с `CHECK` ограничениями:
 
 ```sql
-CREATE TYPE ticket_status AS ENUM ('WAITING', 'CALLED', 'SERVING', 'SERVED', 'SKIPPED', 'CANCELLED');
-CREATE TYPE session_status AS ENUM ('DRAFT', 'OPEN', 'PAUSED', 'CLOSED');
-CREATE TYPE distribution_mode AS ENUM ('MANUAL', 'AUTO');
+-- tickets.status VARCHAR(20) CHECK (status IN ('WAITING', 'CALLED', 'SERVING', 'SERVED', 'SKIPPED', 'CANCELLED'))
+-- queue_sessions.status VARCHAR(20) CHECK (status IN ('DRAFT', 'OPEN', 'PAUSED', 'CLOSED'))
+-- queue_configs.distribution_mode VARCHAR(20) CHECK (distribution_mode IN ('MANUAL', 'AUTO'))
 ```
 
 ### E. Триггеры
@@ -827,13 +829,29 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_users_set_updated_at ON users;
 CREATE TRIGGER trg_users_set_updated_at
     BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS trg_tickets_set_updated_at ON tickets;
 CREATE TRIGGER trg_tickets_set_updated_at
     BEFORE UPDATE ON tickets
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Автоматическое обновление last_activity_at для сессий пользователей
+CREATE OR REPLACE FUNCTION set_last_activity_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.last_activity_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_user_sessions_set_last_activity_at ON user_sessions;
+CREATE TRIGGER trg_user_sessions_set_last_activity_at
+    BEFORE UPDATE ON user_sessions
+    FOR EACH ROW EXECUTE FUNCTION set_last_activity_at();
 ```
 
 ---
