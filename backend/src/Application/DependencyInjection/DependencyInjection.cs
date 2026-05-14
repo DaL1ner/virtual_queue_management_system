@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<ClientSessionService>();
         services.AddScoped<QueueSessionService>();
         services.AddScoped<QueueConfigService>();
+        services.AddScoped<ServiceTypeService>();
 
         return services;
     }

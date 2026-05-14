@@ -20,7 +20,9 @@ public class EventLogDomainEventHandler :
     INotificationHandler<PriorityChangedEvent>,
     INotificationHandler<ClientSessionInvalidatedEvent>,
     INotificationHandler<QueueConfigCreatedEvent>,
-    INotificationHandler<QueueConfigUpdatedEvent>
+    INotificationHandler<QueueConfigUpdatedEvent>,
+    INotificationHandler<ServiceTypeCreatedEvent>,
+    INotificationHandler<ServiceTypeUpdatedEvent>
 {
     private readonly AppDbContext _context;
 
@@ -199,6 +201,38 @@ public class EventLogDomainEventHandler :
             EventType = EventType.QueueConfigUpdated,
             Timestamp = notification.OccurredAt,
             Details = JsonSerializer.Serialize(new { notification.ConfigId, notification.ActorUserId })
+        };
+
+        _context.EventLogs.Add(eventLog);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task Handle(ServiceTypeCreatedEvent notification, CancellationToken cancellationToken)
+    {
+        var eventLog = new EventLog
+        {
+            QueueSessionId = null,
+            TicketId = null,
+            ActorUserId = notification.CreatedById,
+            EventType = EventType.ServiceTypeCreated,
+            Timestamp = notification.OccurredAt,
+            Details = JsonSerializer.Serialize(new { notification.ServiceTypeId, notification.QueueConfigId, notification.Name, notification.CreatedById })
+        };
+
+        _context.EventLogs.Add(eventLog);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task Handle(ServiceTypeUpdatedEvent notification, CancellationToken cancellationToken)
+    {
+        var eventLog = new EventLog
+        {
+            QueueSessionId = null,
+            TicketId = null,
+            ActorUserId = notification.ActorUserId,
+            EventType = EventType.ServiceTypeUpdated,
+            Timestamp = notification.OccurredAt,
+            Details = JsonSerializer.Serialize(new { notification.ServiceTypeId, notification.QueueConfigId, notification.ActorUserId })
         };
 
         _context.EventLogs.Add(eventLog);
