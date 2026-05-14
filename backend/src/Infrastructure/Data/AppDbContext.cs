@@ -29,8 +29,8 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
         
-        // Apply all configurations from the assembly
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        // EF Core configurations disabled - using SQL scripts for schema management
+        // modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         
         // Configure relationships
         modelBuilder.Entity<QueueConfig>(entity =>
@@ -381,29 +381,6 @@ public class AppDbContext : DbContext
             
             entity.HasIndex(r => r.Name)
                 .IsUnique();
-        });
-        
-        modelBuilder.Entity<UserRole>(entity =>
-        {
-            entity.ToTable("user_roles");
-            entity.HasKey(ur => ur.Id);
-            
-            entity.Property(ur => ur.Id)
-                .HasColumnName("id");
-            
-            entity.Property(ur => ur.UserId)
-                .HasColumnName("user_id");
-            
-            entity.Property(ur => ur.RoleId)
-                .HasColumnName("role_id");
-            
-            entity.Property(ur => ur.AssignedAt)
-                .HasColumnName("assigned_at");
-            
-            entity.Property(ur => ur.AssignedBy)
-                .HasColumnName("assigned_by");
-            
-            entity.HasIndex(ur => ur.UserId);
         });
         
         modelBuilder.Entity<UserSession>(entity =>

@@ -42,5 +42,11 @@ public enum EventType
     
     // Service Type
     ServiceTypeCreated = 24,
-    ServiceTypeUpdated = 25
+    ServiceTypeUpdated = 25,
+
+    // User
+    UserCreated = 26,
+    UserUpdated = 27,
+    UserRoleAssigned = 28,
+    UserRoleUnassigned = 29
 }

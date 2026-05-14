@@ -23,6 +23,10 @@ public static class DependencyInjection
         services.AddScoped<QueueSessionService>();
         services.AddScoped<QueueConfigService>();
         services.AddScoped<ServiceTypeService>();
+        services.AddScoped<UserService>();
+
+        // Event Log Handlers
+        services.AddScoped<UserLogDomainEventHandler>();
 
         return services;
     }

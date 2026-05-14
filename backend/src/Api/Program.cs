@@ -71,6 +71,7 @@ public static class Program
         app.MapQueueConfigEndpoints();
         app.MapQueueSessionEndpoints();
         app.MapServiceTypeEndpoints();
+        app.MapUserEndpoints();
 
         // Root endpoint
         app.MapGet("/", () => Results.Ok(new { Message = "Welcome to VQMS API", Version = "1.0.0" }))
