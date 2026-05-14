@@ -33,9 +33,7 @@ public record QueueSessionDto(
     DateTime? ClosedAt,
     int CreatedById,
     string? CreatedByName,
-    DateTime CreatedAt,
-    int ActiveTicketsCount,
-    int ServedTicketsCount
+    DateTime CreatedAt
 );
 
 /// <summary>

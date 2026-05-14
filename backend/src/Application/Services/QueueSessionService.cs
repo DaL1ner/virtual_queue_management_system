@@ -106,6 +106,34 @@ public class QueueSessionService
     }
 
     /// <summary>
+    /// Возвращает все сессии с поддержкой пагинации
+    /// </summary>
+    public async Task<(List<QueueSessionDto> Items, int TotalCount)> GetAllAsync(
+        int page = 1,
+        int pageSize = 20)
+    {
+        var skip = (page - 1) * pageSize;
+
+        var query = _context.QueueSessions
+            .Include(q => q.QueueConfig)
+            .Include(q => q.CreatedBy)
+            .Include(q => q.Tickets)
+            .Include(q => q.ExecutorStates);
+
+        var totalCount = await query.CountAsync();
+
+        var sessions = await query
+            .OrderByDescending(q => q.CreatedAt)
+            .Skip(skip)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var items = sessions.Select(MapToDto).ToList();
+
+        return (items, totalCount);
+    }
+
+    /// <summary>
     /// Изменение статуса сессии с валидацией переходов
     /// </summary>
     public async Task<QueueSessionDto> ChangeStatusAsync(
@@ -278,14 +306,6 @@ public class QueueSessionService
     /// </summary>
     private QueueSessionDto MapToDto(QueueSession session)
     {
-        var activeTicketsCount = session.Tickets
-            .Count(t => t.Status == TicketStatus.Waiting || 
-                       t.Status == TicketStatus.Called || 
-                       t.Status == TicketStatus.Serving);
-
-        var servedTicketsCount = session.Tickets
-            .Count(t => t.Status == TicketStatus.Served);
-
         return new QueueSessionDto(
             session.Id,
             session.QueueConfigId,
@@ -295,9 +315,7 @@ public class QueueSessionService
             session.ClosedAt,
             session.CreatedById,
             session.CreatedBy?.FullName,
-            session.CreatedAt,
-            activeTicketsCount,
-            servedTicketsCount
+            session.CreatedAt
         );
     }
 }

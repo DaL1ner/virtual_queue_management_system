@@ -1,9 +1,11 @@
 namespace Api.Endpoints;
 
 using Application.Services;
+using Application.DTOs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Mvc;
 
 public static class QueueSessionEndpoints
 {
@@ -11,12 +13,32 @@ public static class QueueSessionEndpoints
     {
         var endpointGroup = app.MapGroup("/api/queue-sessions").WithTags("QueueSession");
 
+        endpointGroup.MapGet("/", GetAllSessions);
         endpointGroup.MapGet("/{id:int}", GetSessionById);
         endpointGroup.MapGet("/{id:int}/statistics", GetSessionStatistics);
         endpointGroup.MapPost("/", CreateSession);
         endpointGroup.MapPost("/{id:int}/status", ChangeSessionStatus);
 
         return endpointGroup;
+    }
+
+    private static async Task<IResult> GetAllSessions(
+        QueueSessionService service,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1 || pageSize > 100) pageSize = 20;
+
+        var (items, totalCount) = await service.GetAllAsync(page, pageSize);
+
+        return Results.Ok(new
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        });
     }
 
     private static async Task<IResult> GetSessionById(int id, QueueSessionService service)
@@ -37,23 +59,44 @@ public static class QueueSessionEndpoints
         return Results.Ok(stats);
     }
 
-    private static async Task<IResult> CreateSession(QueueConfigService queueConfigService, QueueSessionService queueSessionService)
+    private static async Task<IResult> CreateSession([FromBody] CreateQueueSessionDto request, QueueSessionService queueSessionService)
     {
-        var configs = await queueConfigService.GetAllAsync();
-        var config = configs.FirstOrDefault();
-        if (config == null)
-            return Results.BadRequest("No active queue configuration found");
         // TODO: Заменить на получение ID из контекста аутентификации
         // Временно используем ID пользователя admin (id = 1)
-        var created = await queueSessionService.CreateFromConfigAsync(config.Id, createdById: 1);
-        return Results.Created("", created);
+        try
+        {
+            var created = await queueSessionService.CreateFromConfigAsync(request.QueueConfigId, createdById: 1);
+            return Results.Created("", created);
+        }
+        catch (NotFoundException ex) when (ex.Message.Contains("not found"))
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
     }
 
-    private static async Task<IResult> ChangeSessionStatus(int id, QueueSessionService service)
+    private static async Task<IResult> ChangeSessionStatus(
+        int id,
+        [FromBody] UpdateQueueSessionStatusDto request,
+        QueueSessionService service)
     {
         // TODO: Заменить на получение ID из контекста аутентификации
         // Временно используем ID пользователя admin (id = 1)
-        var updated = await service.ChangeStatusAsync(id, newStatus: Domain.Enums.SessionStatus.Paused, actorUserId: 1);
-        return Results.Ok(updated);
+        try
+        {
+            var updated = await service.ChangeStatusAsync(id, request.Status, actorUserId: 1);
+            return Results.Ok(updated);
+        }
+        catch (NotFoundException ex) when (ex.Message.Contains("not found"))
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
     }
 }
