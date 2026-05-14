@@ -88,3 +88,22 @@ public record TicketListDto(
     int TotalCount,
     int YourPosition
 );
+
+/// <summary>
+/// DTO для перемещения талона на N шагов назад (дальше от начала очереди)
+/// </summary>
+public record MoveTicketBackwardDto(
+    int TicketId,
+    int Steps,
+    int? ActorUserId = null
+);
+
+/// <summary>
+/// DTO для ответа с позицией талона в очереди
+/// </summary>
+public record TicketPositionDto(
+    int TicketId,
+    int Position,
+    int TotalWaiting,
+    int? EstimatedWaitMinutes = null
+);

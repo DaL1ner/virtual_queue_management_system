@@ -16,6 +16,7 @@ public static class QueueSessionEndpoints
         endpointGroup.MapGet("/", GetAllSessions);
         endpointGroup.MapGet("/{id:int}", GetSessionById);
         endpointGroup.MapGet("/{id:int}/statistics", GetSessionStatistics);
+        endpointGroup.MapGet("/{id:int}/queue", GetSessionQueue);
         endpointGroup.MapPost("/", CreateSession);
         endpointGroup.MapPost("/{id:int}/status", ChangeSessionStatus);
 
@@ -57,6 +58,25 @@ public static class QueueSessionEndpoints
             return Results.NotFound();
 
         return Results.Ok(stats);
+    }
+
+    private static async Task<IResult> GetSessionQueue(int id, TicketService ticketService)
+    {
+        try
+        {
+            var tickets = await ticketService.GetAllBySessionAsync(id, includeSorted: true);
+            // Фильтруем только ожидающие талоны (опционально)
+            var waitingTickets = tickets.Where(t => t.Status == Domain.Enums.TicketStatus.Waiting);
+            return Results.Ok(waitingTickets);
+        }
+        catch (NotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
     }
 
     private static async Task<IResult> CreateSession([FromBody] CreateQueueSessionDto request, QueueSessionService queueSessionService)
