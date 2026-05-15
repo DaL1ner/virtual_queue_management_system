@@ -15,11 +15,13 @@ public class TicketService
 {
     private readonly AppDbContext _context;
     private readonly IEventPublisher _eventPublisher;
+    private readonly QueueSessionService _queueSessionService;
 
-    public TicketService(AppDbContext context, IEventPublisher eventPublisher)
+    public TicketService(AppDbContext context, IEventPublisher eventPublisher, QueueSessionService queueSessionService)
     {
         _context = context;
         _eventPublisher = eventPublisher;
+        _queueSessionService = queueSessionService;
     }
 
     /// <summary>
@@ -27,12 +29,10 @@ public class TicketService
     /// </summary>
     public async Task<TicketDto> CreateAsync(CreateTicketDto dto, int? clientSessionId = null, int? actorUserId = null)
     {
-        // 1. Проверка существования сессии очереди
-        var session = await _context.QueueSessions
-            .Include(qs => qs.QueueConfig)
-            .FirstOrDefaultAsync(qs => qs.Id == dto.QueueSessionId && qs.Status == SessionStatus.Open);
+        // 1. Получение активной сессии очереди (в системе может быть только одна)
+        var session = await _queueSessionService.GetActiveSessionAsync();
         if (session == null)
-            throw new BadRequestException($"Активная сессия очереди с ID {dto.QueueSessionId} не найдена.");
+            throw new BadRequestException("Нет активной сессии очереди.");
 
         // 2. Определение типа услуги и приоритета
         ServiceType? serviceType = null;
@@ -57,7 +57,7 @@ public class TicketService
         {
             var activeTickets = await _context.Tickets
                 .Where(t => t.ClientSessionId == clientSessionId &&
-                           t.QueueSessionId == dto.QueueSessionId &&
+                           t.QueueSessionId == session.Id &&
                            (t.Status == TicketStatus.Waiting || t.Status == TicketStatus.Called))
                 .ToListAsync();
             foreach (var activeTicket in activeTickets)
@@ -77,14 +77,14 @@ public class TicketService
 
         // 5. Вычисление sort_order
         var maxSortOrder = await _context.Tickets
-            .Where(t => t.QueueSessionId == dto.QueueSessionId)
+            .Where(t => t.QueueSessionId == session.Id)
             .MaxAsync(t => (decimal?)t.SortOrder) ?? 0;
         var newSortOrder = maxSortOrder + 1000;
 
         // 6. Создание талона
         var ticket = new Ticket
         {
-            QueueSessionId = dto.QueueSessionId,
+            QueueSessionId = session.Id,
             ServiceTypeId = serviceType?.Id,
             TicketNumber = nextNumber,
             ClientName = dto.ClientName,
@@ -324,14 +324,18 @@ public class TicketService
     }
 
     /// <summary>
-    /// Получение списка всех талонов сессии (без сортировки)
+    /// Получение списка всех талонов активной сессии (без сортировки)
     /// </summary>
-    public async Task<IEnumerable<TicketDto>> GetAllBySessionAsync(int queueSessionId, bool includeSorted = false)
+    public async Task<IEnumerable<TicketDto>> GetAllBySessionAsync(bool includeSorted = false)
     {
+        var session = await _queueSessionService.GetActiveSessionAsync();
+        if (session == null)
+            throw new BadRequestException("Нет активной сессии очереди.");
+
         var query = _context.Tickets
             .Include(t => t.ServiceType)
             .Include(t => t.ServedByUser)
-            .Where(t => t.QueueSessionId == queueSessionId);
+            .Where(t => t.QueueSessionId == session.Id);
 
         if (includeSorted)
         {

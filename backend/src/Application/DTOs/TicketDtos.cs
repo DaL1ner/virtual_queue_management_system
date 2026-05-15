@@ -10,7 +10,6 @@ using Domain.Enums;
 /// DTO для создания талона (клиентом)
 /// </summary>
 public record CreateTicketDto(
-    int QueueSessionId,
     string ClientName,
     string ClientSurname,
     int? ServiceTypeId = null

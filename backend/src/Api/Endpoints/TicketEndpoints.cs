@@ -4,6 +4,7 @@ using Application.DTOs;
 using Application.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
 public static class TicketEndpoints
@@ -21,16 +22,13 @@ public static class TicketEndpoints
     }
 
     /// <summary>
-    /// Получить список всех талонов (без сортировки) для указанной сессии очереди
+    /// Получить список всех талонов активной сессии очереди
     /// </summary>
     private static async Task<IResult> GetAllTickets(
-        [AsParameters] TicketQueryParams queryParams,
-        TicketService service)
+        TicketService service,
+        [FromQuery] bool sorted = false)
     {
-        if (queryParams.QueueSessionId == null)
-            return Results.BadRequest("Не указан queueSessionId.");
-
-        var tickets = await service.GetAllBySessionAsync(queryParams.QueueSessionId.Value, queryParams.Sorted ?? false);
+        var tickets = await service.GetAllBySessionAsync(sorted);
         return Results.Ok(tickets);
     }
 
@@ -93,5 +91,5 @@ public static class TicketEndpoints
     /// <summary>
     /// Параметры запроса для списка талонов
     /// </summary>
-    public record TicketQueryParams(int? QueueSessionId, bool? Sorted);
+    public record TicketQueryParams(bool? Sorted);
 }

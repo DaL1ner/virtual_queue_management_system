@@ -40,6 +40,22 @@ public class QueueSessionService
     }
 
     /// <summary>
+    /// Получить активную сессию (Status = OPEN) в системе
+    /// В системе может быть только одна активная сессия
+    /// </summary>
+    public async Task<QueueSession?> GetActiveSessionAsync()
+    {
+        var session = await _context.QueueSessions
+            .Include(q => q.QueueConfig)
+            .Include(q => q.CreatedBy)
+            .Include(q => q.Tickets)
+            .Include(q => q.ExecutorStates)
+            .FirstOrDefaultAsync(q => q.Status == SessionStatus.Open);
+
+        return session;
+    }
+
+    /// <summary>
     /// Создание сессии из конфигурации
     /// </summary>
     public async Task<QueueSessionDto> CreateFromConfigAsync(int configId, int createdById)
@@ -54,13 +70,13 @@ public class QueueSessionService
             throw new NotFoundException($"QueueConfig with id {configId} not found");
         }
 
-        // Проверка что нет другой активной сессии для этой конфигурации
+        // Проверка что нет активной сессии в системе (OPEN или PAUSED)
         var existingActiveSession = await _context.QueueSessions
-            .AnyAsync(q => q.QueueConfigId == configId && q.Status == SessionStatus.Open);
+            .AnyAsync(q => q.Status == SessionStatus.Open || q.Status == SessionStatus.Paused);
 
         if (existingActiveSession)
         {
-            throw new BadRequestException("There is already an active session for this configuration");
+            throw new BadRequestException("There is already an active session in the system");
         }
 
         var session = new QueueSession
@@ -158,17 +174,15 @@ public class QueueSessionService
         // Валидация переходов
         ValidateStatusTransition(oldStatus, newStatus);
 
-        // DRAFT -> OPEN: нельзя если есть другие активные сессии этой конфигурации
-        if (oldStatus == SessionStatus.Draft && newStatus == SessionStatus.Open)
+        // DRAFT -> OPEN или PAUSED -> OPEN: нельзя если есть активные сессии в системе
+        if ((oldStatus == SessionStatus.Draft || oldStatus == SessionStatus.Paused) && newStatus == SessionStatus.Open)
         {
             var activeSession = await _context.QueueSessions
-                .AnyAsync(q => q.QueueConfigId == session.QueueConfigId && 
-                              q.Id != sessionId && 
-                              q.Status == SessionStatus.Open);
+                .AnyAsync(q => (q.Status == SessionStatus.Open || q.Status == SessionStatus.Paused) && q.Id != sessionId);
 
             if (activeSession)
             {
-                throw new BadRequestException("There is already an active session for this configuration");
+                throw new BadRequestException("There is already an active session in the system");
             }
         }
 
