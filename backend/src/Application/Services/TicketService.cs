@@ -38,22 +38,25 @@ public class TicketService
             throw new BadRequestException("Нет активной сессии очереди.");
 
         // 2. Определение типа услуги и приоритета
+        // Если типы услуг разрешены в конфигурации очереди, используем переданный ServiceTypeId
+        // Иначе принудительно устанавливаем null
         ServiceType? serviceType = null;
-        if (dto.ServiceTypeId.HasValue)
+        if (session.QueueConfig.IsServiceTypeEnabled && dto.ServiceTypeId.HasValue)
         {
             serviceType = await _context.ServiceTypes
                 .FirstOrDefaultAsync(st => st.Id == dto.ServiceTypeId && st.QueueConfigId == session.QueueConfigId && st.IsActive);
             if (serviceType == null)
                 throw new BadRequestException($"Тип услуги с ID {dto.ServiceTypeId} не найден или не активен.");
         }
-        else if (session.QueueConfig.IsServiceTypeEnabled)
+        else if (session.QueueConfig.IsServiceTypeEnabled && !dto.ServiceTypeId.HasValue)
         {
-            // Если выбор услуги обязателен, но не указан - используем базовую услугу (приоритет 0, буква 'A')
+            // Если выбор услуги включён, но не указан - используем базовую услугу (приоритет 0, буква 'A')
             serviceType = await _context.ServiceTypes
                 .FirstOrDefaultAsync(st => st.QueueConfigId == session.QueueConfigId && st.BasePriorityLevel == 0 && st.IsActive);
             if (serviceType == null)
                 throw new BadRequestException("Для данной очереди требуется выбор услуги, но базовая услуга не настроена.");
         }
+        // Если IsServiceTypeEnabled = false, serviceType остаётся null
 
         // 3. Аннулирование предыдущих активных талонов для этой клиентской сессии (если указана)
         if (clientSessionId.HasValue)

@@ -56,6 +56,15 @@ public class QueueSessionService
     }
 
     /// <summary>
+    /// Возвращает конфигурацию очереди по ID
+    /// </summary>
+    public async Task<QueueConfig?> GetConfigByIdAsync(int configId)
+    {
+        return await _context.QueueConfigs
+            .FirstOrDefaultAsync(qc => qc.Id == configId);
+    }
+
+    /// <summary>
     /// Создание сессии из конфигурации
     /// </summary>
     public async Task<QueueSessionDto> CreateFromConfigAsync(int configId, int createdById)

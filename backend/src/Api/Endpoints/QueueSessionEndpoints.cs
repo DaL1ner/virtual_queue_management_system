@@ -71,13 +71,16 @@ public static class QueueSessionEndpoints
 
         var serviceTypes = await serviceTypeService.GetAllAsync(session.QueueConfigId);
 
+        var queueConfig = await queueSessionService.GetConfigByIdAsync(session.QueueConfigId);
+        var serviceTypesAllowed = queueConfig?.IsServiceTypeEnabled ?? false;
+
         var response = new ActiveSessionServiceTypesResponseDto(
             session.Id,
             session.Status.ToString(),
             session.QueueConfigId,
             session.StartedAt,
             serviceTypes,
-            true
+            serviceTypesAllowed
         );
 
         return Results.Ok(response);
