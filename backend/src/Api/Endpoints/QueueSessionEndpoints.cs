@@ -76,7 +76,8 @@ public static class QueueSessionEndpoints
             session.Status.ToString(),
             session.QueueConfigId,
             session.StartedAt,
-            serviceTypes
+            serviceTypes,
+            true
         );
 
         return Results.Ok(response);

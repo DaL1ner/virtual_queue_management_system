@@ -58,5 +58,6 @@ public record ActiveSessionServiceTypesResponseDto(
     string SessionStatus,
     int QueueConfigId,
     DateTime? StartedAt,
-    IEnumerable<ServiceTypeDto> ServiceTypes
+    IEnumerable<ServiceTypeDto> ServiceTypes,
+    bool ServiceTypesAllowed
 );
