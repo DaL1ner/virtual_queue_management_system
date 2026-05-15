@@ -1,0 +1,46 @@
+# docker-compose.override.yml (обновлённый)
+services:
+  backend:
+    build:
+      target: build
+      args:
+        BUILD_CONFIGURATION: Debug
+    
+    working_dir: /src
+    
+    volumes:
+      # Исходники — синхронизируем
+      - ./backend:/src:cached
+      # Кэш NuGet
+      - ~/.nuget/packages:/root/.nuget/packages
+      
+      # 👇 ИЗОЛИРУЕМ артефакты сборки (контейнер-онли)
+      - /src/src/Api/bin
+      - /src/src/Api/obj
+      - /src/src/Application/bin
+      - /src/src/Application/obj
+      - /src/src/Domain/bin
+      - /src/src/Domain/obj
+      - /src/src/Infrastructure/bin
+      - /src/src/Infrastructure/obj
+    
+    command: >
+      sh -c "
+        dotnet restore /src/src/Api/Api.csproj &&
+        dotnet watch --project /src/src/Api/Api.csproj run --no-launch-profile
+      "
+    
+    environment:
+      - DOTNET_USE_POLLING_FILE_WATCHER=1
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_ENVIRONMENT=Development
+    
+    user: root
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
