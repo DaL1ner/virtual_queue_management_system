@@ -26,7 +26,7 @@ public static class TicketEndpoints
     /// </summary>
     private static async Task<IResult> GetAllTickets(
         TicketService service,
-        [FromQuery] bool sorted = false)
+        [FromQuery] bool sorted = true)
     {
         var tickets = await service.GetAllBySessionAsync(sorted);
         return Results.Ok(tickets);

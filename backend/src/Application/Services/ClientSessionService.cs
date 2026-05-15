@@ -14,11 +14,16 @@ public class ClientSessionService
 {
     private readonly AppDbContext _context;
     private readonly IEventPublisher _eventPublisher;
+    private readonly TicketService _ticketService;
 
-    public ClientSessionService(AppDbContext context, IEventPublisher eventPublisher)
+    public ClientSessionService(
+        AppDbContext context, 
+        IEventPublisher eventPublisher,
+        TicketService ticketService)
     {
         _context = context;
         _eventPublisher = eventPublisher;
+        _ticketService = ticketService;
     }
 
     /// <summary>
@@ -33,6 +38,8 @@ public class ClientSessionService
                        cs.ExpiresAt > DateTime.UtcNow)
             .FirstOrDefaultAsync();
 
+        bool isNew = false;
+        
         if (session == null)
         {
             // Создание новой сессии
@@ -47,6 +54,7 @@ public class ClientSessionService
 
             _context.ClientSessions.Add(session);
             await _context.SaveChangesAsync();
+            isNew = true;
         }
         else
         {
@@ -58,14 +66,17 @@ public class ClientSessionService
             await _context.SaveChangesAsync();
         }
 
-        // Получение активного талона
-        var activeTicket = await _context.Tickets
-            .Where(t => t.ClientSessionId == session.Id && 
-                       (t.Status == TicketStatus.Waiting || 
-                        t.Status == TicketStatus.Called || 
-                        t.Status == TicketStatus.Serving))
-            .OrderByDescending(t => t.CreatedAt)
-            .FirstOrDefaultAsync();
+        // Публикация события создания сессии
+        if (isNew)
+        {
+            await _eventPublisher.PublishAsync(new ClientSessionCreatedEvent(
+                session.Id, 
+                session.DeviceFingerprint, 
+                session.IpAddress));
+        }
+
+        // Получение активного талона через TicketService
+        var activeTicket = await _ticketService.GetActiveTicketByClientSessionIdAsync(session.Id);
 
         return new ClientSessionDto(
             session.Id,
@@ -95,23 +106,11 @@ public class ClientSessionService
         session.IsActive = false;
         await _context.SaveChangesAsync();
 
-        // Аннулирование всех связанных активных талонов
-        var activeTickets = await _context.Tickets
-            .Where(t => t.ClientSessionId == sessionId && 
-                       (t.Status == TicketStatus.Waiting || t.Status == TicketStatus.Called))
-            .ToListAsync();
-
-        foreach (var ticket in activeTickets)
-        {
-            ticket.Status = TicketStatus.Cancelled;
-            ticket.CancelReason = "Client session invalidated";
-            ticket.UpdatedAt = DateTime.UtcNow;
-        }
-
-        if (activeTickets.Count > 0)
-        {
-            await _context.SaveChangesAsync();
-        }
+        // Аннулирование всех связанных активных талонов через TicketService
+        await _ticketService.InvalidateTicketsByClientSessionIdAsync(
+            sessionId, 
+            "Client session invalidated", 
+            actorUserId);
 
         // Публикация доменного события
         await _eventPublisher.PublishAsync(new ClientSessionInvalidatedEvent(
@@ -129,13 +128,8 @@ public class ClientSessionService
         if (session == null)
             return null;
 
-        var activeTicket = await _context.Tickets
-            .Where(t => t.ClientSessionId == session.Id && 
-                       (t.Status == TicketStatus.Waiting || 
-                        t.Status == TicketStatus.Called || 
-                        t.Status == TicketStatus.Serving))
-            .OrderByDescending(t => t.CreatedAt)
-            .FirstOrDefaultAsync();
+        // Получение активного талона через TicketService
+        var activeTicket = await _ticketService.GetActiveTicketByClientSessionIdAsync(session.Id);
 
         return new ClientSessionDto(
             session.Id,

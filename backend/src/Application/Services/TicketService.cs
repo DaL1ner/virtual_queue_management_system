@@ -413,4 +413,91 @@ public class TicketService
             .CountAsync();
         return count + 1;
     }
+
+    /// <summary>
+    /// Получение активного талона по client_session_id
+    /// Активный талон - это талон со статусом WAITING, CALLED или SERVING
+    /// </summary>
+    public async Task<Ticket?> GetActiveTicketByClientSessionIdAsync(int clientSessionId)
+    {
+        return await _context.Tickets
+            .Where(t => t.ClientSessionId == clientSessionId &&
+                       (t.Status == TicketStatus.Waiting ||
+                        t.Status == TicketStatus.Called ||
+                        t.Status == TicketStatus.Serving))
+            .OrderByDescending(t => t.CreatedAt)
+            .FirstOrDefaultAsync();
+    }
+
+    /// <summary>
+    /// Получение всех активных талонов по client_session_id
+    /// </summary>
+    public async Task<List<Ticket>> GetActiveTicketsByClientSessionIdAsync(int clientSessionId)
+    {
+        return await _context.Tickets
+            .Where(t => t.ClientSessionId == clientSessionId &&
+                       (t.Status == TicketStatus.Waiting ||
+                        t.Status == TicketStatus.Called))
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Аннулирование всех активных талонов по client_session_id
+    /// </summary>
+    public async Task<int> InvalidateTicketsByClientSessionIdAsync(
+        int clientSessionId,
+        string reason,
+        int? actorUserId = null)
+    {
+        var activeTickets = await GetActiveTicketsByClientSessionIdAsync(clientSessionId);
+        
+        if (activeTickets.Count == 0)
+            return 0;
+
+        foreach (var ticket in activeTickets)
+        {
+            ticket.Status = TicketStatus.Cancelled;
+            ticket.ServiceEndedAt = DateTime.UtcNow;
+            ticket.CancelReason = reason;
+            ticket.Version++;
+            await _eventPublisher.PublishAsync(new TicketCancelledEvent(ticket.Id, ticket.QueueSessionId, actorUserId));
+        }
+
+        await _context.SaveChangesAsync();
+        return activeTickets.Count;
+    }
+
+    /// <summary>
+    /// Аннулирование предыдущих активных талонов для client_session_id в конкретной сессии
+    /// Используется при создании нового талона для той же клиентской сессии
+    /// </summary>
+    public async Task<int> InvalidateTicketsByClientSessionIdAndSessionIdAsync(
+        int clientSessionId,
+        int queueSessionId,
+        string reason,
+        int? actorUserId = null)
+    {
+        var activeTickets = await _context.Tickets
+            .Where(t => t.ClientSessionId == clientSessionId &&
+                       t.QueueSessionId == queueSessionId &&
+                       (t.Status == TicketStatus.Waiting || t.Status == TicketStatus.Called))
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+        
+        if (activeTickets.Count == 0)
+            return 0;
+
+        foreach (var ticket in activeTickets)
+        {
+            ticket.Status = TicketStatus.Cancelled;
+            ticket.ServiceEndedAt = DateTime.UtcNow;
+            ticket.CancelReason = reason;
+            ticket.Version++;
+            await _eventPublisher.PublishAsync(new TicketCancelledEvent(ticket.Id, ticket.QueueSessionId, actorUserId));
+        }
+
+        await _context.SaveChangesAsync();
+        return activeTickets.Count;
+    }
 }

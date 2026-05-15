@@ -38,15 +38,16 @@ public enum EventType
     ServiceSkipped = 22,     // SKIPPED
     
     // Client Session
-    ClientSessionInvalidated = 23,
+    ClientSessionCreated = 23,
+    ClientSessionInvalidated = 24,
     
     // Service Type
-    ServiceTypeCreated = 24,
-    ServiceTypeUpdated = 25,
+    ServiceTypeCreated = 25,
+    ServiceTypeUpdated = 26,
 
     // User
-    UserCreated = 26,
-    UserUpdated = 27,
-    UserRoleAssigned = 28,
-    UserRoleUnassigned = 29
+    UserCreated = 27,
+    UserUpdated = 28,
+    UserRoleAssigned = 29,
+    UserRoleUnassigned = 30
 }

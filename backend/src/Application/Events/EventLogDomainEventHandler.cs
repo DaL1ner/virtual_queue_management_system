@@ -18,6 +18,7 @@ public class EventLogDomainEventHandler :
     INotificationHandler<TicketCalledEvent>,
     INotificationHandler<TicketMovedEvent>,
     INotificationHandler<PriorityChangedEvent>,
+    INotificationHandler<ClientSessionCreatedEvent>,
     INotificationHandler<ClientSessionInvalidatedEvent>,
     INotificationHandler<QueueConfigCreatedEvent>,
     INotificationHandler<QueueConfigUpdatedEvent>,
@@ -153,6 +154,22 @@ public class EventLogDomainEventHandler :
             EventType = EventType.PriorityChanged,
             Timestamp = notification.OccurredAt,
             Details = JsonSerializer.Serialize(new { notification.TicketId, notification.QueueSessionId, notification.OldPriority, notification.NewPriority, notification.ActorUserId })
+        };
+
+        _context.EventLogs.Add(eventLog);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task Handle(ClientSessionCreatedEvent notification, CancellationToken cancellationToken)
+    {
+        var eventLog = new EventLog
+        {
+            QueueSessionId = null,
+            TicketId = null,
+            ActorUserId = null,
+            EventType = EventType.ClientSessionCreated,
+            Timestamp = notification.OccurredAt,
+            Details = JsonSerializer.Serialize(new { notification.ClientSessionId, notification.DeviceFingerprint, notification.IpAddress })
         };
 
         _context.EventLogs.Add(eventLog);
