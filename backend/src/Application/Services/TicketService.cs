@@ -345,7 +345,12 @@ public class TicketService
         }
 
         var tickets = await query.ToListAsync();
-        return await Task.WhenAll(tickets.Select(MapToDtoAsync));
+        var dtos = new List<TicketDto>();
+        foreach (var ticket in tickets)
+        {
+            dtos.Add(await MapToDtoAsync(ticket));
+        }
+        return dtos;
     }
 
     /// <summary>
@@ -520,6 +525,11 @@ public class TicketService
             .ThenBy(t => t.CreatedAt)
             .ToListAsync();
     
-        return await Task.WhenAll(tickets.Select(MapToDtoAsync));
+        var dtos = new List<TicketDto>();
+        foreach (var ticket in tickets)
+        {
+            dtos.Add(await MapToDtoAsync(ticket));
+        }
+        return dtos;
     }
 }

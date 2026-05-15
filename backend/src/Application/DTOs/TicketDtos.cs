@@ -104,7 +104,6 @@ public record TicketListDto(
 /// DTO для перемещения талона на N шагов назад (дальше от начала очереди)
 /// </summary>
 public record MoveTicketBackwardDto(
-    int TicketId,
     int Steps,
     int? ActorUserId = null
 );

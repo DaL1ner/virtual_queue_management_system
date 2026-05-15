@@ -80,10 +80,12 @@ public class AppDbContext : DbContext
             entity.Property(u => u.CreatedAt)
                 .HasColumnName("created_at")
                 .IsRequired()
-                .HasDefaultValueSql("NOW()");
+                .HasDefaultValueSql("NOW()")
+                .HasConversion(typeof(DateTimeUtcConverter));
             
             entity.Property(u => u.UpdatedAt)
-                .HasColumnName("updated_at");
+                .HasColumnName("updated_at")
+                .HasConversion(typeof(NullableDateTimeUtcConverter));
         });
         
         // Configure Role entity
@@ -110,7 +112,8 @@ public class AppDbContext : DbContext
             
             entity.Property(r => r.CreatedAt)
                 .HasColumnName("created_at")
-                .HasDefaultValueSql("NOW()");
+                .HasDefaultValueSql("NOW()")
+                .HasConversion(typeof(DateTimeUtcConverter));
             
             entity.HasIndex(r => r.Code)
                 .IsUnique()
@@ -136,7 +139,8 @@ public class AppDbContext : DbContext
             
             entity.Property(ur => ur.AssignedAt)
                 .HasColumnName("assigned_at")
-                .HasDefaultValueSql("NOW()");
+                .HasDefaultValueSql("NOW()")
+                .HasConversion(typeof(DateTimeUtcConverter));
             
             entity.Property(ur => ur.AssignedBy)
                 .HasColumnName("assigned_by");
@@ -176,10 +180,12 @@ public class AppDbContext : DbContext
             
             entity.Property(us => us.CreatedAt)
                 .HasColumnName("created_at")
-                .HasDefaultValueSql("NOW()");
+                .HasDefaultValueSql("NOW()")
+                .HasConversion(typeof(DateTimeUtcConverter));
             
             entity.Property(us => us.ExpiresAt)
-                .HasColumnName("expires_at");
+                .HasColumnName("expires_at")
+                .HasConversion(typeof(NullableDateTimeUtcConverter));
             
             entity.Property(us => us.Token)
                 .HasColumnName("token")
@@ -196,7 +202,8 @@ public class AppDbContext : DbContext
             
             entity.Property(us => us.LastActivityAt)
                 .HasColumnName("last_activity_at")
-                .HasDefaultValueSql("NOW()");
+                .HasDefaultValueSql("NOW()")
+                .HasConversion(typeof(DateTimeUtcConverter));
             
             entity.Property(us => us.IsActive)
                 .HasColumnName("is_active")
@@ -251,7 +258,8 @@ public class AppDbContext : DbContext
             
             entity.Property(qc => qc.CreatedAt)
                 .HasColumnName("created_at")
-                .HasDefaultValueSql("NOW()");
+                .HasDefaultValueSql("NOW()")
+                .HasConversion(typeof(DateTimeUtcConverter));
             
             entity.Property(qc => qc.CreatedById)
                 .HasColumnName("created_by_id");
@@ -278,10 +286,12 @@ public class AppDbContext : DbContext
                 .HasMaxLength(20);
             
             entity.Property(qs => qs.StartedAt)
-                .HasColumnName("started_at");
+                .HasColumnName("started_at")
+                .HasConversion(typeof(NullableDateTimeUtcConverter));
             
             entity.Property(qs => qs.ClosedAt)
-                .HasColumnName("closed_at");
+                .HasColumnName("closed_at")
+                .HasConversion(typeof(NullableDateTimeUtcConverter));
             
             entity.Property(qs => qs.CreatedById)
                 .HasColumnName("created_by");
@@ -355,19 +365,24 @@ public class AppDbContext : DbContext
             
             entity.Property(t => t.CreatedAt)
                 .HasColumnName("created_at")
-                .HasDefaultValueSql("NOW()");
+                .HasDefaultValueSql("NOW()")
+                .HasConversion(typeof(DateTimeUtcConverter));
             
             entity.Property(t => t.CalledAt)
-                .HasColumnName("called_at");
+                .HasColumnName("called_at")
+                .HasConversion(typeof(NullableDateTimeUtcConverter));
             
             entity.Property(t => t.ServiceStartedAt)
-                .HasColumnName("service_started_at");
+                .HasColumnName("service_started_at")
+                .HasConversion(typeof(NullableDateTimeUtcConverter));
             
             entity.Property(t => t.ServiceEndedAt)
-                .HasColumnName("service_ended_at");
+                .HasColumnName("service_ended_at")
+                .HasConversion(typeof(NullableDateTimeUtcConverter));
             
             entity.Property(t => t.UpdatedAt)
-                .HasColumnName("updated_at");
+                .HasColumnName("updated_at")
+                .HasConversion(typeof(NullableDateTimeUtcConverter));
             
             entity.Property(t => t.ServedByUserId)
                 .HasColumnName("served_by_user_id");
@@ -471,7 +486,8 @@ public class AppDbContext : DbContext
             
             entity.Property(st => st.CreatedAt)
                 .HasColumnName("created_at")
-                .HasDefaultValueSql("NOW()");
+                .HasDefaultValueSql("NOW()")
+                .HasConversion(typeof(DateTimeUtcConverter));
             
             // Check constraints
             entity.HasCheckConstraint("chk_service_types_priority",
@@ -514,7 +530,8 @@ public class AppDbContext : DbContext
             
             entity.Property(es => es.LastStatusChange)
                 .HasColumnName("last_status_change")
-                .HasDefaultValueSql("NOW()");
+                .HasDefaultValueSql("NOW()")
+                .HasConversion(typeof(DateTimeUtcConverter));
             
             entity.HasIndex(es => es.QueueSessionId);
             
@@ -543,10 +560,12 @@ public class AppDbContext : DbContext
             
             entity.Property(cs => cs.CreatedAt)
                 .HasColumnName("created_at")
-                .HasDefaultValueSql("NOW()");
+                .HasDefaultValueSql("NOW()")
+                .HasConversion(typeof(DateTimeUtcConverter));
             
             entity.Property(cs => cs.ExpiresAt)
-                .HasColumnName("expires_at");
+                .HasColumnName("expires_at")
+                .HasConversion(typeof(NullableDateTimeUtcConverter));
             
             entity.Property(cs => cs.IsActive)
                 .HasColumnName("is_active")
@@ -592,7 +611,8 @@ public class AppDbContext : DbContext
             
             entity.Property(el => el.Timestamp)
                 .HasColumnName("timestamp")
-                .HasDefaultValueSql("NOW()");
+                .HasDefaultValueSql("NOW()")
+                .HasConversion(typeof(DateTimeUtcConverter));
             
             entity.Property(el => el.Details)
                 .HasColumnName("details")
