@@ -16,6 +16,18 @@ public record CreateTicketDto(
 );
 
 /// <summary>
+/// DTO для создания талона с device_fingerprint (публичный эндпоинт)
+/// </summary>
+public record CreateTicketWithDeviceDto(
+    string DeviceFingerprint,
+    string ClientName,
+    string ClientSurname,
+    int? ServiceTypeId = null,
+    string? IpAddress = null,
+    string? UserAgent = null
+);
+
+/// <summary>
 /// DTO для вызова талона (оператором)
 /// </summary>
 public record CallTicketDto(

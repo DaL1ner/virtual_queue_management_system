@@ -15,8 +15,10 @@ public static class TicketEndpoints
 
         endpointGroup.MapGet("/", GetAllTickets);
         endpointGroup.MapGet("/{id:int}", GetTicketById);
+        endpointGroup.MapPost("/", CreateTicket);
         endpointGroup.MapPost("/{id:int}/move-backward", MoveTicketBackward);
         endpointGroup.MapGet("/{id:int}/position", GetTicketPosition);
+        endpointGroup.MapGet("/queue", GetQueue);
 
         return endpointGroup;
     }
@@ -26,10 +28,68 @@ public static class TicketEndpoints
     /// </summary>
     private static async Task<IResult> GetAllTickets(
         TicketService service,
-        [FromQuery] bool sorted = true)
+        [FromQuery] bool sorted = false)
     {
         var tickets = await service.GetAllBySessionAsync(sorted);
         return Results.Ok(tickets);
+    }
+
+    /// <summary>
+    /// Создать новый талон (публичный эндпоинт для клиентов)
+    /// </summary>
+    private static async Task<IResult> CreateTicket(
+        CreateTicketWithDeviceDto dto,
+        TicketService ticketService,
+        ClientSessionService clientSessionService,
+        HttpContext httpContext)
+    {
+        try
+        {
+            // Валидация входных данных
+            if (string.IsNullOrWhiteSpace(dto.DeviceFingerprint))
+                return Results.BadRequest("DeviceFingerprint обязателен.");
+            if (string.IsNullOrWhiteSpace(dto.ClientName))
+                return Results.BadRequest("ClientName обязателен.");
+            if (string.IsNullOrWhiteSpace(dto.ClientSurname))
+                return Results.BadRequest("ClientSurname обязателен.");
+
+            // Извлечение IP-адреса и User-Agent из контекста, если не переданы в DTO
+            var ipAddress = dto.IpAddress ?? httpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = dto.UserAgent ?? httpContext.Request.Headers.UserAgent.ToString();
+
+            // Создание или получение клиентской сессии
+            var clientSessionDto = await clientSessionService.GetOrCreateAsync(new CreateClientSessionDto(
+                dto.DeviceFingerprint,
+                ipAddress,
+                userAgent
+            ));
+
+            // Создание талона
+            var ticketDto = await ticketService.CreateAsync(
+                new CreateTicketDto(dto.ClientName, dto.ClientSurname, dto.ServiceTypeId),
+                clientSessionDto.Id,
+                actorUserId: null // Публичный эндпоинт, actorUserId = null
+            );
+
+            return Results.Created($"/api/tickets/{ticketDto.Id}", ticketDto);
+        }
+        catch (NotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (ConflictException ex)
+        {
+            return Results.Conflict(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            // Логирование внутренней ошибки
+            return Results.Problem($"Внутренняя ошибка сервера: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -81,6 +141,23 @@ public static class TicketEndpoints
         catch (NotFoundException ex)
         {
             return Results.NotFound(ex.Message);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Получение списка ожидающих талонов (очереди) в активной сессии
+    /// Сортировка: PriorityLevel DESC, SortOrder ASC, CreatedAt ASC
+    /// </summary>
+    private static async Task<IResult> GetQueue(TicketService service)
+    {
+        try
+        {
+            var tickets = await service.GetQueueAsync();
+            return Results.Ok(tickets);
         }
         catch (BadRequestException ex)
         {

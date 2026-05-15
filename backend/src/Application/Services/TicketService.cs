@@ -500,4 +500,26 @@ public class TicketService
         await _context.SaveChangesAsync();
         return activeTickets.Count;
     }
+
+    /// <summary>
+    /// Получение списка ожидающих талонов (очереди) в активной сессии
+    /// Сортировка: PriorityLevel DESC, SortOrder ASC, CreatedAt ASC
+    /// </summary>
+    public async Task<IEnumerable<TicketDto>> GetQueueAsync()
+    {
+        var session = await _queueSessionService.GetActiveSessionAsync();
+        if (session == null)
+            throw new BadRequestException("Нет активной сессии очереди.");
+    
+        var tickets = await _context.Tickets
+            .Include(t => t.ServiceType)
+            .Include(t => t.ServedByUser)
+            .Where(t => t.QueueSessionId == session.Id && t.Status == TicketStatus.Waiting)
+            .OrderByDescending(t => t.PriorityLevel)
+            .ThenBy(t => t.SortOrder)
+            .ThenBy(t => t.CreatedAt)
+            .ToListAsync();
+    
+        return await Task.WhenAll(tickets.Select(MapToDtoAsync));
+    }
 }
