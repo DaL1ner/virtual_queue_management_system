@@ -2,6 +2,7 @@ namespace Api.Endpoints;
 
 using Application.Services;
 using Application.DTOs;
+using Domain.Enums;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -16,6 +17,7 @@ public static class QueueSessionEndpoints
         endpointGroup.MapGet("/", GetAllSessions);
         endpointGroup.MapGet("/{id:int}", GetSessionById);
         endpointGroup.MapGet("/{id:int}/statistics", GetSessionStatistics);
+        endpointGroup.MapGet("/active/service-types", GetActiveSessionServiceTypes);
         endpointGroup.MapPost("/", CreateSession);
         endpointGroup.MapPost("/{id:int}/status", ChangeSessionStatus);
 
@@ -57,6 +59,27 @@ public static class QueueSessionEndpoints
             return Results.NotFound();
 
         return Results.Ok(stats);
+    }
+
+    private static async Task<IResult> GetActiveSessionServiceTypes(
+        QueueSessionService queueSessionService,
+        ServiceTypeService serviceTypeService)
+    {
+        var session = await queueSessionService.GetActiveSessionAsync();
+        if (session == null)
+            return Results.NotFound();
+
+        var serviceTypes = await serviceTypeService.GetAllAsync(session.QueueConfigId);
+
+        var response = new ActiveSessionServiceTypesResponseDto(
+            session.Id,
+            session.Status.ToString(),
+            session.QueueConfigId,
+            session.StartedAt,
+            serviceTypes
+        );
+
+        return Results.Ok(response);
     }
 
     private static async Task<IResult> CreateSession([FromBody] CreateQueueSessionDto request, QueueSessionService queueSessionService)

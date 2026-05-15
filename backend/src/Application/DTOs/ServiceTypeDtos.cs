@@ -49,3 +49,14 @@ public record ServiceTypeDto(
     int SortOrder,
     DateTime CreatedAt
 );
+
+/// <summary>
+/// DTO ответа для типов услуг активной сессии
+/// </summary>
+public record ActiveSessionServiceTypesResponseDto(
+    int SessionId,
+    string SessionStatus,
+    int QueueConfigId,
+    DateTime? StartedAt,
+    IEnumerable<ServiceTypeDto> ServiceTypes
+);

@@ -234,6 +234,21 @@ public class ServiceTypeService
     }
 
     /// <summary>
+    /// Возвращает все типы обслуживания для указанной сессии очереди
+    /// </summary>
+    public async Task<IEnumerable<ServiceTypeDto>> GetAllBySessionIdAsync(int sessionId)
+    {
+        var session = await _context.QueueSessions
+            .Include(q => q.QueueConfig)
+            .FirstOrDefaultAsync(q => q.Id == sessionId);
+
+        if (session == null)
+            throw new NotFoundException($"QueueSession with id {sessionId} not found");
+
+        return await GetAllAsync(session.QueueConfigId);
+    }
+
+    /// <summary>
     /// Преобразование в ServiceTypeDto
     /// </summary>
     private ServiceTypeDto MapToDto(ServiceType serviceType)
