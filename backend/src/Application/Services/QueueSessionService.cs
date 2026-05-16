@@ -15,7 +15,9 @@ public class QueueSessionService
     private readonly AppDbContext _context;
     private readonly IEventPublisher _eventPublisher;
 
-    public QueueSessionService(AppDbContext context, IEventPublisher eventPublisher)
+    public QueueSessionService(
+        AppDbContext context,
+        IEventPublisher eventPublisher)
     {
         _context = context;
         _eventPublisher = eventPublisher;
@@ -210,22 +212,8 @@ public class QueueSessionService
             await _context.Database.ExecuteSqlRawAsync(
                 $"DROP SEQUENCE IF EXISTS sq_ticket_{sessionId}");
 
-            // Закрытие всех WAITING и CALLED талонов (автоматический SKIPPED)
-            var pendingTickets = await _context.Tickets
-                .Where(t => t.QueueSessionId == sessionId && 
-                           (t.Status == TicketStatus.Waiting || t.Status == TicketStatus.Called))
-                .ToListAsync();
-
-            foreach (var ticket in pendingTickets)
-            {
-                ticket.Status = TicketStatus.Skipped;
-                ticket.UpdatedAt = DateTime.UtcNow;
-            }
-
-            if (pendingTickets.Count > 0)
-            {
-                await _context.SaveChangesAsync();
-            }
+            // Закрытие талонов и инвалидация клиентских сессий выполняются в эндпоинте
+            // WAITING -> CANCELLED, CALLED -> SKIPPED, SERVING -> SERVED
         }
 
         // Установка нового статуса

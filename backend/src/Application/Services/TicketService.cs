@@ -713,4 +713,60 @@ public class TicketService
         }
         return dtos;
     }
+
+    /// <summary>
+    /// Массовое завершение всех активных талонов при закрытии сессии
+    /// WAITING -> CANCELLED
+    /// CALLED -> SKIPPED
+    /// SERVING -> SERVED
+    /// </summary>
+    public async Task<int> CloseAllTicketsForSessionAsync(
+        int queueSessionId,
+        int? actorUserId = null)
+    {
+        var activeTickets = await _context.Tickets
+            .Where(t => t.QueueSessionId == queueSessionId &&
+                       (t.Status == TicketStatus.Waiting ||
+                        t.Status == TicketStatus.Called ||
+                        t.Status == TicketStatus.Serving))
+            .ToListAsync();
+
+        if (activeTickets.Count == 0)
+            return 0;
+
+        foreach (var ticket in activeTickets)
+        {
+            TicketStatus newStatus;
+            switch (ticket.Status)
+            {
+                case TicketStatus.Waiting:
+                    newStatus = TicketStatus.Cancelled;
+                    ticket.CancelReason = "Сессия очереди закрыта";
+                    break;
+                case TicketStatus.Called:
+                    newStatus = TicketStatus.Skipped;
+                    break;
+                case TicketStatus.Serving:
+                    newStatus = TicketStatus.Served;
+                    break;
+                default:
+                    continue;
+            }
+
+            var oldStatus = ticket.Status;
+            ticket.Status = newStatus;
+            ticket.ServiceEndedAt = DateTime.UtcNow;
+            ticket.Version++;
+
+            await _eventPublisher.PublishAsync(
+                new TicketStatusChangedEvent(ticket.Id, ticket.QueueSessionId, newStatus, oldStatus, actorUserId));
+
+            if (newStatus == TicketStatus.Cancelled)
+                await _eventPublisher.PublishAsync(
+                    new TicketCancelledEvent(ticket.Id, ticket.QueueSessionId, actorUserId));
+        }
+
+        await _context.SaveChangesAsync();
+        return activeTickets.Count;
+    }
 }

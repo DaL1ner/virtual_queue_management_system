@@ -108,13 +108,32 @@ public static class QueueSessionEndpoints
     private static async Task<IResult> ChangeSessionStatus(
         int id,
         [FromBody] UpdateQueueSessionStatusDto request,
-        QueueSessionService service)
+        QueueSessionService queueSessionService,
+        TicketService ticketService,
+        ClientSessionService clientSessionService)
     {
         // TODO: Заменить на получение ID из контекста аутентификации
         // Временно используем ID пользователя admin (id = 1)
         try
         {
-            var updated = await service.ChangeStatusAsync(id, request.Status, actorUserId: 1);
+            var session = await queueSessionService.GetByIdAsync(id);
+            if (session == null)
+                return Results.NotFound();
+
+            var oldStatus = session.Status;
+
+            // При переходе в CLOSED: закрыть талоны и инвалидировать клиентские сессии
+            if (request.Status == SessionStatus.Closed && oldStatus != SessionStatus.Closed)
+            {
+                // 1. Закрыть все активные талоны сессии
+                await ticketService.CloseAllTicketsForSessionAsync(id, actorUserId: 1);
+
+                // 2. Инвалидировать все клиентские сессии, привязанные к этой очереди
+                await clientSessionService.InvalidateAllByQueueSessionAsync(id, actorUserId: 1);
+            }
+
+            // 3. Изменить статус сессии (без инвалидации — она уже выполнена выше)
+            var updated = await queueSessionService.ChangeStatusAsync(id, request.Status, actorUserId: 1);
             return Results.Ok(updated);
         }
         catch (NotFoundException ex) when (ex.Message.Contains("not found"))
@@ -124,6 +143,10 @@ public static class QueueSessionEndpoints
         catch (BadRequestException ex)
         {
             return Results.BadRequest(ex.Message);
+        }
+        catch (ConflictException ex)
+        {
+            return Results.Conflict(ex.Message);
         }
     }
 }
