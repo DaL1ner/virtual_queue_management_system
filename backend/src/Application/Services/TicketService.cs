@@ -50,11 +50,7 @@ public class TicketService
         }
         else if (session.QueueConfig.IsServiceTypeEnabled && !dto.ServiceTypeId.HasValue)
         {
-            // Если выбор услуги включён, но не указан - используем базовую услугу (приоритет 0, буква 'A')
-            serviceType = await _context.ServiceTypes
-                .FirstOrDefaultAsync(st => st.QueueConfigId == session.QueueConfigId && st.BasePriorityLevel == 0 && st.IsActive);
-            if (serviceType == null)
-                throw new BadRequestException("Для данной очереди требуется выбор услуги, но базовая услуга не настроена.");
+            throw new BadRequestException("При включённых типах обслуживания параметр serviceTypeId обязателен.");
         }
         // Если IsServiceTypeEnabled = false, serviceType остаётся null
 
