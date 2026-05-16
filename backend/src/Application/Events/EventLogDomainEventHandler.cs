@@ -180,7 +180,7 @@ public class EventLogDomainEventHandler :
     {
         var eventLog = new EventLog
         {
-            QueueSessionId = notification.QueueSessionId ?? 0,
+            QueueSessionId = notification.QueueSessionId,
             TicketId = null,
             ActorUserId = notification.ActorUserId,
             EventType = EventType.ClientSessionInvalidated,

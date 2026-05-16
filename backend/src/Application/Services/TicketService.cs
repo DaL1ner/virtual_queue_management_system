@@ -624,6 +624,74 @@ public class TicketService
     }
 
     /// <summary>
+    /// Отмена талона (перевод из WAITING в CANCELLED) с завершением клиентской сессии
+    /// </summary>
+    public async Task<TicketDto> CancelTicketAsync(int ticketId, int? actorUserId = null)
+    {
+        var ticket = await _context.Tickets
+            .Include(t => t.ServiceType)
+            .Include(t => t.ServedByUser)
+            .Include(t => t.ClientSession)
+            .FirstOrDefaultAsync(t => t.Id == ticketId);
+
+        if (ticket == null)
+            throw new NotFoundException($"Талон с ID {ticketId} не найден.");
+
+        if (ticket.Status != TicketStatus.Waiting)
+            throw new BadRequestException("Можно отменить только талон в статусе WAITING.");
+
+        var oldStatus = ticket.Status;
+        var clientSessionId = ticket.ClientSessionId;
+
+        // Обновление полей талона
+        ticket.Status = TicketStatus.Cancelled;
+        ticket.ServiceEndedAt = DateTime.UtcNow;
+        ticket.CancelReason = "Выход/исключение до начала обслуживания";
+        ticket.Version++;
+
+        await _context.SaveChangesAsync();
+
+        // Публикация события отмены талона
+        await _eventPublisher.PublishAsync(new TicketCancelledEvent(ticket.Id, ticket.QueueSessionId, actorUserId));
+        await _eventPublisher.PublishAsync(new TicketStatusChangedEvent(ticket.Id, ticket.QueueSessionId, TicketStatus.Cancelled, oldStatus, actorUserId));
+
+        // Завершение клиентской сессии, если она есть
+        if (clientSessionId.HasValue)
+        {
+            await InvalidateClientSessionAsync(clientSessionId.Value, actorUserId);
+        }
+
+        return await MapToDtoAsync(ticket);
+    }
+
+    /// <summary>
+    /// Завершение клиентской сессии и аннулирование связанных талонов
+    /// </summary>
+    private async Task InvalidateClientSessionAsync(int clientSessionId, int? actorUserId = null)
+    {
+        var session = await _context.ClientSessions
+            .FirstOrDefaultAsync(cs => cs.Id == clientSessionId);
+
+        if (session == null)
+            return;
+
+        session.IsActive = false;
+        await _context.SaveChangesAsync();
+
+        // Аннулирование всех активных талонов сессии
+        await InvalidateTicketsByClientSessionIdAsync(
+            clientSessionId,
+            "Клиентская сессия завершена при отмене талона",
+            actorUserId);
+
+        // Публикация события завершения сессии
+        await _eventPublisher.PublishAsync(new ClientSessionInvalidatedEvent(
+            clientSessionId,
+            null,
+            actorUserId ?? 1));
+    }
+
+    /// <summary>
     /// Получение списка ожидающих талонов (очереди) в активной сессии
     /// Сортировка: PriorityLevel DESC, SortOrder ASC, CreatedAt ASC
     /// </summary>

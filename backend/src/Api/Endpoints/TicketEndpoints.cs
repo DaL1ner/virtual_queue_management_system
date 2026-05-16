@@ -16,6 +16,7 @@ public static class TicketEndpoints
         endpointGroup.MapGet("/", GetAllTickets);
         endpointGroup.MapGet("/{id:int}", GetTicketById);
         endpointGroup.MapPost("/", CreateTicket);
+        endpointGroup.MapPost("/{ticketId:int}/cancel", CancelTicket);
         endpointGroup.MapPost("/{ticketId:int}/move-backward", MoveTicketBackward);
         endpointGroup.MapGet("/{id:int}/position", GetTicketPosition);
         endpointGroup.MapGet("/queue", GetQueue);
@@ -162,6 +163,32 @@ public static class TicketEndpoints
         catch (BadRequestException ex)
         {
             return Results.BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Отмена талона (перевод из WAITING в CANCELLED)
+    /// </summary>
+    private static async Task<IResult> CancelTicket(
+        int ticketId,
+        TicketService service)
+    {
+        try
+        {
+            var ticket = await service.CancelTicketAsync(ticketId, actorUserId: null);
+            return Results.Ok(ticket);
+        }
+        catch (NotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (ConflictException ex)
+        {
+            return Results.Conflict(ex.Message);
         }
     }
 
