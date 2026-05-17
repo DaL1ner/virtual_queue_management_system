@@ -18,6 +18,7 @@ public static class TicketEndpoints
         endpointGroup.MapPost("/", CreateTicket);
         endpointGroup.MapPost("/{ticketId:int}/cancel", CancelTicket);
         endpointGroup.MapPost("/{ticketId:int}/move-backward", MoveTicketBackward);
+        endpointGroup.MapPost("/{ticketId:int}/move-to-position", MoveTicketToPosition);
         endpointGroup.MapGet("/{id:int}/position", GetTicketPosition);
         endpointGroup.MapGet("/queue", GetQueue);
 
@@ -113,6 +114,30 @@ public static class TicketEndpoints
         try
         {
             var ticket = await service.MoveBackwardAsync(ticketId, dto.Steps, dto.ActorUserId);
+            return Results.Ok(ticket);
+        }
+        catch (NotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (ConflictException ex)
+        {
+            return Results.Conflict(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Переместить талон в целевую позицию в очереди (абсолютный индекс, 1 = начало очереди)
+    /// </summary>
+    private static async Task<IResult> MoveTicketToPosition(int ticketId, MoveTicketToPositionDto dto, TicketService service)
+    {
+        try
+        {
+            var ticket = await service.MoveToPositionAsync(ticketId, dto.Position, dto.ActorUserId);
             return Results.Ok(ticket);
         }
         catch (NotFoundException ex)

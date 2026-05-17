@@ -278,13 +278,10 @@ public class TicketService
         }
         else if (prevTicket == null)
         {
-            // Перемещаем в начало очереди (но мы двигаем назад, так что этот случай маловероятен)
-            // Используем минимальный sort_order среди всех талонов, уменьшенный на 1000, чтобы гарантировать уникальность
-            decimal minSortOrder = otherTickets.Min(t => t.SortOrder);
-            newSortOrder = minSortOrder - 1000;
-            // Убедимся, что newSortOrder не отрицательный (ограничение CHECK sort_order >= 0)
-            if (newSortOrder < 0)
-                newSortOrder = 0;
+            // Перемещаем в начало очереди (перед первым талоном)
+            // newSortOrder = половина sort_order следующего талона, чтобы гарантировать
+            // положительное значение и корректную масштабируемость при повторных вставках
+            newSortOrder = nextTicket.SortOrder / 2;
         }
         else if (nextTicket == null)
         {
@@ -380,6 +377,182 @@ public class TicketService
             await _eventPublisher.PublishAsync(new PriorityChangedEvent(ticket.Id, ticket.QueueSessionId, oldPriority, targetPriority, actorUserId));
 
         _logger.LogInformation("Ticket moved successfully from position {OldPosition} to {NewPosition}", oldPosition, newPosition);
+
+        return await MapToDtoAsync(ticket);
+    }
+
+    /// <summary>
+    /// Перемещение талона в целевую позицию в очереди (абсолютный индекс, 1 = начало очереди)
+    /// </summary>
+    public async Task<TicketDto> MoveToPositionAsync(int ticketId, int targetPosition, int? actorUserId = null)
+    {
+        if (targetPosition < 1)
+            throw new BadRequestException("Целевая позиция должна быть не менее 1.");
+
+        // Загрузка талона
+        var ticket = await _context.Tickets
+            .Include(t => t.ServiceType)
+            .Include(t => t.ServedByUser)
+            .FirstOrDefaultAsync(t => t.Id == ticketId);
+        if (ticket == null)
+            throw new NotFoundException($"Талон с ID {ticketId} не найден.");
+
+        // Проверка статуса
+        if (ticket.Status != TicketStatus.Waiting)
+            throw new BadRequestException("Перемещать можно только талоны в статусе WAITING.");
+
+        // Получение всех ожидающих талонов в сессии, отсортированных по приоритету и sort_order
+        var waitingTickets = await _context.Tickets
+            .Where(t => t.QueueSessionId == ticket.QueueSessionId && t.Status == TicketStatus.Waiting)
+            .OrderByDescending(t => t.PriorityLevel)
+            .ThenBy(t => t.SortOrder)
+            .ThenBy(t => t.CreatedAt)
+            .ToListAsync();
+
+        // Находим индекс текущего талона в отсортированном списке
+        int currentIndex = waitingTickets.FindIndex(t => t.Id == ticketId);
+        if (currentIndex < 0)
+            throw new BadRequestException("Талон не найден среди ожидающих талонов сессии.");
+
+        int totalWaiting = waitingTickets.Count;
+
+        // Валидация целевой позиции
+        if (targetPosition > totalWaiting)
+            throw new BadRequestException($"Целевая позиция {targetPosition} превышает количество ожидающих талонов ({totalWaiting}).");
+
+        // Если целевая позиция равна текущей, ничего не делаем
+        if (targetPosition == currentIndex + 1)
+            return await MapToDtoAsync(ticket);
+
+        // Исключаем перемещаемый талон из списка для определения соседей
+        var otherTickets = waitingTickets.Where(t => t.Id != ticketId).ToList();
+
+        // Целевая позиция - это абсолютный индекс (1-based), поэтому targetPosition - 1 = индекс в otherTickets,
+        // после которого будет вставлен талон
+        int insertIndex = targetPosition - 1;
+        if (insertIndex < 0)
+            insertIndex = 0;
+        if (insertIndex > otherTickets.Count)
+            insertIndex = otherTickets.Count;
+
+        // Определяем соседние талоны вокруг целевой позиции
+        Ticket? prevTicket = null;
+        Ticket? nextTicket = null;
+
+        if (otherTickets.Count == 0)
+        {
+            // В очереди только один талон (перемещаемый)
+            prevTicket = null;
+            nextTicket = null;
+        }
+        else if (insertIndex == 0)
+        {
+            // Перемещаем в начало очереди
+            prevTicket = null;
+            nextTicket = otherTickets[0];
+        }
+        else if (insertIndex >= otherTickets.Count)
+        {
+            // Перемещаем в конец очереди
+            prevTicket = otherTickets[otherTickets.Count - 1];
+            nextTicket = null;
+        }
+        else
+        {
+            // Перемещаем между талонами
+            prevTicket = otherTickets[insertIndex - 1];
+            nextTicket = otherTickets[insertIndex];
+        }
+
+        // Вычисляем новый sort_order
+        decimal newSortOrder;
+        if (prevTicket == null && nextTicket == null)
+        {
+            // В очереди только один талон
+            newSortOrder = ticket.SortOrder;
+        }
+        else if (prevTicket == null)
+        {
+            // Перемещаем в начало очереди (перед первым талоном)
+            // newSortOrder = половина sort_order следующего талона, чтобы гарантировать
+            // положительное значение и корректную масштабируемость при повторных вставках
+            newSortOrder = nextTicket.SortOrder / 2;
+        }
+        else if (nextTicket == null)
+        {
+            // Перемещаем в конец очереди
+            decimal maxSortOrder = otherTickets.Max(t => t.SortOrder);
+            newSortOrder = maxSortOrder + 1000;
+        }
+        else
+        {
+            // Среднее арифметическое между sort_order соседних талонов
+            newSortOrder = (prevTicket.SortOrder + nextTicket.SortOrder) / 2;
+        }
+
+        // Проверяем, не стал ли newSortOrder равен одному из соседних (из-за ограничений точности)
+        decimal minStep = 0.001m;
+        if (prevTicket != null && Math.Abs(newSortOrder - prevTicket.SortOrder) < minStep)
+        {
+            newSortOrder = prevTicket.SortOrder + minStep;
+        }
+        if (nextTicket != null && Math.Abs(newSortOrder - nextTicket.SortOrder) < minStep)
+        {
+            newSortOrder = nextTicket.SortOrder - minStep;
+        }
+
+        // Дополнительная проверка: убедимся, что новый sort_order не совпадает с существующим у другого талона
+        bool duplicateExists = otherTickets.Any(t => Math.Abs(t.SortOrder - newSortOrder) < minStep);
+        if (duplicateExists)
+        {
+            // Если обнаружен дубликат, сдвигаем на минимальный шаг в сторону от соседа
+            if (prevTicket != null)
+                newSortOrder = prevTicket.SortOrder + minStep;
+            else if (nextTicket != null)
+                newSortOrder = nextTicket.SortOrder - minStep;
+            else
+                newSortOrder += minStep;
+        }
+
+        // Определяем, изменился ли приоритет (приоритет целевой позиции)
+        int targetPriority;
+        if (otherTickets.Count == 0)
+        {
+            targetPriority = ticket.PriorityLevel;
+        }
+        else if (insertIndex == 0)
+        {
+            targetPriority = otherTickets[0].PriorityLevel;
+        }
+        else if (insertIndex >= otherTickets.Count)
+        {
+            targetPriority = otherTickets[otherTickets.Count - 1].PriorityLevel;
+        }
+        else
+        {
+            targetPriority = otherTickets[insertIndex].PriorityLevel;
+        }
+
+        bool priorityChanged = ticket.PriorityLevel != targetPriority;
+        int oldPriority = ticket.PriorityLevel;
+
+        // Сохраняем старую и новую позиции для события
+        int oldPosition = currentIndex + 1;
+        int newPosition = targetPosition;
+
+        // Обновляем талон
+        ticket.SortOrder = newSortOrder;
+        if (priorityChanged)
+            ticket.PriorityLevel = targetPriority;
+        ticket.Version++;
+
+        // Сохраняем изменения
+        await _context.SaveChangesAsync();
+
+        // Публикация событий
+        await _eventPublisher.PublishAsync(new TicketMovedEvent(ticket.Id, ticket.QueueSessionId, oldPosition, newPosition, actorUserId));
+        if (priorityChanged)
+            await _eventPublisher.PublishAsync(new PriorityChangedEvent(ticket.Id, ticket.QueueSessionId, oldPriority, targetPriority, actorUserId));
 
         return await MapToDtoAsync(ticket);
     }

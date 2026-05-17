@@ -109,6 +109,14 @@ public record MoveTicketBackwardDto(
 );
 
 /// <summary>
+/// DTO для перемещения талона в целевую позицию в очереди (абсолютный индекс, 1 = начало очереди)
+/// </summary>
+public record MoveTicketToPositionDto(
+    int Position,
+    int? ActorUserId = null
+);
+
+/// <summary>
 /// DTO для ответа с позицией талона в очереди
 /// </summary>
 public record TicketPositionDto(
