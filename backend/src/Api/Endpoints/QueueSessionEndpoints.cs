@@ -16,7 +16,7 @@ public static class QueueSessionEndpoints
 
         endpointGroup.MapGet("/", GetAllSessions);
         endpointGroup.MapGet("/{id:int}", GetSessionById);
-        endpointGroup.MapGet("/{id:int}/statistics", GetSessionStatistics);
+        endpointGroup.MapGet("/statistics/{id:int?}", GetSessionStatistics);
         endpointGroup.MapGet("/active/service-types", GetActiveSessionServiceTypes);
         endpointGroup.MapPost("/", CreateSession);
         endpointGroup.MapPost("/{id:int}/status", ChangeSessionStatus);
@@ -52,11 +52,20 @@ public static class QueueSessionEndpoints
         return Results.Ok(session);
     }
 
-    private static async Task<IResult> GetSessionStatistics(int id, QueueSessionService service)
+    private static async Task<IResult> GetSessionStatistics(
+        int? id,
+        QueueSessionService service)
     {
-        var stats = await service.GetStatisticsAsync(id);
-        if (stats == null)
-            return Results.NotFound();
+        QueueSessionStatsDto stats;
+
+        if (id.HasValue)
+        {
+            stats = await service.GetStatisticsAsync(id.Value);
+        }
+        else
+        {
+            stats = await service.GetStatisticsAsync();
+        }
 
         return Results.Ok(stats);
     }

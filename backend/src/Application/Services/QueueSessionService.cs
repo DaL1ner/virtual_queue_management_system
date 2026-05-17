@@ -228,64 +228,86 @@ public class QueueSessionService
     }
 
     /// <summary>
-    /// Агрегация метрик по талонам и исполнителям
-    /// </summary>
-    public async Task<QueueSessionStatsDto> GetStatisticsAsync(int sessionId)
-    {
-        var session = await _context.QueueSessions
-            .Include(q => q.Tickets)
-            .FirstOrDefaultAsync(q => q.Id == sessionId);
-
-        if (session == null)
-        {
-            throw new NotFoundException($"QueueSession with id {sessionId} not found");
-        }
-
-        var tickets = session.Tickets;
-
-        var totalTickets = tickets.Count;
-        var waitingTickets = tickets.Count(t => t.Status == TicketStatus.Waiting);
-        var calledTickets = tickets.Count(t => t.Status == TicketStatus.Called);
-        var servingTickets = tickets.Count(t => t.Status == TicketStatus.Serving);
-        var servedTickets = tickets.Count(t => t.Status == TicketStatus.Served);
-        var skippedTickets = tickets.Count(t => t.Status == TicketStatus.Skipped);
-        var cancelledTickets = tickets.Count(t => t.Status == TicketStatus.Cancelled);
-
-        // Среднее время обслуживания
-        double? avgServiceTime = null;
-        var servedTicketsWithTimes = tickets
-            .Where(t => t.Status == TicketStatus.Served && 
-                       t.ServiceStartedAt.HasValue && 
-                       t.ServiceEndedAt.HasValue)
-            .ToList();
-
-        if (servedTicketsWithTimes.Count > 0)
-        {
-            var totalSeconds = servedTicketsWithTimes.Sum(t => 
-                (t.ServiceEndedAt.Value - t.ServiceStartedAt.Value!).TotalSeconds);
-            avgServiceTime = totalSeconds / servedTicketsWithTimes.Count;
-        }
-
-        // Длительность сессии
-        TimeSpan? sessionDuration = null;
-        if (session.StartedAt.HasValue)
-        {
-            var endTime = session.ClosedAt ?? DateTime.UtcNow;
-            sessionDuration = endTime - session.StartedAt.Value;
-        }
-
-        return new QueueSessionStatsDto(
-            totalTickets,
-            waitingTickets,
-            calledTickets,
-            servingTickets,
-            servedTickets,
-            skippedTickets,
-            cancelledTickets,
-            avgServiceTime,
-            sessionDuration
-        );
-    }
+            /// Агрегация метрик по талонам и исполнителям
+            /// </summary>
+            public async Task<QueueSessionStatsDto> GetStatisticsAsync(int sessionId)
+            {
+                var session = await _context.QueueSessions
+                    .Include(q => q.Tickets)
+                    .FirstOrDefaultAsync(q => q.Id == sessionId);
+    
+                if (session == null)
+                {
+                    throw new NotFoundException($"QueueSession with id {sessionId} not found");
+                }
+    
+                return await GetStatisticsForSessionAsync(session);
+            }
+    
+            /// <summary>
+            /// Возвращает статистику для активной сессии
+            /// </summary>
+            public async Task<QueueSessionStatsDto> GetStatisticsAsync()
+            {
+                var session = await GetActiveSessionAsync();
+                if (session == null)
+                {
+                    throw new NotFoundException("No active queue session found");
+                }
+    
+                return await GetStatisticsForSessionAsync(session);
+            }
+    
+            /// <summary>
+            /// Вспомогательный метод для агрегации статистики по сессии
+            /// </summary>
+            private async Task<QueueSessionStatsDto> GetStatisticsForSessionAsync(QueueSession session)
+            {
+                var tickets = session.Tickets;
+    
+                var totalTickets = tickets.Count;
+                var waitingTickets = tickets.Count(t => t.Status == TicketStatus.Waiting);
+                var calledTickets = tickets.Count(t => t.Status == TicketStatus.Called);
+                var servingTickets = tickets.Count(t => t.Status == TicketStatus.Serving);
+                var servedTickets = tickets.Count(t => t.Status == TicketStatus.Served);
+                var skippedTickets = tickets.Count(t => t.Status == TicketStatus.Skipped);
+                var cancelledTickets = tickets.Count(t => t.Status == TicketStatus.Cancelled);
+    
+                // Среднее время обслуживания
+                double? avgServiceTime = null;
+                var servedTicketsWithTimes = tickets
+                    .Where(t => t.Status == TicketStatus.Served &&
+                               t.ServiceStartedAt.HasValue &&
+                               t.ServiceEndedAt.HasValue)
+                    .ToList();
+    
+                if (servedTicketsWithTimes.Count > 0)
+                {
+                    var totalSeconds = servedTicketsWithTimes.Sum(t =>
+                        (t.ServiceEndedAt.Value - t.ServiceStartedAt.Value!).TotalSeconds);
+                    avgServiceTime = totalSeconds / servedTicketsWithTimes.Count;
+                }
+    
+                // Длительность сессии
+                TimeSpan? sessionDuration = null;
+                if (session.StartedAt.HasValue)
+                {
+                    var endTime = session.ClosedAt ?? DateTime.UtcNow;
+                    sessionDuration = endTime - session.StartedAt.Value;
+                }
+    
+                return new QueueSessionStatsDto(
+                    totalTickets,
+                    waitingTickets,
+                    calledTickets,
+                    servingTickets,
+                    servedTickets,
+                    skippedTickets,
+                    cancelledTickets,
+                    avgServiceTime,
+                    sessionDuration
+                );
+            }
 
     /// <summary>
     /// Валидация переходов статусов
