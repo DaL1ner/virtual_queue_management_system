@@ -95,11 +95,11 @@ public static class TicketEndpoints
     }
 
     /// <summary>
-    /// Получить конкретный талон по ID
+    /// Получить детальную информацию о талоне по ID (с расчётом времени ожидания)
     /// </summary>
     private static async Task<IResult> GetTicketById(int id, TicketService service)
     {
-        var ticket = await service.GetByIdAsync(id);
+        var ticket = await service.GetDetailAsync(id);
         if (ticket == null)
             return Results.NotFound();
 

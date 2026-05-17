@@ -310,6 +310,84 @@ public class QueueSessionService
             }
 
     /// <summary>
+    /// Расчёт времени ожидания для талона согласно логической модели данных (раздел 4.7)
+    /// время_ожидания = (людей_передо_мной × среднее_время_обслуживания) / активных_исполнителей
+    /// </summary>
+    public async Task<int?> CalculateEstimatedWaitTimeAsync(int ticketId)
+    {
+        // 1. Получаем талон с сессией
+        var ticket = await _context.Tickets
+            .Include(t => t.QueueSession)
+            .FirstOrDefaultAsync(t => t.Id == ticketId);
+
+        if (ticket == null)
+            return null;
+
+        var queueSessionId = ticket.QueueSessionId;
+
+        // 2. people_before_me = COUNT(WAITING с sort_order < текущей)
+        var peopleBeforeMe = await _context.Tickets
+            .Where(t => t.QueueSessionId == queueSessionId
+                        && t.Status == TicketStatus.Waiting
+                        && t.SortOrder < ticket.SortOrder)
+            .CountAsync();
+
+        // 3. Среднее время обслуживания = AVG по SERVED талонам в секундах
+        double? avgServiceTimeSeconds = null;
+        var servedTickets = await _context.Tickets
+            .Where(t => t.QueueSessionId == queueSessionId
+                        && t.Status == TicketStatus.Served
+                        && t.ServiceStartedAt.HasValue
+                        && t.ServiceEndedAt.HasValue)
+            .ToListAsync();
+
+        if (servedTickets.Count > 0)
+        {
+            var totalSeconds = servedTickets.Sum(t =>
+                (t.ServiceEndedAt.Value - t.ServiceStartedAt.Value!).TotalSeconds);
+            avgServiceTimeSeconds = totalSeconds / servedTickets.Count;
+        }
+
+        // Для MVP: если нет завершённых талонов, используем плановое среднее время
+        // Но только если у талона есть привязка к типу услуги
+        if ((avgServiceTimeSeconds == null || avgServiceTimeSeconds == 0) && ticket.ServiceTypeId.HasValue)
+        {
+            // Берём PlanAvgServiceTimeSec из конкретного типа услуги талона
+            var serviceType = await _context.ServiceTypes
+                .FirstOrDefaultAsync(st => st.Id == ticket.ServiceTypeId.Value);
+
+            if (serviceType?.PlanAvgServiceTimeSec.HasValue == true)
+            {
+                avgServiceTimeSeconds = serviceType.PlanAvgServiceTimeSec.Value;
+            }
+        }
+
+        // 4. Активные исполнители = COUNT(is_ready = true) + COUNT(current_ticket_id IS NOT NULL)
+        var activeExecutors = await _context.ExecutorStates
+            .Where(es => es.QueueSessionId == queueSessionId
+                        && (es.IsReady || es.CurrentTicketId.HasValue))
+            .CountAsync();
+
+        // 5. Расчёт времени ожидания
+                // Формула: (людей_передо_мной + 1) × среднее_время_обслуживания / активных_исполнителей
+                if (avgServiceTimeSeconds == null)
+                    return null; // Нет данных для расчёта
+        
+                double waitTimeMinutes;
+                if (activeExecutors == 0)
+                {
+                    // Если активных исполнителей = 0, показываем время для одного исполнителя
+                    waitTimeMinutes = ((peopleBeforeMe + 1) * avgServiceTimeSeconds.Value) / 60.0;
+                }
+                else
+                {
+                    waitTimeMinutes = ((peopleBeforeMe + 1) * avgServiceTimeSeconds.Value) / activeExecutors / 60.0;
+                }
+
+        return (int)Math.Round(waitTimeMinutes);
+    }
+
+    /// <summary>
     /// Валидация переходов статусов
     /// </summary>
     private void ValidateStatusTransition(SessionStatus current, SessionStatus next)

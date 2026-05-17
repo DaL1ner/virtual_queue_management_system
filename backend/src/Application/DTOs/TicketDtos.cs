@@ -125,3 +125,30 @@ public record TicketPositionDto(
     int TotalWaiting,
     int? EstimatedWaitMinutes = null
 );
+
+/// <summary>
+/// DTO для детального ответа талона с расчётом времени ожидания
+/// </summary>
+public record TicketDetailDto(
+    int Id,
+    int QueueSessionId,
+    string TicketNumber,
+    string ClientName,
+    string ClientSurname,
+    int? ServiceTypeId,
+    string? ServiceTypeName,
+    char? ServiceLetter,
+    int SortOrder,
+    int PriorityLevel,
+    TicketStatus Status,
+    int Version,
+    DateTime CreatedAt,
+    DateTime? CalledAt,
+    DateTime? ServiceStartedAt,
+    DateTime? ServiceEndedAt,
+    int? ServedByUserId,
+    string? ServedByUserName,
+    string? CancelReason,
+    int PositionInQueue,
+    int? EstimatedWaitMinutes
+);

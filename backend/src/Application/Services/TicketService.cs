@@ -651,6 +651,50 @@ public class TicketService
     }
 
     /// <summary>
+    /// Получение детальной информации о талоне с расчётом времени ожидания
+    /// </summary>
+    public async Task<TicketDetailDto?> GetDetailAsync(int ticketId)
+    {
+        var ticket = await _context.Tickets
+            .Include(t => t.ServiceType)
+            .Include(t => t.ServedByUser)
+            .Include(t => t.QueueSession)
+            .FirstOrDefaultAsync(t => t.Id == ticketId);
+        if (ticket == null)
+            return null;
+
+        // Вычисление позиции в очереди
+        var position = await CalculatePositionAsync(ticket);
+
+        // Расчёт времени ожидания через QueueSessionService
+        var estimatedWaitMinutes = await _queueSessionService.CalculateEstimatedWaitTimeAsync(ticketId);
+
+        return new TicketDetailDto(
+            ticket.Id,
+            ticket.QueueSessionId,
+            ticket.TicketNumber,
+            ticket.ClientName,
+            ticket.ClientSurname,
+            ticket.ServiceTypeId,
+            ticket.ServiceType?.Name,
+            ticket.ServiceType?.Letter,
+            (int)ticket.SortOrder,
+            ticket.PriorityLevel,
+            ticket.Status,
+            ticket.Version,
+            ticket.CreatedAt,
+            ticket.CalledAt,
+            ticket.ServiceStartedAt,
+            ticket.ServiceEndedAt,
+            ticket.ServedByUserId,
+            ticket.ServedByUser?.FullName,
+            ticket.CancelReason,
+            position,
+            estimatedWaitMinutes
+        );
+    }
+
+    /// <summary>
     /// Преобразование Ticket в TicketDto
     /// </summary>
     private async Task<TicketDto> MapToDtoAsync(Ticket ticket)
