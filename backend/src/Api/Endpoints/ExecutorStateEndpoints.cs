@@ -16,6 +16,7 @@ public static class ExecutorStateEndpoints
         endpointGroup.MapPost("/ready", ToggleReady);
         endpointGroup.MapGet("/", GetAllBySession);
         endpointGroup.MapGet("/{userId:int}", GetByUser);
+        endpointGroup.MapPost("/call-next", CallNext);
 
         return endpointGroup;
     }
@@ -105,6 +106,40 @@ public static class ExecutorStateEndpoints
                 return Results.NotFound($"Состояние исполнителя для пользователя {userId} не найдено.");
 
             return Results.Ok(state);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Внутренняя ошибка сервера: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Вызов следующего талона (первого в очереди) и назначение исполнителя
+    /// </summary>
+    private static async Task<IResult> CallNext(
+        [FromBody] CallNextTicketDto dto,
+        ExecutorStateService executorStateService,
+        HttpContext httpContext)
+    {
+        try
+        {
+            // TODO: извлечение actorUserId из контекста аутентификации
+            int? actorUserId = null;
+            
+            var result = await executorStateService.CallNextTicketAsync(dto, actorUserId);
+            return Results.Ok(result);
+        }
+        catch (NotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Problem(detail: ex.Message, statusCode: 400);
         }
         catch (Exception ex)
         {

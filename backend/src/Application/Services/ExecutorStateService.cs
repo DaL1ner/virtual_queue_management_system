@@ -18,6 +18,7 @@ public class ExecutorStateService
     private readonly IEventPublisher _eventPublisher;
     private readonly QueueSessionService _queueSessionService;
     private readonly UserService _userService;
+    private readonly TicketService _ticketService;
     private readonly ILogger<ExecutorStateService> _logger;
 
     public ExecutorStateService(
@@ -25,12 +26,14 @@ public class ExecutorStateService
         IEventPublisher eventPublisher,
         QueueSessionService queueSessionService,
         UserService userService,
+        TicketService ticketService,
         ILogger<ExecutorStateService> logger)
     {
         _context = context;
         _eventPublisher = eventPublisher;
         _queueSessionService = queueSessionService;
         _userService = userService;
+        _ticketService = ticketService;
         _logger = logger;
     }
 
@@ -187,6 +190,95 @@ public class ExecutorStateService
             dtos.Add(await MapToDtoAsync(state));
         }
         return dtos;
+    }
+
+    /// <summary>
+    /// Вызов следующего талона (первого в очереди) и назначение исполнителя
+    /// </summary>
+    public async Task<CallNextTicketResponseDto> CallNextTicketAsync(CallNextTicketDto dto, int? actorUserId = null)
+    {
+        // 1. Получить активную сессию очереди
+        var activeSession = await _queueSessionService.GetActiveSessionAsync();
+        if (activeSession == null)
+            throw new BadRequestException("Нет активной сессии очереди.");
+
+        // 2. Найти первый талон в статусе WAITING для этой сессии
+        var ticket = await GetFirstWaitingTicketAsync(activeSession.Id);
+        if (ticket == null)
+            throw new BadRequestException("Нет ожидающих талонов в текущей сессии.");
+
+        // 3. Выбрать исполнителя
+        var executorState = await GetRandomReadyExecutorAsync(activeSession.Id, dto.ExecutorUserId);
+
+        // 4. Обновить статус талона на CALLED через TicketService
+        var ticketDto = await _ticketService.ChangeStatusAsync(
+            ticket.Id,
+            TicketStatus.Called,
+            actorUserId,
+            executorState.UserId); // executorUserId передаётся как исполнитель
+
+        // 5. Обновить состояние исполнителя (привязать талон, снять готовность)
+        var oldIsReady = executorState.IsReady;
+        executorState.CurrentTicketId = ticket.Id;
+        executorState.IsReady = false;
+        executorState.LastStatusChange = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        // 6. Публикация события изменения состояния исполнителя
+        await _eventPublisher.PublishAsync(new ExecutorStateChangedEvent(
+            executorState.Id,
+            activeSession.Id,
+            executorState.UserId,
+            oldIsReady,
+            false,
+            actorUserId));
+
+        // 7. Возврат DTO ответа
+        return new CallNextTicketResponseDto(
+            ticketDto,
+            executorState.UserId,
+            executorState.User?.FullName ?? "Неизвестно"
+        );
+    }
+
+    /// <summary>
+    /// Получение первого ожидающего талона в сессии
+    /// </summary>
+    private async Task<Ticket?> GetFirstWaitingTicketAsync(int queueSessionId)
+    {
+        return await _context.Tickets
+            .Where(t => t.QueueSessionId == queueSessionId && t.Status == TicketStatus.Waiting)
+            .OrderByDescending(t => t.PriorityLevel)
+            .ThenBy(t => t.SortOrder)
+            .ThenBy(t => t.CreatedAt)
+            .FirstOrDefaultAsync();
+    }
+
+    /// <summary>
+    /// Получение случайного готового исполнителя (или указанного)
+    /// </summary>
+    private async Task<ExecutorState> GetRandomReadyExecutorAsync(int queueSessionId, int? preferredExecutorUserId = null)
+    {
+        var query = _context.ExecutorStates
+            .Where(es => es.QueueSessionId == queueSessionId
+                         && es.IsReady
+                         && es.CurrentTicketId == null);
+
+        if (preferredExecutorUserId.HasValue)
+        {
+            var preferred = await query.FirstOrDefaultAsync(es => es.UserId == preferredExecutorUserId.Value);
+            if (preferred == null)
+                throw new BadRequestException($"Указанный исполнитель {preferredExecutorUserId} не готов или уже имеет текущий талон.");
+            return preferred;
+        }
+
+        // Случайный выбор из готовых исполнителей
+        var readyExecutors = await query.ToListAsync();
+        if (!readyExecutors.Any())
+            throw new BadRequestException("Нет готовых исполнителей без текущего талона.");
+
+        var randomIndex = new Random().Next(0, readyExecutors.Count);
+        return readyExecutors[randomIndex];
     }
 
     /// <summary>

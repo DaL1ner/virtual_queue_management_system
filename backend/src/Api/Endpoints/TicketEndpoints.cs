@@ -13,12 +13,12 @@ public static class TicketEndpoints
     {
         var endpointGroup = app.MapGroup("/api/tickets").WithTags("Ticket");
 
-        endpointGroup.MapGet("/{id:int}", GetTicketById);
+        endpointGroup.MapGet("/{ticketId:int}", GetTicketById);
         endpointGroup.MapPost("/", CreateTicket);
         endpointGroup.MapPost("/{ticketId:int}/cancel", CancelTicket);
         endpointGroup.MapPost("/{ticketId:int}/move-backward", MoveTicketBackward);
         endpointGroup.MapPost("/{ticketId:int}/move-to-position", MoveTicketToPosition);
-        endpointGroup.MapGet("/{id:int}/position", GetTicketPosition);
+        endpointGroup.MapGet("/{ticketId:int}/position", GetTicketPosition);
         endpointGroup.MapGet("/queue", GetQueue);
 
         // Отдельная группа для получения всех талонов
@@ -118,9 +118,9 @@ public static class TicketEndpoints
     /// <summary>
     /// Получить детальную информацию о талоне по ID (с расчётом времени ожидания)
     /// </summary>
-    private static async Task<IResult> GetTicketById(int id, TicketService service)
+    private static async Task<IResult> GetTicketById(int ticketId, TicketService service)
     {
-        var ticket = await service.GetDetailAsync(id);
+        var ticket = await service.GetDetailAsync(ticketId);
         if (ticket == null)
             return Results.NotFound();
 
@@ -178,11 +178,11 @@ public static class TicketEndpoints
     /// <summary>
     /// Получить позицию талона в очереди
     /// </summary>
-    private static async Task<IResult> GetTicketPosition(int id, TicketService service)
+    private static async Task<IResult> GetTicketPosition(int ticketId, TicketService service)
     {
         try
         {
-            var position = await service.GetPositionAsync(id);
+            var position = await service.GetPositionAsync(ticketId);
             return Results.Ok(position);
         }
         catch (NotFoundException ex)

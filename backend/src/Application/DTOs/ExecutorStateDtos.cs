@@ -35,3 +35,19 @@ public record ExecutorStateDto(
     int TotalServedCount,
     double? AvgServiceTimeSec
 );
+
+/// <summary>
+/// DTO для запроса вызова следующего талона
+/// </summary>
+public record CallNextTicketDto(
+    int? ExecutorUserId = null  // опционально, если null - выбирается случайный готовый исполнитель
+);
+
+/// <summary>
+/// DTO ответа на вызов следующего талона
+/// </summary>
+public record CallNextTicketResponseDto(
+    TicketDto CalledTicket,
+    int AssignedExecutorUserId,
+    string AssignedExecutorName
+);

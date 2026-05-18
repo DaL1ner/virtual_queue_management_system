@@ -23,7 +23,8 @@ public class EventLogDomainEventHandler :
     INotificationHandler<QueueConfigCreatedEvent>,
     INotificationHandler<QueueConfigUpdatedEvent>,
     INotificationHandler<ServiceTypeCreatedEvent>,
-    INotificationHandler<ServiceTypeUpdatedEvent>
+    INotificationHandler<ServiceTypeUpdatedEvent>,
+    INotificationHandler<ExecutorStateChangedEvent>
 {
     private readonly AppDbContext _context;
 
@@ -250,6 +251,33 @@ public class EventLogDomainEventHandler :
             EventType = EventType.ServiceTypeUpdated,
             Timestamp = notification.OccurredAt,
             Details = JsonSerializer.Serialize(new { notification.ServiceTypeId, notification.QueueConfigId, notification.ActorUserId })
+        };
+
+        _context.EventLogs.Add(eventLog);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task Handle(ExecutorStateChangedEvent notification, CancellationToken cancellationToken)
+    {
+        var eventType = notification.NewIsReady
+            ? EventType.ExecutorReady
+            : EventType.ExecutorNotReady;
+        
+        var eventLog = new EventLog
+        {
+            QueueSessionId = notification.QueueSessionId,
+            TicketId = null,
+            ActorUserId = notification.ActorUserId,
+            EventType = eventType,
+            Timestamp = notification.OccurredAt,
+            Details = JsonSerializer.Serialize(new {
+                notification.ExecutorStateId,
+                notification.QueueSessionId,
+                notification.UserId,
+                notification.OldIsReady,
+                notification.NewIsReady,
+                notification.ActorUserId
+            })
         };
 
         _context.EventLogs.Add(eventLog);
