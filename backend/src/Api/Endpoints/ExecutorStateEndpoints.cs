@@ -51,7 +51,7 @@ public static class ExecutorStateEndpoints
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Results.Forbidden(ex.Message);
+            return Results.Problem(detail: ex.Message, statusCode: 403);
         }
         catch (ConflictException ex)
         {

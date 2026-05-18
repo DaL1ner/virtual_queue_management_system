@@ -13,7 +13,6 @@ public static class TicketEndpoints
     {
         var endpointGroup = app.MapGroup("/api/tickets").WithTags("Ticket");
 
-        endpointGroup.MapGet("/", GetAllTickets);
         endpointGroup.MapGet("/{id:int}", GetTicketById);
         endpointGroup.MapPost("/", CreateTicket);
         endpointGroup.MapPost("/{ticketId:int}/cancel", CancelTicket);
@@ -22,18 +21,40 @@ public static class TicketEndpoints
         endpointGroup.MapGet("/{id:int}/position", GetTicketPosition);
         endpointGroup.MapGet("/queue", GetQueue);
 
+        // Отдельная группа для получения всех талонов
+        var allEndpointGroup = app.MapGroup("/api/tickets/all").WithTags("Ticket");
+        allEndpointGroup.MapGet("/", GetAllTickets);
+
         return endpointGroup;
     }
 
     /// <summary>
-    /// Получить список всех талонов активной сессии очереди
+    /// Получить список всех талонов указанной сессии очереди (или активной, если queueSessionId не указан)
+    /// Сортировка по умолчанию: по ID (ascending). При sorted=true: по PriorityLevel DESC, SortOrder ASC, CreatedAt ASC
     /// </summary>
     private static async Task<IResult> GetAllTickets(
         TicketService service,
+        QueueSessionService queueSessionService,
+        [FromQuery] int? queueSessionId = null,
         [FromQuery] bool sorted = false)
     {
-        var tickets = await service.GetAllBySessionAsync(sorted);
-        return Results.Ok(tickets);
+        try
+        {
+            var tickets = await service.GetAllBySessionAsync(queueSessionId, queueSessionService, sorted);
+            return Results.Ok(tickets);
+        }
+        catch (NotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Внутренняя ошибка сервера: {ex.Message}");
+        }
     }
 
     /// <summary>

@@ -605,18 +605,38 @@ public class TicketService
     }
 
     /// <summary>
-    /// Получение списка всех талонов активной сессии (без сортировки)
+    /// Получение списка всех талонов указанной сессии очереди (или активной, если queueSessionId не указан)
+    /// Сортировка по умолчанию: по ID (ascending). При includeSorted=true: по PriorityLevel DESC, SortOrder ASC, CreatedAt ASC
     /// </summary>
-    public async Task<IEnumerable<TicketDto>> GetAllBySessionAsync(bool includeSorted = false)
+    public async Task<IEnumerable<TicketDto>> GetAllBySessionAsync(
+        int? queueSessionId,
+        QueueSessionService queueSessionService,
+        bool includeSorted = false)
     {
-        var session = await _queueSessionService.GetActiveSessionAsync();
-        if (session == null)
-            throw new BadRequestException("Нет активной сессии очереди.");
+        QueueSession? session;
+        if (queueSessionId.HasValue)
+        {
+            session = await _context.QueueSessions
+                .Include(q => q.QueueConfig)
+                .Include(q => q.CreatedBy)
+                .Include(q => q.Tickets)
+                .Include(q => q.ExecutorStates)
+                .FirstOrDefaultAsync(q => q.Id == queueSessionId);
+            if (session == null)
+                throw new NotFoundException($"Сессия очереди с ID {queueSessionId} не найдена.");
+        }
+        else
+        {
+            session = await _queueSessionService.GetActiveSessionAsync();
+            if (session == null)
+                throw new BadRequestException("Нет активной сессии очереди.");
+        }
 
         var query = _context.Tickets
             .Include(t => t.ServiceType)
             .Include(t => t.ServedByUser)
-            .Where(t => t.QueueSessionId == session.Id);
+            .Where(t => t.QueueSessionId == session.Id)
+            .OrderBy(t => t.Id);
 
         if (includeSorted)
         {
