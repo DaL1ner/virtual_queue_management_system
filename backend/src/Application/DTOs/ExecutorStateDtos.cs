@@ -13,6 +13,14 @@ public record SetExecutorReadyDto(
 );
 
 /// <summary>
+/// DTO для переключения готовности исполнителя (toggle)
+/// </summary>
+public record ToggleExecutorReadyDto(
+    int UserId,
+    int? QueueSessionId = null  // опционально, если null - берём активную сессию
+);
+
+/// <summary>
 /// DTO ответа состояния исполнителя
 /// </summary>
 public record ExecutorStateDto(

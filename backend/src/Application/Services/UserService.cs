@@ -256,6 +256,15 @@ public class UserService
     }
 
     /// <summary>
+    /// Проверка наличия роли у пользователя по коду роли
+    /// </summary>
+    public async Task<bool> HasRoleAsync(int userId, string roleCode)
+    {
+        return await _context.UserRoles
+            .AnyAsync(ur => ur.UserId == userId && ur.Role.Code == roleCode);
+    }
+
+    /// <summary>
     /// Преобразование User в UserDto
     /// </summary>
     private UserDto MapToDto(User user)

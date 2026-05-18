@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<ServiceTypeService>();
         services.AddScoped<UserService>();
         services.AddScoped<TicketService>();
+        services.AddScoped<ExecutorStateService>();
 
         // Event Log Handlers
         services.AddScoped<UserLogDomainEventHandler>();
