@@ -304,6 +304,38 @@ public class ExecutorStateService
                 .Average(t => (t.ServiceEndedAt!.Value - t.ServiceStartedAt!.Value).TotalSeconds);
         }
 
+        // Формирование текущего талона
+        TicketDto? currentTicketDto = null;
+        if (state.CurrentTicketId.HasValue && state.CurrentTicket != null)
+        {
+            var ticket = state.CurrentTicket;
+            var serviceTypeName = ticket.ServiceType?.Name ?? string.Empty;
+            var servedByUserName = ticket.ServedByUser?.FullName;
+
+            currentTicketDto = new TicketDto(
+                ticket.Id,
+                ticket.QueueSessionId,
+                ticket.TicketNumber,
+                ticket.ClientName,
+                ticket.ClientSurname,
+                ticket.ServiceTypeId,
+                serviceTypeName,
+                ticket.ServiceType?.Letter,
+                (int)ticket.SortOrder,
+                ticket.PriorityLevel,
+                ticket.Status,
+                ticket.Version,
+                ticket.CreatedAt,
+                ticket.CalledAt,
+                ticket.ServiceStartedAt,
+                ticket.ServiceEndedAt,
+                ticket.ServedByUserId,
+                servedByUserName,
+                ticket.CancelReason,
+                0
+            );
+        }
+
         return new ExecutorStateDto(
             state.Id,
             state.QueueSessionId,
@@ -312,6 +344,7 @@ public class ExecutorStateService
             state.IsReady,
             state.CurrentTicketId,
             state.CurrentTicket?.TicketNumber,
+            currentTicketDto,
             state.LastStatusChange,
             totalServedCount,
             avgServiceTimeSec

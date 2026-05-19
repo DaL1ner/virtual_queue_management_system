@@ -31,6 +31,7 @@ public record ExecutorStateDto(
     bool IsReady,
     int? CurrentTicketId,
     string? CurrentTicketNumber,
+    TicketDto? CurrentTicket,
     DateTime LastStatusChange,
     int TotalServedCount,
     double? AvgServiceTimeSec
