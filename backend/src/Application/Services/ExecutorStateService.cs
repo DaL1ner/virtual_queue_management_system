@@ -400,6 +400,99 @@ public class ExecutorStateService
     }
 
     /// <summary>
+    /// Завершение обслуживания текущего талона исполнителем (перевод из Serving в Served)
+    /// </summary>
+    public async Task<ExecutorStateDto> CompleteServingAsync(CompleteServingDto dto, int? actorUserId = null)
+    {
+        // 1. Проверка существования пользователя
+        var user = await _userService.GetByIdAsync(dto.UserId);
+        _logger.LogInformation("CompleteServingAsync: пользователь {UserId} существует", dto.UserId);
+
+        // 2. Проверка наличия роли EXECUTOR
+        var hasExecutorRole = await _userService.HasRoleAsync(dto.UserId, "EXECUTOR");
+        if (!hasExecutorRole)
+            throw new UnauthorizedAccessException(
+                $"Пользователь {dto.UserId} не имеет роли EXECUTOR и не может завершать обслуживание.");
+
+        // 3. Получить активную сессию очереди
+        var activeSession = await _queueSessionService.GetActiveSessionAsync();
+        if (activeSession == null)
+            throw new BadRequestException("Нет активной сессии очереди.");
+
+        var queueSessionId = activeSession.Id;
+        _logger.LogInformation("CompleteServingAsync: используем сессию {QueueSessionId}", queueSessionId);
+
+        // 4. Получение состояния исполнителя
+        var executorState = await _context.ExecutorStates
+            .Include(es => es.User)
+            .Include(es => es.QueueSession)
+            .Include(es => es.CurrentTicket)
+            .FirstOrDefaultAsync(es => es.QueueSessionId == queueSessionId && es.UserId == dto.UserId);
+
+        if (executorState == null)
+            throw new NotFoundException($"Состояние исполнителя для пользователя {dto.UserId} в сессии {queueSessionId} не найдено.");
+
+        // 5. Проверка наличия текущего талона
+        if (!executorState.CurrentTicketId.HasValue)
+            throw new BadRequestException($"У исполнителя {dto.UserId} нет текущего талона.");
+
+        // 6. Проверка статуса талона (должен быть Serving)
+        var ticket = executorState.CurrentTicket;
+        if (ticket == null)
+        {
+            ticket = await _context.Tickets.FindAsync(executorState.CurrentTicketId.Value);
+            if (ticket == null)
+                throw new NotFoundException($"Талон с ID {executorState.CurrentTicketId.Value} не найден.");
+        }
+
+        if (ticket.Status != TicketStatus.Serving)
+            throw new BadRequestException($"Талон {ticket.Id} находится в статусе {ticket.Status}, а должен быть Serving.");
+
+        // 7. Сохраняем старое состояние для события
+        var oldIsReady = executorState.IsReady;
+
+        // 8. Установка причины завершения
+        ticket.CancelReason = "Обслужен";
+        // Изменение статуса талона на Served через TicketService
+        await _ticketService.ChangeStatusAsync(
+            ticket.Id,
+            TicketStatus.Served,
+            actorUserId,
+            executorState.UserId);
+
+        // 9. Завершение клиентской сессии, если она есть
+        if (ticket.ClientSessionId.HasValue)
+        {
+            await _clientSessionService.InvalidateAsync(ticket.ClientSessionId.Value, actorUserId ?? dto.UserId);
+        }
+
+        // 10. Обновление состояния исполнителя
+        executorState.CurrentTicketId = null;
+        executorState.IsReady = false;
+        executorState.LastStatusChange = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "CompleteServingAsync: талон {TicketId} переведён в Served, исполнитель {ExecutorStateId} освобождён",
+            ticket.Id, executorState.Id);
+
+        // 11. Публикация события изменения состояния исполнителя (если изменился IsReady)
+        if (oldIsReady != executorState.IsReady)
+        {
+            await _eventPublisher.PublishAsync(new ExecutorStateChangedEvent(
+                executorState.Id,
+                queueSessionId,
+                executorState.UserId,
+                oldIsReady,
+                executorState.IsReady,
+                actorUserId));
+        }
+
+        // 12. Возврат DTO
+        return await MapToDtoAsync(executorState);
+    }
+
+    /// <summary>
     /// Получение первого ожидающего талона в сессии
     /// </summary>
     private async Task<Ticket?> GetFirstWaitingTicketAsync(int queueSessionId)

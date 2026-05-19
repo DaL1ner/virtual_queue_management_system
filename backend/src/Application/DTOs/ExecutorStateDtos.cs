@@ -65,3 +65,10 @@ public record MarkNoShowDto(
 public record StartServingDto(
     int UserId
 );
+
+/// <summary>
+/// DTO для завершения обслуживания текущего талона исполнителем
+/// </summary>
+public record CompleteServingDto(
+    int UserId
+);
