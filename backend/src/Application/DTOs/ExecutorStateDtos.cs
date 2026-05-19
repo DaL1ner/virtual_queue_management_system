@@ -58,3 +58,10 @@ public record CallNextTicketResponseDto(
 public record MarkNoShowDto(
     int UserId
 );
+
+/// <summary>
+/// DTO для начала обслуживания текущего талона исполнителем
+/// </summary>
+public record StartServingDto(
+    int UserId
+);

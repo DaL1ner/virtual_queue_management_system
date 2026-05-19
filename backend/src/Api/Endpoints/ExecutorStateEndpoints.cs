@@ -18,6 +18,7 @@ public static class ExecutorStateEndpoints
         endpointGroup.MapGet("/{userId:int}", GetByUser);
         endpointGroup.MapPost("/call-next", CallNext);
         endpointGroup.MapPost("/mark-no-show", MarkNoShow);
+        endpointGroup.MapPost("/start-serving", StartServing);
 
         return endpointGroup;
     }
@@ -163,6 +164,46 @@ public static class ExecutorStateEndpoints
             // TODO: когда появится аутентификация, брать из httpContext.User
 
             var result = await service.MarkNoShowAsync(dto, actorUserId);
+            return Results.Ok(result);
+        }
+        catch (NotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Results.Problem(detail: ex.Message, statusCode: 403);
+        }
+        catch (ConflictException ex)
+        {
+            return Results.Conflict(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            // Логирование внутренней ошибки
+            return Results.Problem($"Внутренняя ошибка сервера: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Начало обслуживания текущего талона исполнителем
+    /// </summary>
+    private static async Task<IResult> StartServing(
+        [FromBody] StartServingDto dto,
+        ExecutorStateService service,
+        HttpContext httpContext)
+    {
+        try
+        {
+            // Извлечение actorUserId из контекста аутентификации (пока не реализовано)
+            int? actorUserId = null;
+            // TODO: когда появится аутентификация, брать из httpContext.User
+
+            var result = await service.StartServingAsync(dto, actorUserId);
             return Results.Ok(result);
         }
         catch (NotFoundException ex)
