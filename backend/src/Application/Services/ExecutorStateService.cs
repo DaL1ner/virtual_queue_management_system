@@ -17,6 +17,7 @@ public class ExecutorStateService
     private readonly AppDbContext _context;
     private readonly IEventPublisher _eventPublisher;
     private readonly QueueSessionService _queueSessionService;
+    private readonly ClientSessionService _clientSessionService;
     private readonly UserService _userService;
     private readonly TicketService _ticketService;
     private readonly ILogger<ExecutorStateService> _logger;
@@ -27,6 +28,7 @@ public class ExecutorStateService
         QueueSessionService queueSessionService,
         UserService userService,
         TicketService ticketService,
+        ClientSessionService clientSessionService,
         ILogger<ExecutorStateService> logger)
     {
         _context = context;
@@ -34,6 +36,7 @@ public class ExecutorStateService
         _queueSessionService = queueSessionService;
         _userService = userService;
         _ticketService = ticketService;
+        _clientSessionService = clientSessionService;
         _logger = logger;
     }
 
@@ -55,23 +58,12 @@ public class ExecutorStateService
             throw new UnauthorizedAccessException(
                 $"Пользователь {dto.UserId} не имеет роли EXECUTOR и не может управлять состоянием исполнителя.");
 
-        // 2. Определение сессии очереди
-        int queueSessionId;
-        if (dto.QueueSessionId.HasValue)
-        {
-            queueSessionId = dto.QueueSessionId.Value;
-            // Проверим, что сессия существует
-            var sessionExists = await _context.QueueSessions.AnyAsync(qs => qs.Id == queueSessionId);
-            if (!sessionExists)
-                throw new NotFoundException($"Сессия очереди с ID {queueSessionId} не найдена.");
-        }
-        else
-        {
-            var activeSession = await _queueSessionService.GetActiveSessionAsync();
-            if (activeSession == null)
-                throw new BadRequestException("Нет активной сессии очереди.");
-            queueSessionId = activeSession.Id;
-        }
+        // 2. Получение активной сессии очереди
+        var activeSession = await _queueSessionService.GetActiveSessionAsync();
+        if (activeSession == null)
+            throw new BadRequestException("Нет активной сессии очереди.");
+
+        int queueSessionId = activeSession.Id;
 
         _logger.LogInformation("ToggleReadyAsync: используем сессию {QueueSessionId}", queueSessionId);
 
@@ -239,6 +231,100 @@ public class ExecutorStateService
             executorState.UserId,
             executorState.User?.FullName ?? "Неизвестно"
         );
+    }
+
+    /// <summary>
+    /// Фиксация неявки клиента (перевод талона в статус Skipped и освобождение исполнителя)
+    /// </summary>
+    public async Task<ExecutorStateDto> MarkNoShowAsync(MarkNoShowDto dto, int? actorUserId = null)
+    {
+        // 1. Проверка существования пользователя
+        var user = await _userService.GetByIdAsync(dto.UserId);
+        _logger.LogInformation("MarkNoShowAsync: пользователь {UserId} существует", dto.UserId);
+
+        // 1.5 Проверка наличия роли EXECUTOR
+        var hasExecutorRole = await _userService.HasRoleAsync(dto.UserId, "EXECUTOR");
+        if (!hasExecutorRole)
+            throw new UnauthorizedAccessException(
+                $"Пользователь {dto.UserId} не имеет роли EXECUTOR и не может фиксировать неявку.");
+
+        // 2. Получить активную сессию очереди
+        var activeSession = await _queueSessionService.GetActiveSessionAsync();
+        if (activeSession == null)
+            throw new BadRequestException("Нет активной сессии очереди.");
+
+        var queueSessionId = activeSession.Id;
+
+        _logger.LogInformation("MarkNoShowAsync: используем сессию {QueueSessionId}", queueSessionId);
+
+        // 3. Получение состояния исполнителя
+        var executorState = await _context.ExecutorStates
+            .Include(es => es.User)
+            .Include(es => es.QueueSession)
+            .Include(es => es.CurrentTicket)
+            .FirstOrDefaultAsync(es => es.QueueSessionId == queueSessionId && es.UserId == dto.UserId);
+
+        if (executorState == null)
+            throw new NotFoundException($"Состояние исполнителя для пользователя {dto.UserId} в сессии {queueSessionId} не найдено.");
+
+        // 4. Проверка наличия текущего талона
+        if (!executorState.CurrentTicketId.HasValue)
+            throw new BadRequestException($"У исполнителя {dto.UserId} нет текущего талона.");
+
+        // 5. Проверка статуса талона (должен быть Called)
+        var ticket = executorState.CurrentTicket;
+        if (ticket == null)
+        {
+            // На всякий случай загрузим талон отдельно
+            ticket = await _context.Tickets.FindAsync(executorState.CurrentTicketId.Value);
+            if (ticket == null)
+                throw new NotFoundException($"Талон с ID {executorState.CurrentTicketId.Value} не найден.");
+        }
+
+        if (ticket.Status != TicketStatus.Called)
+            throw new BadRequestException($"Талон {ticket.Id} находится в статусе {ticket.Status}, а должен быть Called.");
+
+        // 6. Сохраняем старое состояние для события
+        var oldIsReady = executorState.IsReady;
+    
+        // 7. Установка причины отмены "Неявка"
+        ticket.CancelReason = "Неявка";
+        await _context.SaveChangesAsync();
+    
+        // 8. Изменение статуса талона на Skipped
+        await _ticketService.ChangeStatusAsync(
+            ticket.Id,
+            TicketStatus.Skipped,
+            actorUserId,
+            executorState.UserId);
+    
+        // 9. Завершение клиентской сессии, если она есть
+        if (ticket.ClientSessionId.HasValue)
+        {
+            await _clientSessionService.InvalidateAsync(ticket.ClientSessionId.Value, actorUserId ?? dto.UserId);
+        }
+    
+        // 10. Обновление состояния исполнителя
+        executorState.CurrentTicketId = null;
+        executorState.IsReady = false;
+        executorState.LastStatusChange = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+    
+        _logger.LogInformation(
+            "MarkNoShowAsync: талон {TicketId} помечен как Skipped, исполнитель {ExecutorStateId} освобождён",
+            ticket.Id, executorState.Id);
+    
+        // 11. Публикация события изменения состояния исполнителя
+        await _eventPublisher.PublishAsync(new ExecutorStateChangedEvent(
+            executorState.Id,
+            queueSessionId,
+            executorState.UserId,
+            oldIsReady,
+            false,
+            actorUserId));
+    
+        // 12. Возврат DTO
+        return await MapToDtoAsync(executorState);
     }
 
     /// <summary>

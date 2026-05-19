@@ -17,6 +17,7 @@ public static class ExecutorStateEndpoints
         endpointGroup.MapGet("/", GetAllBySession);
         endpointGroup.MapGet("/{userId:int}", GetByUser);
         endpointGroup.MapPost("/call-next", CallNext);
+        endpointGroup.MapPost("/mark-no-show", MarkNoShow);
 
         return endpointGroup;
     }
@@ -143,6 +144,46 @@ public static class ExecutorStateEndpoints
         }
         catch (Exception ex)
         {
+            return Results.Problem($"Внутренняя ошибка сервера: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Фиксация неявки клиента (перевод талона в статус Skipped и освобождение исполнителя)
+    /// </summary>
+    private static async Task<IResult> MarkNoShow(
+        [FromBody] MarkNoShowDto dto,
+        ExecutorStateService service,
+        HttpContext httpContext)
+    {
+        try
+        {
+            // Извлечение actorUserId из контекста аутентификации (пока не реализовано)
+            int? actorUserId = null;
+            // TODO: когда появится аутентификация, брать из httpContext.User
+
+            var result = await service.MarkNoShowAsync(dto, actorUserId);
+            return Results.Ok(result);
+        }
+        catch (NotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Results.Problem(detail: ex.Message, statusCode: 403);
+        }
+        catch (ConflictException ex)
+        {
+            return Results.Conflict(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            // Логирование внутренней ошибки
             return Results.Problem($"Внутренняя ошибка сервера: {ex.Message}");
         }
     }

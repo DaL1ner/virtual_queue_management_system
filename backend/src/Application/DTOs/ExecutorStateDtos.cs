@@ -16,8 +16,7 @@ public record SetExecutorReadyDto(
 /// DTO для переключения готовности исполнителя (toggle)
 /// </summary>
 public record ToggleExecutorReadyDto(
-    int UserId,
-    int? QueueSessionId = null  // опционально, если null - берём активную сессию
+    int UserId
 );
 
 /// <summary>
@@ -51,4 +50,11 @@ public record CallNextTicketResponseDto(
     TicketDto CalledTicket,
     int AssignedExecutorUserId,
     string AssignedExecutorName
+);
+
+/// <summary>
+/// DTO для фиксации неявки клиента
+/// </summary>
+public record MarkNoShowDto(
+    int UserId
 );
