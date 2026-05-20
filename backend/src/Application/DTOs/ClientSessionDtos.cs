@@ -32,3 +32,22 @@ public record ClientSessionDto(
 {
     public string? ActiveTicketStatusString => ActiveTicketStatus?.ToString();
 }
+
+/// <summary>
+/// DTO ответа клиентской сессии с оригинальным токеном
+/// </summary>
+public record ClientSessionWithTokenDto(
+    int Id,
+    string DeviceFingerprint,
+    string Token,
+    string TokenHash,
+    DateTime CreatedAt,
+    DateTime ExpiresAt,
+    bool IsActive,
+    int? ActiveTicketId,
+    string? ActiveTicketNumber,
+    TicketStatus? ActiveTicketStatus
+)
+{
+    public string? ActiveTicketStatusString => ActiveTicketStatus?.ToString();
+}

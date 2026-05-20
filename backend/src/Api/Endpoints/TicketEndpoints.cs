@@ -95,7 +95,14 @@ public static class TicketEndpoints
                 actorUserId: null // Публичный эндпоинт, actorUserId = null
             );
 
-            return Results.Created($"/api/tickets/{ticketDto.Id}", ticketDto);
+            // Возвращаем талон вместе с токеном сессии
+            var response = new
+            {
+                Ticket = ticketDto,
+                SessionToken = clientSessionDto.Token
+            };
+
+            return Results.Created($"/api/tickets/{ticketDto.Id}", response);
         }
         catch (NotFoundException ex)
         {

@@ -2,6 +2,7 @@ namespace Application.Services;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Interfaces;
 using Application.DTOs;
 using Application.Events;
 using Infrastructure.Data;
@@ -16,33 +17,49 @@ public class ClientSessionService
     private readonly AppDbContext _context;
     private readonly IEventPublisher _eventPublisher;
     private readonly TicketService _ticketService;
+    private readonly ITokenService _tokenService;
     private readonly ILogger<ClientSessionService> _logger;
 
     public ClientSessionService(
         AppDbContext context,
         IEventPublisher eventPublisher,
         TicketService ticketService,
+        ITokenService tokenService,
         ILogger<ClientSessionService> logger)
     {
         _context = context;
         _eventPublisher = eventPublisher;
         _ticketService = ticketService;
+        _tokenService = tokenService;
         _logger = logger;
     }
 
     /// <summary>
-    /// Создание или получение клиентской сессии
+    /// Создание или получение клиентской сессии с токеном
     /// </summary>
-    public async Task<ClientSessionDto> GetOrCreateAsync(CreateClientSessionDto dto)
+    public async Task<ClientSessionWithTokenDto> GetOrCreateAsync(CreateClientSessionDto dto)
     {
         // Поиск активной сессии
         var session = await _context.ClientSessions
-            .Where(cs => cs.DeviceFingerprint == dto.DeviceFingerprint && 
-                       cs.IsActive && 
+            .Where(cs => cs.DeviceFingerprint == dto.DeviceFingerprint &&
+                       cs.IsActive &&
                        cs.ExpiresAt > DateTime.UtcNow)
             .FirstOrDefaultAsync();
 
         bool isNew = false;
+        string? token = null;
+        string tokenHash = dto.TokenHash;
+        
+        // Если токен не передан (пустая строка), генерируем новый
+        if (string.IsNullOrWhiteSpace(tokenHash) && session == null)
+        {
+            (token, tokenHash) = _tokenService.GenerateSessionToken();
+        }
+        // Если сессия существует и передан пустой TokenHash, оставляем старый хэш
+        else if (string.IsNullOrWhiteSpace(tokenHash) && session != null)
+        {
+            tokenHash = session.TokenHash;
+        }
         
         if (session == null)
         {
@@ -50,7 +67,7 @@ public class ClientSessionService
             session = new ClientSession
             {
                 DeviceFingerprint = dto.DeviceFingerprint,
-                TokenHash = dto.TokenHash,
+                TokenHash = tokenHash,
                 IpAddress = dto.IpAddress,
                 UserAgent = dto.UserAgent,
                 IsActive = true,
@@ -63,10 +80,13 @@ public class ClientSessionService
         }
         else
         {
-            // Обновление IpAddress, UserAgent и TokenHash
+            // Обновление IpAddress, UserAgent и TokenHash (если передан непустой)
             session.IpAddress = dto.IpAddress ?? session.IpAddress;
             session.UserAgent = dto.UserAgent ?? session.UserAgent;
-            session.TokenHash = dto.TokenHash;
+            if (!string.IsNullOrWhiteSpace(dto.TokenHash))
+            {
+                session.TokenHash = dto.TokenHash;
+            }
             session.ExpiresAt = DateTime.UtcNow.AddHours(24); // Продление
             
             await _context.SaveChangesAsync();
@@ -76,17 +96,18 @@ public class ClientSessionService
         if (isNew)
         {
             await _eventPublisher.PublishAsync(new ClientSessionCreatedEvent(
-                session.Id, 
-                session.DeviceFingerprint, 
+                session.Id,
+                session.DeviceFingerprint,
                 session.IpAddress));
         }
 
         // Получение активного талона через TicketService
         var activeTicket = await _ticketService.GetActiveTicketByClientSessionIdAsync(session.Id);
 
-        return new ClientSessionDto(
+        return new ClientSessionWithTokenDto(
             session.Id,
             session.DeviceFingerprint,
+            token ?? string.Empty, // Для существующей сессии токен неизвестен
             session.TokenHash,
             session.CreatedAt,
             session.ExpiresAt,
