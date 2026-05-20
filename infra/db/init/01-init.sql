@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS user_sessions (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    token VARCHAR(255) NOT NULL UNIQUE,
+    token_hash CHAR(64) NOT NULL UNIQUE,
     ip_address VARCHAR(45),
     user_agent TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
 CREATE TABLE IF NOT EXISTS client_sessions (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     device_fingerprint VARCHAR(255) NOT NULL,
+    token_hash CHAR(64) NOT NULL UNIQUE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMP NOT NULL DEFAULT (NOW() + INTERVAL '24 hours'),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -176,12 +177,13 @@ CREATE TABLE IF NOT EXISTS event_logs (
 -- INDEXES
 -- =========================
 CREATE INDEX IF NOT EXISTS idx_user_login ON users(login);
-CREATE INDEX IF NOT EXISTS idx_usersession_token ON user_sessions(token);
+CREATE INDEX IF NOT EXISTS idx_usersession_token_hash ON user_sessions(token_hash);
 CREATE INDEX IF NOT EXISTS idx_usersession_user ON user_sessions(user_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_usersession_expires ON user_sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_userrole_user ON user_roles(user_id);
 CREATE INDEX IF NOT EXISTS idx_userrole_role ON user_roles(role_id);
 CREATE INDEX IF NOT EXISTS idx_clientsession_active ON client_sessions(device_fingerprint, is_active);
+CREATE INDEX IF NOT EXISTS idx_clientsession_token_hash ON client_sessions(token_hash);
 CREATE INDEX IF NOT EXISTS idx_servicetype_queue ON service_types(queue_config_id, is_active, sort_order);
 CREATE INDEX IF NOT EXISTS idx_session_queue_status ON queue_sessions(queue_config_id, status);
 CREATE INDEX IF NOT EXISTS idx_ticket_queue_sort

@@ -55,7 +55,7 @@
 |---------|------------|-------------|----------|
 | `id` | `INTEGER` | `PK`, `GENERATED ALWAYS AS IDENTITY` | Уникальный идентификатор |
 | `user_id` | `INTEGER` | `NOT NULL`, `FK → users(id) ON DELETE CASCADE ON UPDATE CASCADE` | Пользователь |
-| `token` | `VARCHAR(255)` | `NOT NULL`, `UNIQUE` | Токен сессии |
+| `token_hash` | `CHAR(64)` | `NOT NULL`, `UNIQUE` | SHA-256 хеш токена сессии (64 hex символа) |
 | `ip_address` | `VARCHAR(45)` | `NULL` | IP-адрес входа |
 | `user_agent` | `TEXT` | `NULL` | Браузер/устройство |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время создания |
@@ -66,13 +66,13 @@
 **Ключи:**
 
 - Первичный ключ: `id`
-- Уникальные: `token`
+- Уникальные: `token_hash`
 - Внешние ключи: `user_id → users(id)`
 
 **Индексы:**
 
 ```sql
-idx_usersession_token (token)
+idx_usersession_token_hash (token_hash)
 idx_usersession_user (user_id, is_active)
 idx_usersession_expires (expires_at)
 ```
@@ -388,6 +388,7 @@ CHECK (NOT (is_ready = TRUE AND current_ticket_id IS NOT NULL))
 |---------|------------|-------------|----------|
 | `id` | `INTEGER` | `PK`, `GENERATED ALWAYS AS IDENTITY` | Уникальный идентификатор сессии |
 | `device_fingerprint` | `VARCHAR(255)` | `NOT NULL` | Идентификатор устройства/браузера |
+| `token_hash` | `CHAR(64)` | `NOT NULL`, `UNIQUE` | SHA-256 хеш токена сессии (64 hex символа) |
 | `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | Время создания сессии |
 | `expires_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT (NOW() + INTERVAL '24 hours')` | Время истечения сессии |
 | `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT TRUE` | Флаг активности сессии |
@@ -397,10 +398,12 @@ CHECK (NOT (is_ready = TRUE AND current_ticket_id IS NOT NULL))
 **Ключи:**
 
 - Первичный ключ: `id`
+- Уникальные: `token_hash`
 
 **Индексы:**
 
 - `idx_clientsession_active` (`device_fingerprint`, `is_active`) — поиск активной сессии
+- `idx_clientsession_token_hash` (`token_hash`) — верификация сессии
 
 **Бизнес-правила:**
 
