@@ -47,20 +47,10 @@ public class ClientSessionService
             .FirstOrDefaultAsync();
 
         bool isNew = false;
-        string? token = null;
-        string tokenHash = dto.TokenHash;
         
-        // Если токен не передан (пустая строка), генерируем новый
-        if (string.IsNullOrWhiteSpace(tokenHash) && session == null)
-        {
-            (token, tokenHash) = _tokenService.GenerateSessionToken();
-        }
-        // Если сессия существует и передан пустой TokenHash, оставляем старый хэш
-        else if (string.IsNullOrWhiteSpace(tokenHash) && session != null)
-        {
-            tokenHash = session.TokenHash;
-        }
-        
+        // Всегда генерируем новый токен
+        var (token, tokenHash) = _tokenService.GenerateSessionToken();
+
         if (session == null)
         {
             // Создание новой сессии
@@ -80,13 +70,10 @@ public class ClientSessionService
         }
         else
         {
-            // Обновление IpAddress, UserAgent и TokenHash (если передан непустой)
+            // Обновление IpAddress, UserAgent и TokenHash
             session.IpAddress = dto.IpAddress ?? session.IpAddress;
             session.UserAgent = dto.UserAgent ?? session.UserAgent;
-            if (!string.IsNullOrWhiteSpace(dto.TokenHash))
-            {
-                session.TokenHash = dto.TokenHash;
-            }
+            session.TokenHash = tokenHash;
             session.ExpiresAt = DateTime.UtcNow.AddHours(24); // Продление
             
             await _context.SaveChangesAsync();
@@ -107,7 +94,7 @@ public class ClientSessionService
         return new ClientSessionWithTokenDto(
             session.Id,
             session.DeviceFingerprint,
-            token ?? string.Empty, // Для существующей сессии токен неизвестен
+            token,
             session.TokenHash,
             session.CreatedAt,
             session.ExpiresAt,
