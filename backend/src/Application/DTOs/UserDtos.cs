@@ -58,7 +58,7 @@ public record AuthenticatedUserDto(
     string Login,
     string FullName,
     string LastName,
-    string Token,
+    string TokenHash,
     DateTime TokenExpiresAt,
     IEnumerable<string> RoleCodes
 );

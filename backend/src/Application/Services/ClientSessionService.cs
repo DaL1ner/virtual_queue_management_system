@@ -50,6 +50,7 @@ public class ClientSessionService
             session = new ClientSession
             {
                 DeviceFingerprint = dto.DeviceFingerprint,
+                TokenHash = dto.TokenHash,
                 IpAddress = dto.IpAddress,
                 UserAgent = dto.UserAgent,
                 IsActive = true,
@@ -62,9 +63,10 @@ public class ClientSessionService
         }
         else
         {
-            // Обновление IpAddress и UserAgent
+            // Обновление IpAddress, UserAgent и TokenHash
             session.IpAddress = dto.IpAddress ?? session.IpAddress;
             session.UserAgent = dto.UserAgent ?? session.UserAgent;
+            session.TokenHash = dto.TokenHash;
             session.ExpiresAt = DateTime.UtcNow.AddHours(24); // Продление
             
             await _context.SaveChangesAsync();
@@ -85,6 +87,7 @@ public class ClientSessionService
         return new ClientSessionDto(
             session.Id,
             session.DeviceFingerprint,
+            session.TokenHash,
             session.CreatedAt,
             session.ExpiresAt,
             session.IsActive,
@@ -138,6 +141,7 @@ public class ClientSessionService
         return new ClientSessionDto(
             session.Id,
             session.DeviceFingerprint,
+            session.TokenHash,
             session.CreatedAt,
             session.ExpiresAt,
             session.IsActive,

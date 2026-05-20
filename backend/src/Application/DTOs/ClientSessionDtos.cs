@@ -10,6 +10,7 @@ namespace Application.DTOs;
 /// </summary>
 public record CreateClientSessionDto(
     string DeviceFingerprint,
+    string TokenHash,
     string? IpAddress = null,
     string? UserAgent = null
 );
@@ -20,10 +21,14 @@ public record CreateClientSessionDto(
 public record ClientSessionDto(
     int Id,
     string DeviceFingerprint,
+    string TokenHash,
     DateTime CreatedAt,
     DateTime ExpiresAt,
     bool IsActive,
     int? ActiveTicketId,
     string? ActiveTicketNumber,
     TicketStatus? ActiveTicketStatus
-);
+)
+{
+    public string? ActiveTicketStatusString => ActiveTicketStatus?.ToString();
+}

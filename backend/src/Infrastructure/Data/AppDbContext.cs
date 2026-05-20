@@ -187,10 +187,10 @@ public class AppDbContext : DbContext
                 .HasColumnName("expires_at")
                 .HasConversion(typeof(NullableDateTimeUtcConverter));
             
-            entity.Property(us => us.Token)
-                .HasColumnName("token")
+            entity.Property(us => us.TokenHash)
+                .HasColumnName("token_hash")
                 .IsRequired()
-                .HasMaxLength(500);
+                .HasMaxLength(64);
             
             entity.Property(us => us.IpAddress)
                 .HasColumnName("ip_address")
@@ -558,6 +558,11 @@ public class AppDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(255);
             
+            entity.Property(cs => cs.TokenHash)
+                .HasColumnName("token_hash")
+                .IsRequired()
+                .HasMaxLength(64);
+            
             entity.Property(cs => cs.CreatedAt)
                 .HasColumnName("created_at")
                 .HasDefaultValueSql("NOW()")
@@ -582,6 +587,12 @@ public class AppDbContext : DbContext
             // Index: active client sessions
             entity.HasIndex(cs => new { cs.DeviceFingerprint, cs.IsActive })
                 .HasName("idx_clientsession_active");
+            
+            // Unique index for active sessions only (partial index)
+            entity.HasIndex(cs => cs.TokenHash)
+                .HasName("uq_client_sessions_token_hash_active")
+                .IsUnique()
+                .HasFilter("WHERE is_active = true AND token_hash IS NOT NULL");
         });
         
         modelBuilder.Entity<EventLog>(entity =>
@@ -655,46 +666,6 @@ public class AppDbContext : DbContext
             
             entity.HasIndex(r => r.Name)
                 .IsUnique();
-        });
-        
-        modelBuilder.Entity<UserSession>(entity =>
-        {
-            entity.ToTable("user_sessions");
-            entity.HasKey(us => us.Id);
-            
-            entity.Property(us => us.Id)
-                .HasColumnName("id");
-            
-            entity.Property(us => us.UserId)
-                .HasColumnName("user_id");
-            
-            entity.Property(us => us.Token)
-                .HasColumnName("token")
-                .IsRequired()
-                .HasMaxLength(255);
-            
-            entity.Property(us => us.IpAddress)
-                .HasColumnName("ip_address")
-                .HasMaxLength(45);
-            
-            entity.Property(us => us.UserAgent)
-                .HasColumnName("user_agent")
-                .HasMaxLength(2048);
-            
-            entity.Property(us => us.CreatedAt)
-                .HasColumnName("created_at")
-                .HasDefaultValueSql("NOW()");
-            
-            entity.Property(us => us.ExpiresAt)
-                .HasColumnName("expires_at");
-            
-            entity.Property(us => us.LastActivityAt)
-                .HasColumnName("last_activity_at");
-            
-            entity.Property(us => us.IsActive)
-                .HasColumnName("is_active");
-            
-            entity.HasIndex(us => us.UserId);
         });
     }
 }

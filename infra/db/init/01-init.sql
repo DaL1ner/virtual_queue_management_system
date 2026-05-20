@@ -53,13 +53,17 @@ CREATE TABLE IF NOT EXISTS user_roles (
 CREATE TABLE IF NOT EXISTS client_sessions (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     device_fingerprint VARCHAR(255) NOT NULL,
-    token_hash CHAR(64) NOT NULL UNIQUE,
+    token_hash CHAR(64) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMP NOT NULL DEFAULT (NOW() + INTERVAL '24 hours'),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     ip_address VARCHAR(45),
     user_agent TEXT
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_client_sessions_token_hash_active
+ON client_sessions(token_hash)
+WHERE is_active = true AND token_hash IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS queue_configs (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

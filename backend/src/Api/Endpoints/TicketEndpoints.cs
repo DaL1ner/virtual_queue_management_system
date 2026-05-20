@@ -83,6 +83,7 @@ public static class TicketEndpoints
             // Создание или получение клиентской сессии
             var clientSessionDto = await clientSessionService.GetOrCreateAsync(new CreateClientSessionDto(
                 dto.DeviceFingerprint,
+                string.Empty, // TokenHash placeholder - будет сгенерирован при реализации генерации токенов
                 ipAddress,
                 userAgent
             ));
