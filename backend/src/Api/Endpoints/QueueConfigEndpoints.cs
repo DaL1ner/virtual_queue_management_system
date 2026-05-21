@@ -22,14 +22,33 @@ public static class QueueConfigEndpoints
         return endpointGroup;
     }
 
-    private static async Task<IResult> GetAllQueueConfigs(QueueConfigService service)
+    private static async Task<IResult> GetAllQueueConfigs(
+        ClaimsPrincipal user,
+        QueueConfigService service)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
         var configs = await service.GetAllAsync();
         return Results.Ok(configs);
     }
 
-    private static async Task<IResult> GetQueueConfigById(int id, QueueConfigService service)
+    private static async Task<IResult> GetQueueConfigById(
+        int id,
+        ClaimsPrincipal user,
+        QueueConfigService service)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
         var config = await service.GetByIdAsync(id);
         if (config == null)
             return Results.NotFound();

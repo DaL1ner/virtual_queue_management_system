@@ -38,8 +38,12 @@ public static class ServiceTypeEndpoints
         ServiceTypeService service,
         [FromQuery] int queueConfigId)
     {
-        if (!user.Identity?.IsAuthenticated ?? false)
+        var userId = user.GetUserId();
+        if (userId == null)
             return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
             
         var serviceTypes = await service.GetAllAsync(queueConfigId);
         return Results.Ok(serviceTypes);
@@ -53,8 +57,12 @@ public static class ServiceTypeEndpoints
         ClaimsPrincipal user,
         ServiceTypeService service)
     {
-        if (!user.Identity?.IsAuthenticated ?? false)
+        var userId = user.GetUserId();
+        if (userId == null)
             return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
             
         var serviceType = await service.GetByIdAsync(id);
         if (serviceType == null)
