@@ -71,3 +71,41 @@ public sealed class UserRoleUnassignedEvent : DomainEvent
         UnassignedById = unassignedById;
     }
 }
+
+/// <summary>
+/// Событие: сессия пользователя аннулирована (при новом логине)
+/// </summary>
+public sealed class UserSessionRevokedEvent : DomainEvent
+{
+    public int UserSessionId { get; }
+    public int UserId { get; }
+    public string Login { get; }
+
+    public UserSessionRevokedEvent(int userSessionId, int userId, string login)
+    {
+        UserSessionId = userSessionId;
+        UserId = userId;
+        Login = login;
+    }
+}
+
+/// <summary>
+/// Событие: сессия пользователя создана (успешная аутентификация)
+/// </summary>
+public sealed class UserSessionCreatedEvent : DomainEvent
+{
+    public int UserSessionId { get; }
+    public int UserId { get; }
+    public string Login { get; }
+    public string? IpAddress { get; }
+    public string? UserAgent { get; }
+
+    public UserSessionCreatedEvent(int userSessionId, int userId, string login, string? ipAddress, string? userAgent)
+    {
+        UserSessionId = userSessionId;
+        UserId = userId;
+        Login = login;
+        IpAddress = ipAddress;
+        UserAgent = userAgent;
+    }
+}

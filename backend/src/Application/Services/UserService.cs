@@ -1,6 +1,7 @@
 namespace Application.Services;
 
 using Domain.Entities;
+using Domain.Interfaces;
 using Application.DTOs;
 using Application.Events;
 using Infrastructure.Data;
@@ -13,11 +14,13 @@ public class UserService
 {
     private readonly AppDbContext _context;
     private readonly IEventPublisher _eventPublisher;
+    private readonly IPasswordHasher _passwordHasher;
 
-    public UserService(AppDbContext context, IEventPublisher eventPublisher)
+    public UserService(AppDbContext context, IEventPublisher eventPublisher, IPasswordHasher passwordHasher)
     {
         _context = context;
         _eventPublisher = eventPublisher;
+        _passwordHasher = passwordHasher;
     }
 
     /// <summary>
@@ -38,7 +41,7 @@ public class UserService
         var user = new User
         {
             Login = dto.Login,
-            PasswordHash = dto.Password, // TODO: Хешировать пароль
+            PasswordHash = _passwordHasher.HashPassword(dto.Password),
             FullName = dto.FullName,
             LastName = dto.LastName,
             Email = dto.Email,
@@ -74,6 +77,34 @@ public class UserService
         await _eventPublisher.PublishAsync(new UserCreatedEvent(user.Id, user.Login, createdById));
 
         return await GetByIdAsync(user.Id);
+    }
+
+    /// <summary>
+    /// Аутентификация пользователя по логину и паролю
+    /// </summary>
+    public async Task<User> AuthenticateAsync(string login, string password)
+    {
+        var user = await _context.Users
+            .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Login == login);
+
+        if (user == null)
+        {
+            throw new NotFoundException($"User with login '{login}' not found");
+        }
+
+        if (!user.IsActive)
+        {
+            throw new BadRequestException($"User '{login}' is inactive");
+        }
+
+        if (!_passwordHasher.VerifyPassword(password, user.PasswordHash))
+        {
+            throw new UnauthorizedException("Invalid password");
+        }
+
+        return user;
     }
 
     /// <summary>

@@ -248,3 +248,11 @@ public class ConflictException : Exception
 {
     public ConflictException(string message) : base(message) { }
 }
+
+/// <summary>
+/// Исключение - неавторизованный доступ
+/// </summary>
+public class UnauthorizedException : Exception
+{
+    public UnauthorizedException(string message) : base(message) { }
+}

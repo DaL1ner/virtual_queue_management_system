@@ -58,7 +58,21 @@ public record AuthenticatedUserDto(
     string Login,
     string FullName,
     string LastName,
-    string TokenHash,
+    DateTime TokenExpiresAt,
+    IEnumerable<string> RoleCodes
+);
+
+/// <summary>
+/// DTO ответа аутентификации с токеном сессии
+/// </summary>
+public record UserSessionResponseDto(
+    int SessionId,
+    int UserId,
+    string Login,
+    string FullName,
+    string LastName,
+    string? Email,
+    string Token,
     DateTime TokenExpiresAt,
     IEnumerable<string> RoleCodes
 );

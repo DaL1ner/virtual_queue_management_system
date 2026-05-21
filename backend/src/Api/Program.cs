@@ -72,6 +72,7 @@ public static class Program
         app.MapQueueSessionEndpoints();
         app.MapServiceTypeEndpoints();
         app.MapUserEndpoints();
+        app.MapAuthEndpoints();
         app.MapTicketEndpoints();
         app.MapExecutorStateEndpoints();
 
