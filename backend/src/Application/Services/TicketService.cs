@@ -110,6 +110,79 @@ public class TicketService
     }
 
     /// <summary>
+    /// Получение активного талона клиента по ClientSessionId
+    /// Возвращает один активный талон со статусом Waiting, Called или Serving
+    /// </summary>
+    public async Task<TicketDto?> GetActiveTicketAsync(int clientSessionId)
+    {
+        var ticket = await _context.Tickets
+            .Include(t => t.ServiceType)
+            .Include(t => t.ServedByUser)
+            .FirstOrDefaultAsync(t => t.ClientSessionId == clientSessionId &&
+                                      (t.Status == TicketStatus.Waiting ||
+                                       t.Status == TicketStatus.Called ||
+                                       t.Status == TicketStatus.Serving));
+
+        if (ticket == null)
+            return null;
+
+        return await MapToDtoAsync(ticket);
+    }
+
+    /// <summary>
+    /// Получение детальной информации об активном талоне клиента по ClientSessionId
+    /// Возвращает талон с расчётом времени ожидания и общим числом ожидающих
+    /// </summary>
+    public async Task<MyActiveTicketDetailDto?> GetMyActiveTicketDetailAsync(int clientSessionId)
+    {
+        var ticket = await _context.Tickets
+            .Include(t => t.ServiceType)
+            .Include(t => t.ServedByUser)
+            .FirstOrDefaultAsync(t => t.ClientSessionId == clientSessionId &&
+                                      (t.Status == TicketStatus.Waiting ||
+                                       t.Status == TicketStatus.Called ||
+                                       t.Status == TicketStatus.Serving));
+
+        if (ticket == null)
+            return null;
+
+        // Вычисление позиции в очереди
+        var position = await CalculatePositionAsync(ticket);
+
+        // Расчёт времени ожидания
+        var estimatedWaitMinutes = await _queueSessionService.CalculateEstimatedWaitTimeAsync(ticket.Id);
+
+        // Общее количество ожидающих талонов в сессии
+        var totalWaiting = await _context.Tickets
+            .CountAsync(t => t.QueueSessionId == ticket.QueueSessionId && t.Status == TicketStatus.Waiting);
+
+        return new MyActiveTicketDetailDto(
+            ticket.Id,
+            ticket.QueueSessionId,
+            ticket.TicketNumber,
+            ticket.ClientName,
+            ticket.ClientSurname,
+            ticket.ServiceTypeId,
+            ticket.ServiceType?.Name,
+            ticket.ServiceType?.Letter,
+            (int)ticket.SortOrder,
+            ticket.PriorityLevel,
+            ticket.Status,
+            ticket.Version,
+            ticket.CreatedAt,
+            ticket.CalledAt,
+            ticket.ServiceStartedAt,
+            ticket.ServiceEndedAt,
+            ticket.ServedByUserId,
+            ticket.ServedByUser?.FullName,
+            ticket.CancelReason,
+            position,
+            estimatedWaitMinutes,
+            totalWaiting
+        );
+    }
+
+    /// <summary>
     /// Получение следующего номера талона (буква + номер из последовательности)
     /// </summary>
     private async Task<string> GetNextTicketNumberAsync(int sessionId, char serviceLetter)
@@ -895,6 +968,30 @@ public class TicketService
         }
 
         return await MapToDtoAsync(ticket);
+    }
+
+    /// <summary>
+    /// Отмена активного талона клиента по clientSessionId
+    /// Используется в эндпоинте /api/tickets/me/cancel
+    /// </summary>
+    public async Task<TicketDto> CancelMyTicketAsync(int clientSessionId)
+    {
+        // Получаем активный талон клиента
+        var ticket = await _context.Tickets
+            .Include(t => t.ServiceType)
+            .Include(t => t.ServedByUser)
+            .Include(t => t.ClientSession)
+            .FirstOrDefaultAsync(t => t.ClientSessionId == clientSessionId &&
+                                      (t.Status == TicketStatus.Waiting || t.Status == TicketStatus.Called));
+
+        if (ticket == null)
+            throw new NotFoundException($"У вас нет активных талонов в очереди.");
+
+        if (ticket.Status != TicketStatus.Waiting)
+            throw new BadRequestException("Можно отменить только талон в статусе WAITING.");
+
+        // Вызываем существующий метод отмены
+        return await CancelTicketAsync(ticket.Id, actorUserId: null);
     }
 
     /// <summary>

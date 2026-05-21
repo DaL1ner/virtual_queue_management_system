@@ -104,16 +104,14 @@ public record TicketListDto(
 /// DTO для перемещения талона на N шагов назад (дальше от начала очереди)
 /// </summary>
 public record MoveTicketBackwardDto(
-    int Steps,
-    int? ActorUserId = null
+    int Steps
 );
 
 /// <summary>
 /// DTO для перемещения талона в целевую позицию в очереди (абсолютный индекс, 1 = начало очереди)
 /// </summary>
 public record MoveTicketToPositionDto(
-    int Position,
-    int? ActorUserId = null
+    int Position
 );
 
 /// <summary>
@@ -151,4 +149,32 @@ public record TicketDetailDto(
     string? CancelReason,
     int PositionInQueue,
     int? EstimatedWaitMinutes
+);
+
+/// <summary>
+/// DTO для ответа на запрос /api/tickets/me с расчётом времени ожидания и общим числом ожидающих
+/// </summary>
+public record MyActiveTicketDetailDto(
+    int Id,
+    int QueueSessionId,
+    string TicketNumber,
+    string ClientName,
+    string ClientSurname,
+    int? ServiceTypeId,
+    string? ServiceTypeName,
+    char? ServiceLetter,
+    int SortOrder,
+    int PriorityLevel,
+    TicketStatus Status,
+    int Version,
+    DateTime CreatedAt,
+    DateTime? CalledAt,
+    DateTime? ServiceStartedAt,
+    DateTime? ServiceEndedAt,
+    int? ServedByUserId,
+    string? ServedByUserName,
+    string? CancelReason,
+    int PositionInQueue,
+    int? EstimatedWaitMinutes,
+    int TotalWaiting
 );

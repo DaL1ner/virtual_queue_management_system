@@ -13,21 +13,29 @@ public static class TicketEndpoints
 {
     public static IEndpointRouteBuilder MapTicketEndpoints(this IEndpointRouteBuilder app)
     {
-        var endpointGroup = app.MapGroup("/api/tickets").WithTags("Ticket");
+        // Основная группа для операций с ticketId
+        var ticketGroup = app.MapGroup("/api/tickets").WithTags("Ticket");
 
-        endpointGroup.MapGet("/{ticketId:int}", GetTicketById);
-        endpointGroup.MapPost("/", CreateTicket);
-        endpointGroup.MapPost("/{ticketId:int}/cancel", CancelTicket);
-        endpointGroup.MapPost("/{ticketId:int}/move-backward", MoveTicketBackward);
-        endpointGroup.MapPost("/{ticketId:int}/move-to-position", MoveTicketToPosition);
-        endpointGroup.MapGet("/{ticketId:int}/position", GetTicketPosition);
-        endpointGroup.MapGet("/queue", GetQueue);
+        ticketGroup.MapGet("/{ticketId:int}", GetTicketById);
+        ticketGroup.MapPost("/", CreateTicket);
+        ticketGroup.MapPost("/{ticketId:int}/cancel", CancelTicket);
+        ticketGroup.MapPost("/{ticketId:int}/move-backward", MoveTicketBackward);
+        ticketGroup.MapPost("/{ticketId:int}/move-to-position", MoveTicketToPosition);
+        ticketGroup.MapGet("/{ticketId:int}/position", GetTicketPosition);
+        ticketGroup.MapGet("/queue", GetQueue);
+
+        // Отдельная группа для клиентских эндпоинтов (me)
+        var meGroup = app.MapGroup("/api/tickets/me").WithTags("Ticket");
+
+        meGroup.MapGet("/", GetMyActiveTicket);
+        meGroup.MapPost("/cancel", CancelMyTicket);
+        meGroup.MapPost("/move-backward", MoveMyTicketBackward);
 
         // Отдельная группа для получения всех талонов
         var allEndpointGroup = app.MapGroup("/api/tickets/all").WithTags("Ticket");
         allEndpointGroup.MapGet("/", GetAllTickets);
 
-        return endpointGroup;
+        return ticketGroup;
     }
 
     /// <summary>
@@ -175,7 +183,7 @@ public static class TicketEndpoints
             
         try
         {
-            var ticket = await service.MoveBackwardAsync(ticketId, dto.Steps, userId.Value);
+            var ticket = await service.MoveBackwardAsync(ticketId, dto.Steps, actorUserId: userId.Value);
             return Results.Ok(ticket);
         }
         catch (NotFoundException ex)
@@ -210,7 +218,7 @@ public static class TicketEndpoints
             
         try
         {
-            var ticket = await service.MoveToPositionAsync(ticketId, dto.Position, userId.Value);
+            var ticket = await service.MoveToPositionAsync(ticketId, dto.Position, actorUserId: userId.Value);
             return Results.Ok(ticket);
         }
         catch (NotFoundException ex)
@@ -318,6 +326,89 @@ public static class TicketEndpoints
         {
             return Results.Conflict(ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Переместить активный талон клиента на N шагов назад
+    /// Доступно только для клиентов (entity_type = "client")
+    /// </summary>
+    private static async Task<IResult> MoveMyTicketBackward(
+        MoveTicketBackwardDto dto,
+        ClaimsPrincipal user,
+        TicketService service)
+    {
+        var clientSessionId = user.GetClientSessionId();
+        if (clientSessionId == null)
+            return Results.Unauthorized();
+
+        var ticket = await service.GetActiveTicketAsync(clientSessionId.Value);
+        if (ticket == null)
+            return Results.NotFound("У вас нет активных талонов в очереди.");
+
+        try
+        {
+            var updatedTicket = await service.MoveBackwardAsync(ticket.Id, dto.Steps);
+            return Results.Ok(updatedTicket);
+        }
+        catch (NotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (ConflictException ex)
+        {
+            return Results.Conflict(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Отменить активный талон текущего клиента
+    /// Доступно только для клиентов (entity_type = "client")
+    /// </summary>
+    private static async Task<IResult> CancelMyTicket(
+        ClaimsPrincipal user,
+        TicketService service)
+    {
+        var clientSessionId = user.GetClientSessionId();
+        if (clientSessionId == null)
+            return Results.Unauthorized();
+
+        try
+        {
+            var ticket = await service.CancelMyTicketAsync(clientSessionId.Value);
+            return Results.Ok(ticket);
+        }
+        catch (NotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Получить активный талон текущего клиента по session token
+    /// Возвращает детальную информацию с estimatedWaitMinutes и totalWaiting
+    /// Доступно только для клиентов (entity_type = "client")
+    /// </summary>
+    private static async Task<IResult> GetMyActiveTicket(
+        ClaimsPrincipal user,
+        TicketService service)
+    {
+        var clientSessionId = user.GetClientSessionId();
+        if (clientSessionId == null)
+            return Results.Unauthorized();
+
+        var ticket = await service.GetMyActiveTicketDetailAsync(clientSessionId.Value);
+        if (ticket == null)
+            return Results.NotFound("У вас нет активных талонов в очереди.");
+
+        return Results.Ok(ticket);
     }
 
     /// <summary>
