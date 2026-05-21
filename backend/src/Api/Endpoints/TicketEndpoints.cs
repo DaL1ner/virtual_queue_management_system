@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using System.Security.Claims;
+using Api.Helpers;
 
 public static class TicketEndpoints
 {
@@ -33,11 +35,20 @@ public static class TicketEndpoints
     /// Сортировка по умолчанию: по ID (ascending). При sorted=true: по PriorityLevel DESC, SortOrder ASC, CreatedAt ASC
     /// </summary>
     private static async Task<IResult> GetAllTickets(
+        ClaimsPrincipal user,
         TicketService service,
         QueueSessionService queueSessionService,
         [FromQuery] int? queueSessionId = null,
         [FromQuery] bool sorted = false)
     {
+        // GET /api/tickets/all требует аутентификации и роли ADMIN или OPERATOR
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("ADMIN", "OPERATOR"))
+            return Results.Forbid();
+            
         try
         {
             var tickets = await service.GetAllBySessionAsync(queueSessionId, queueSessionService, sorted);
@@ -138,11 +149,22 @@ public static class TicketEndpoints
     /// <summary>
     /// Переместить талон на N шагов назад
     /// </summary>
-    private static async Task<IResult> MoveTicketBackward(int ticketId, MoveTicketBackwardDto dto, TicketService service)
+    private static async Task<IResult> MoveTicketBackward(
+        int ticketId,
+        MoveTicketBackwardDto dto,
+        ClaimsPrincipal user,
+        TicketService service)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("ADMIN", "OPERATOR"))
+            return Results.Forbid();
+            
         try
         {
-            var ticket = await service.MoveBackwardAsync(ticketId, dto.Steps, dto.ActorUserId);
+            var ticket = await service.MoveBackwardAsync(ticketId, dto.Steps, userId.Value);
             return Results.Ok(ticket);
         }
         catch (NotFoundException ex)
@@ -162,11 +184,22 @@ public static class TicketEndpoints
     /// <summary>
     /// Переместить талон в целевую позицию в очереди (абсолютный индекс, 1 = начало очереди)
     /// </summary>
-    private static async Task<IResult> MoveTicketToPosition(int ticketId, MoveTicketToPositionDto dto, TicketService service)
+    private static async Task<IResult> MoveTicketToPosition(
+        int ticketId,
+        MoveTicketToPositionDto dto,
+        ClaimsPrincipal user,
+        TicketService service)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("ADMIN", "OPERATOR"))
+            return Results.Forbid();
+            
         try
         {
-            var ticket = await service.MoveToPositionAsync(ticketId, dto.Position, dto.ActorUserId);
+            var ticket = await service.MoveToPositionAsync(ticketId, dto.Position, userId.Value);
             return Results.Ok(ticket);
         }
         catch (NotFoundException ex)
@@ -225,11 +258,20 @@ public static class TicketEndpoints
     /// </summary>
     private static async Task<IResult> CancelTicket(
         int ticketId,
+        ClaimsPrincipal user,
         TicketService service)
     {
+        // Отмена талона требует аутентификации и роли ADMIN, OPERATOR или EXECUTOR
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("ADMIN", "OPERATOR", "EXECUTOR"))
+            return Results.Forbid();
+            
         try
         {
-            var ticket = await service.CancelTicketAsync(ticketId, actorUserId: null);
+            var ticket = await service.CancelTicketAsync(ticketId, actorUserId: userId.Value);
             return Results.Ok(ticket);
         }
         catch (NotFoundException ex)

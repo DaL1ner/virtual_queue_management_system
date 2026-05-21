@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Api.Helpers;
 
 public static class ServiceTypeEndpoints
 {
@@ -32,9 +34,13 @@ public static class ServiceTypeEndpoints
     /// Получает все типы обслуживания для указанной конфигурации очереди
     /// </summary>
     private static async Task<IResult> GetAllServiceTypes(
+        ClaimsPrincipal user,
         ServiceTypeService service,
         [FromQuery] int queueConfigId)
     {
+        if (!user.Identity?.IsAuthenticated ?? false)
+            return Results.Unauthorized();
+            
         var serviceTypes = await service.GetAllAsync(queueConfigId);
         return Results.Ok(serviceTypes);
     }
@@ -44,8 +50,12 @@ public static class ServiceTypeEndpoints
     /// </summary>
     private static async Task<IResult> GetServiceTypeById(
         int id,
+        ClaimsPrincipal user,
         ServiceTypeService service)
     {
+        if (!user.Identity?.IsAuthenticated ?? false)
+            return Results.Unauthorized();
+            
         var serviceType = await service.GetByIdAsync(id);
         if (serviceType == null)
             return Results.NotFound();
@@ -58,11 +68,17 @@ public static class ServiceTypeEndpoints
     /// </summary>
     private static async Task<IResult> CreateServiceType(
         CreateServiceTypeDto dto,
+        ClaimsPrincipal user,
         ServiceTypeService service)
     {
-        // TODO: Заменить на получение ID из контекста аутентификации
-        // Временно используем ID пользователя admin (id = 1)
-        var created = await service.CreateAsync(dto, createdById: 1);
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var created = await service.CreateAsync(dto, createdById: userId.Value);
         return Results.Created("", created);
     }
 
@@ -72,11 +88,17 @@ public static class ServiceTypeEndpoints
     private static async Task<IResult> UpdateServiceType(
         int id,
         UpdateServiceTypeDto dto,
+        ClaimsPrincipal user,
         ServiceTypeService service)
     {
-        // TODO: Заменить на получение ID из контекста аутентификации
-        // Временно используем ID пользователя admin (id = 1)
-        var updated = await service.UpdateAsync(id, dto, actorUserId: 1);
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var updated = await service.UpdateAsync(id, dto, actorUserId: userId.Value);
         return Results.Ok(updated);
     }
 }

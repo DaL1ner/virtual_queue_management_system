@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Api.Helpers;
 
 public static class QueueSessionEndpoints
 {
@@ -25,10 +27,14 @@ public static class QueueSessionEndpoints
     }
 
     private static async Task<IResult> GetAllSessions(
+        ClaimsPrincipal user,
         QueueSessionService service,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
+        if (!user.Identity?.IsAuthenticated ?? false)
+            return Results.Unauthorized();
+            
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
@@ -43,8 +49,14 @@ public static class QueueSessionEndpoints
         });
     }
 
-    private static async Task<IResult> GetSessionById(int id, QueueSessionService service)
+    private static async Task<IResult> GetSessionById(
+        int id,
+        ClaimsPrincipal user,
+        QueueSessionService service)
     {
+        if (!user.Identity?.IsAuthenticated ?? false)
+            return Results.Unauthorized();
+            
         var session = await service.GetByIdAsync(id);
         if (session == null)
             return Results.NotFound();
@@ -54,8 +66,12 @@ public static class QueueSessionEndpoints
 
     private static async Task<IResult> GetSessionStatistics(
         int? id,
+        ClaimsPrincipal user,
         QueueSessionService service)
     {
+        if (!user.Identity?.IsAuthenticated ?? false)
+            return Results.Unauthorized();
+            
         QueueSessionStatsDto stats;
 
         if (id.HasValue)
@@ -71,9 +87,13 @@ public static class QueueSessionEndpoints
     }
 
     private static async Task<IResult> GetActiveSessionServiceTypes(
+        ClaimsPrincipal user,
         QueueSessionService queueSessionService,
         ServiceTypeService serviceTypeService)
     {
+        if (!user.Identity?.IsAuthenticated ?? false)
+            return Results.Unauthorized();
+            
         var session = await queueSessionService.GetActiveSessionAsync();
         if (session == null)
             return Results.NotFound();
@@ -95,13 +115,21 @@ public static class QueueSessionEndpoints
         return Results.Ok(response);
     }
 
-    private static async Task<IResult> CreateSession([FromBody] CreateQueueSessionDto request, QueueSessionService queueSessionService)
+    private static async Task<IResult> CreateSession(
+        [FromBody] CreateQueueSessionDto request,
+        ClaimsPrincipal user,
+        QueueSessionService queueSessionService)
     {
-        // TODO: Заменить на получение ID из контекста аутентификации
-        // Временно используем ID пользователя admin (id = 1)
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("ADMIN", "OPERATOR"))
+            return Results.Forbid();
+            
         try
         {
-            var created = await queueSessionService.CreateFromConfigAsync(request.QueueConfigId, createdById: 1);
+            var created = await queueSessionService.CreateFromConfigAsync(request.QueueConfigId, createdById: userId.Value);
             return Results.Created("", created);
         }
         catch (NotFoundException ex) when (ex.Message.Contains("not found"))
@@ -117,12 +145,18 @@ public static class QueueSessionEndpoints
     private static async Task<IResult> ChangeSessionStatus(
         int id,
         [FromBody] UpdateQueueSessionStatusDto request,
+        ClaimsPrincipal user,
         QueueSessionService queueSessionService,
         TicketService ticketService,
         ClientSessionService clientSessionService)
     {
-        // TODO: Заменить на получение ID из контекста аутентификации
-        // Временно используем ID пользователя admin (id = 1)
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("ADMIN", "OPERATOR"))
+            return Results.Forbid();
+            
         try
         {
             var session = await queueSessionService.GetByIdAsync(id);
@@ -135,14 +169,14 @@ public static class QueueSessionEndpoints
             if (request.Status == SessionStatus.Closed && oldStatus != SessionStatus.Closed)
             {
                 // 1. Закрыть все активные талоны сессии
-                await ticketService.CloseAllTicketsForSessionAsync(id, actorUserId: 1);
+                await ticketService.CloseAllTicketsForSessionAsync(id, actorUserId: userId.Value);
 
                 // 2. Инвалидировать все клиентские сессии, привязанные к этой очереди
-                await clientSessionService.InvalidateAllByQueueSessionAsync(id, actorUserId: 1);
+                await clientSessionService.InvalidateAllByQueueSessionAsync(id, actorUserId: userId.Value);
             }
 
             // 3. Изменить статус сессии (без инвалидации — она уже выполнена выше)
-            var updated = await queueSessionService.ChangeStatusAsync(id, request.Status, actorUserId: 1);
+            var updated = await queueSessionService.ChangeStatusAsync(id, request.Status, actorUserId: userId.Value);
             return Results.Ok(updated);
         }
         catch (NotFoundException ex) when (ex.Message.Contains("not found"))

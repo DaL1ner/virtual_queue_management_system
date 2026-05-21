@@ -17,6 +17,7 @@ public static class DependencyInjection
         // Регистрация сервисов безопасности
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<ITokenValidationService, TokenValidationService>();
 
         return services;
     }

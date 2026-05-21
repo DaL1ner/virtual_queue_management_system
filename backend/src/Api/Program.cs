@@ -2,6 +2,7 @@ using Serilog;
 using Infrastructure.DependencyInjection;
 using Application.DependencyInjection;
 using Api.Endpoints;
+using Api.Middleware;
 
 namespace Api;
 
@@ -64,6 +65,9 @@ public static class Program
 
         app.UseHttpsRedirection();
         app.UseCors("AllowAll");
+
+        // Добавить middleware аутентификации
+        app.UseAuthenticationMiddleware();
 
         // Map endpoints
         app.MapHealthEndpoints();

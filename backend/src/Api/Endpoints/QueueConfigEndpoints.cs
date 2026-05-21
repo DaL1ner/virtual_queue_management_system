@@ -5,6 +5,8 @@ using Application.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using System.Security.Claims;
+using Api.Helpers;
 
 public static class QueueConfigEndpoints
 {
@@ -35,19 +37,36 @@ public static class QueueConfigEndpoints
         return Results.Ok(config);
     }
 
-    private static async Task<IResult> CreateQueueConfig(CreateQueueConfigDto dto, QueueConfigService service)
+    private static async Task<IResult> CreateQueueConfig(
+        CreateQueueConfigDto dto,
+        ClaimsPrincipal user,
+        QueueConfigService service)
     {
-        // TODO: Заменить на получение ID из контекста аутентификации
-        // Временно используем ID пользователя admin (id = 1)
-        var created = await service.CreateAsync(dto, createdById: 1);
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var created = await service.CreateAsync(dto, createdById: userId.Value);
         return Results.Created("", created);
     }
 
-    private static async Task<IResult> UpdateQueueConfig(int id, UpdateQueueConfigDto dto, QueueConfigService service)
+    private static async Task<IResult> UpdateQueueConfig(
+        int id,
+        UpdateQueueConfigDto dto,
+        ClaimsPrincipal user,
+        QueueConfigService service)
     {
-        // TODO: Заменить на получение ID из контекста аутентификации
-        // Временно используем ID пользователя admin (id = 1)
-        var updated = await service.UpdateAsync(id, dto, actorUserId: 1);
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var updated = await service.UpdateAsync(id, dto, actorUserId: userId.Value);
         return Results.Ok(updated);
     }
 }

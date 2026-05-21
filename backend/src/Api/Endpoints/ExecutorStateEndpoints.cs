@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Api.Helpers;
 
 public static class ExecutorStateEndpoints
 {
@@ -29,20 +31,23 @@ public static class ExecutorStateEndpoints
     /// </summary>
     private static async Task<IResult> ToggleReady(
         [FromBody] ToggleExecutorReadyDto dto,
-        ExecutorStateService service,
-        HttpContext httpContext)
+        ClaimsPrincipal user,
+        ExecutorStateService service)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+            return Results.Forbid();
+            
         try
         {
             // Валидация входных данных
             if (dto.UserId <= 0)
                 return Results.BadRequest("UserId должен быть положительным числом.");
 
-            // Извлечение actorUserId из контекста аутентификации (пока не реализовано)
-            int? actorUserId = null;
-            // TODO: когда появится аутентификация, брать из httpContext.User
-
-            var result = await service.ToggleReadyAsync(dto, actorUserId);
+            var result = await service.ToggleReadyAsync(dto, userId.Value);
             return Results.Ok(result);
         }
         catch (NotFoundException ex)
@@ -72,9 +77,17 @@ public static class ExecutorStateEndpoints
     /// Получение всех состояний исполнителей для активной сессии
     /// </summary>
     private static async Task<IResult> GetAllBySession(
+        ClaimsPrincipal user,
         ExecutorStateService service,
         QueueSessionService queueSessionService)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+            return Results.Forbid();
+            
         try
         {
             var activeSession = await queueSessionService.GetActiveSessionAsync();
@@ -95,9 +108,17 @@ public static class ExecutorStateEndpoints
     /// </summary>
     private static async Task<IResult> GetByUser(
         int userId,
+        ClaimsPrincipal user,
         ExecutorStateService service,
         QueueSessionService queueSessionService)
     {
+        var actorId = user.GetUserId();
+        if (actorId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+            return Results.Forbid();
+            
         try
         {
             var activeSession = await queueSessionService.GetActiveSessionAsync();
@@ -121,15 +142,19 @@ public static class ExecutorStateEndpoints
     /// </summary>
     private static async Task<IResult> CallNext(
         [FromBody] CallNextTicketDto dto,
-        ExecutorStateService executorStateService,
-        HttpContext httpContext)
+        ClaimsPrincipal user,
+        ExecutorStateService executorStateService)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+            return Results.Forbid();
+            
         try
         {
-            // TODO: извлечение actorUserId из контекста аутентификации
-            int? actorUserId = null;
-            
-            var result = await executorStateService.CallNextTicketAsync(dto, actorUserId);
+            var result = await executorStateService.CallNextTicketAsync(dto, userId.Value);
             return Results.Ok(result);
         }
         catch (NotFoundException ex)
@@ -155,16 +180,19 @@ public static class ExecutorStateEndpoints
     /// </summary>
     private static async Task<IResult> MarkNoShow(
         [FromBody] MarkNoShowDto dto,
-        ExecutorStateService service,
-        HttpContext httpContext)
+        ClaimsPrincipal user,
+        ExecutorStateService service)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+            return Results.Forbid();
+            
         try
         {
-            // Извлечение actorUserId из контекста аутентификации (пока не реализовано)
-            int? actorUserId = null;
-            // TODO: когда появится аутентификация, брать из httpContext.User
-
-            var result = await service.MarkNoShowAsync(dto, actorUserId);
+            var result = await service.MarkNoShowAsync(dto, userId.Value);
             return Results.Ok(result);
         }
         catch (NotFoundException ex)
@@ -195,16 +223,19 @@ public static class ExecutorStateEndpoints
     /// </summary>
     private static async Task<IResult> StartServing(
         [FromBody] StartServingDto dto,
-        ExecutorStateService service,
-        HttpContext httpContext)
+        ClaimsPrincipal user,
+        ExecutorStateService service)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+            return Results.Forbid();
+            
         try
         {
-            // Извлечение actorUserId из контекста аутентификации (пока не реализовано)
-            int? actorUserId = null;
-            // TODO: когда появится аутентификация, брать из httpContext.User
-
-            var result = await service.StartServingAsync(dto, actorUserId);
+            var result = await service.StartServingAsync(dto, userId.Value);
             return Results.Ok(result);
         }
         catch (NotFoundException ex)
@@ -235,16 +266,19 @@ public static class ExecutorStateEndpoints
     /// </summary>
     private static async Task<IResult> CompleteServing(
         [FromBody] CompleteServingDto dto,
-        ExecutorStateService service,
-        HttpContext httpContext)
+        ClaimsPrincipal user,
+        ExecutorStateService service)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+            return Results.Forbid();
+            
         try
         {
-            // Извлечение actorUserId из контекста аутентификации (пока не реализовано)
-            int? actorUserId = null;
-            // TODO: когда появится аутентификация, брать из httpContext.User
-
-            var result = await service.CompleteServingAsync(dto, actorUserId);
+            var result = await service.CompleteServingAsync(dto, userId.Value);
             return Results.Ok(result);
         }
         catch (NotFoundException ex)

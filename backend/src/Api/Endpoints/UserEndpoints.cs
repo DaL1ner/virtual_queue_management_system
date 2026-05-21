@@ -5,6 +5,8 @@ using Application.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using System.Security.Claims;
+using Api.Helpers;
 
 public static class UserEndpoints
 {
@@ -34,35 +36,70 @@ public static class UserEndpoints
         return Results.Ok(user);
     }
 
-    private static async Task<IResult> CreateUser(CreateUserDto dto, UserService service)
+    private static async Task<IResult> CreateUser(
+        CreateUserDto dto,
+        ClaimsPrincipal user,
+        UserService service)
     {
-        // TODO: Заменить на получение ID из контекста аутентификации
-        // Временно используем ID пользователя admin (id = 1)
-        var created = await service.CreateAsync(dto, createdById: 1);
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var created = await service.CreateAsync(dto, createdById: userId.Value);
         return Results.Created("/api/users/" + created.Id, created);
     }
 
-    private static async Task<IResult> UpdateUser(int id, UpdateUserDto dto, UserService service)
+    private static async Task<IResult> UpdateUser(
+        int id,
+        UpdateUserDto dto,
+        ClaimsPrincipal user,
+        UserService service)
     {
-        // TODO: Заменить на получение ID из контекста аутентификации
-        // Временно используем ID пользователя admin (id = 1)
-        var updated = await service.UpdateAsync(id, dto, updatedById: 1);
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var updated = await service.UpdateAsync(id, dto, updatedById: userId.Value);
         return Results.Ok(updated);
     }
 
-    private static async Task<IResult> AssignRole(int userId, int roleId, UserService service)
+    private static async Task<IResult> AssignRole(
+        int userId,
+        int roleId,
+        ClaimsPrincipal user,
+        UserService service)
     {
-        // TODO: Заменить на получение ID из контекста аутентификации
-        // Временно используем ID пользователя admin (id = 1)
-        var updated = await service.AssignRoleAsync(userId, roleId, assignedById: 1);
+        var actorId = user.GetUserId();
+        if (actorId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var updated = await service.AssignRoleAsync(userId, roleId, assignedById: actorId.Value);
         return Results.Ok(updated);
     }
 
-    private static async Task<IResult> UnassignRole(int userId, int roleId, UserService service)
+    private static async Task<IResult> UnassignRole(
+        int userId,
+        int roleId,
+        ClaimsPrincipal user,
+        UserService service)
     {
-        // TODO: Заменить на получение ID из контекста аутентификации
-        // Временно используем ID пользователя admin (id = 1)
-        var updated = await service.UnassignRoleAsync(userId, roleId, unassignedById: 1);
+        var actorId = user.GetUserId();
+        if (actorId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var updated = await service.UnassignRoleAsync(userId, roleId, unassignedById: actorId.Value);
         return Results.Ok(updated);
     }
 }
