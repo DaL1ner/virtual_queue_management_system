@@ -136,9 +136,20 @@ public static class TicketEndpoints
 
     /// <summary>
     /// Получить детальную информацию о талоне по ID (с расчётом времени ожидания)
+    /// Требует аутентификации и роли ADMIN или OPERATOR
     /// </summary>
-    private static async Task<IResult> GetTicketById(int ticketId, TicketService service)
+    private static async Task<IResult> GetTicketById(
+        int ticketId,
+        ClaimsPrincipal user,
+        TicketService service)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+
+        if (!user.IsInAnyRole("ADMIN", "OPERATOR"))
+            return Results.Forbid();
+
         var ticket = await service.GetDetailAsync(ticketId);
         if (ticket == null)
             return Results.NotFound();
@@ -218,9 +229,20 @@ public static class TicketEndpoints
 
     /// <summary>
     /// Получить позицию талона в очереди
+    /// Требует аутентификации и роли ADMIN или OPERATOR
     /// </summary>
-    private static async Task<IResult> GetTicketPosition(int ticketId, TicketService service)
+    private static async Task<IResult> GetTicketPosition(
+        int ticketId,
+        ClaimsPrincipal user,
+        TicketService service)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+
+        if (!user.IsInAnyRole("ADMIN", "OPERATOR"))
+            return Results.Forbid();
+
         try
         {
             var position = await service.GetPositionAsync(ticketId);
@@ -238,10 +260,20 @@ public static class TicketEndpoints
 
     /// <summary>
     /// Получение списка ожидающих талонов (очереди) в активной сессии
+    /// Требует аутентификации и роли ADMIN или OPERATOR
     /// Сортировка: PriorityLevel DESC, SortOrder ASC, CreatedAt ASC
     /// </summary>
-    private static async Task<IResult> GetQueue(TicketService service)
+    private static async Task<IResult> GetQueue(
+        ClaimsPrincipal user,
+        TicketService service)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+
+        if (!user.IsInAnyRole("ADMIN", "OPERATOR"))
+            return Results.Forbid();
+
         try
         {
             var tickets = await service.GetQueueAsync();
@@ -255,18 +287,18 @@ public static class TicketEndpoints
 
     /// <summary>
     /// Отмена талона (перевод из WAITING в CANCELLED)
+    /// Требует аутентификации и роли ADMIN или OPERATOR
     /// </summary>
     private static async Task<IResult> CancelTicket(
         int ticketId,
         ClaimsPrincipal user,
         TicketService service)
     {
-        // Отмена талона требует аутентификации и роли ADMIN, OPERATOR или EXECUTOR
         var userId = user.GetUserId();
         if (userId == null)
             return Results.Unauthorized();
-            
-        if (!user.IsInAnyRole("ADMIN", "OPERATOR", "EXECUTOR"))
+
+        if (!user.IsInAnyRole("ADMIN", "OPERATOR"))
             return Results.Forbid();
             
         try
