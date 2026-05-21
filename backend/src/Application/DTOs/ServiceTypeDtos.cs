@@ -61,3 +61,11 @@ public record ActiveSessionServiceTypesResponseDto(
     IEnumerable<ServiceTypeDto> ServiceTypes,
     bool ServiceTypesAllowed
 );
+
+/// <summary>
+/// DTO для упрощённого ответа с типом услуги (только id и name)
+/// </summary>
+public record ServiceTypeSimpleDto(
+    int Id,
+    string Name
+);

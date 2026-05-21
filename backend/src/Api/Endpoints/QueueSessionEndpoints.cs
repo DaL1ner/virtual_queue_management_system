@@ -18,6 +18,7 @@ public static class QueueSessionEndpoints
 
         endpointGroup.MapGet("/", GetAllSessions);
         endpointGroup.MapGet("/{id:int}", GetSessionById);
+        endpointGroup.MapGet("/statistics/active", GetActiveSessionStatistics);
         endpointGroup.MapGet("/statistics/{id:int?}", GetSessionStatistics);
         endpointGroup.MapGet("/active/service-types", GetActiveSessionServiceTypes);
         endpointGroup.MapPost("/", CreateSession);
@@ -29,24 +30,14 @@ public static class QueueSessionEndpoints
     private static async Task<IResult> GetAllSessions(
         ClaimsPrincipal user,
         QueueSessionService service,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] bool isActive = false)
     {
-        if (!user.Identity?.IsAuthenticated ?? false)
-            return Results.Unauthorized();
-            
-        if (page < 1) page = 1;
-        if (pageSize < 1 || pageSize > 100) pageSize = 20;
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
 
-        var (items, totalCount) = await service.GetAllAsync(page, pageSize);
+        var sessions = await service.GetAllAsync(filterActive: isActive);
 
-        return Results.Ok(new
-        {
-            Items = items,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
-        });
+        return Results.Ok(sessions);
     }
 
     private static async Task<IResult> GetSessionById(
@@ -54,8 +45,8 @@ public static class QueueSessionEndpoints
         ClaimsPrincipal user,
         QueueSessionService service)
     {
-        if (!user.Identity?.IsAuthenticated ?? false)
-            return Results.Unauthorized();
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
             
         var session = await service.GetByIdAsync(id);
         if (session == null)
@@ -69,8 +60,8 @@ public static class QueueSessionEndpoints
         ClaimsPrincipal user,
         QueueSessionService service)
     {
-        if (!user.Identity?.IsAuthenticated ?? false)
-            return Results.Unauthorized();
+        if (user.IsClient())
+            return Results.Forbid();
             
         QueueSessionStatsDto stats;
 
@@ -86,33 +77,48 @@ public static class QueueSessionEndpoints
         return Results.Ok(stats);
     }
 
+    private static async Task<IResult> GetActiveSessionStatistics(
+        ClaimsPrincipal user,
+        QueueSessionService service)
+    {
+        if (user.IsClient())
+            return Results.Forbid();
+
+        var stats = await service.GetStatisticsAsync();
+
+        return Results.Ok(stats);
+    }
+
     private static async Task<IResult> GetActiveSessionServiceTypes(
         ClaimsPrincipal user,
         QueueSessionService queueSessionService,
         ServiceTypeService serviceTypeService)
     {
-        if (!user.Identity?.IsAuthenticated ?? false)
-            return Results.Unauthorized();
-            
         var session = await queueSessionService.GetActiveSessionAsync();
         if (session == null)
             return Results.NotFound();
 
         var serviceTypes = await serviceTypeService.GetAllAsync(session.QueueConfigId);
 
-        var queueConfig = await queueSessionService.GetConfigByIdAsync(session.QueueConfigId);
-        var serviceTypesAllowed = queueConfig?.IsServiceTypeEnabled ?? false;
+        if (user.IsInRole("ADMIN"))
+        {
+            var queueConfig = await queueSessionService.GetConfigByIdAsync(session.QueueConfigId);
+            var serviceTypesAllowed = queueConfig?.IsServiceTypeEnabled ?? false;
 
-        var response = new ActiveSessionServiceTypesResponseDto(
-            session.Id,
-            session.Status.ToString(),
-            session.QueueConfigId,
-            session.StartedAt,
-            serviceTypes,
-            serviceTypesAllowed
-        );
+            var response = new ActiveSessionServiceTypesResponseDto(
+                session.Id,
+                session.Status.ToString(),
+                session.QueueConfigId,
+                session.StartedAt,
+                serviceTypes,
+                serviceTypesAllowed
+            );
 
-        return Results.Ok(response);
+            return Results.Ok(response);
+        }
+
+        var simpleResponse = serviceTypes.Select(st => new ServiceTypeSimpleDto(st.Id, st.Name));
+        return Results.Ok(simpleResponse);
     }
 
     private static async Task<IResult> CreateSession(
@@ -124,7 +130,7 @@ public static class QueueSessionEndpoints
         if (userId == null)
             return Results.Unauthorized();
             
-        if (!user.IsInAnyRole("ADMIN", "OPERATOR"))
+        if (!user.IsInRole("ADMIN"))
             return Results.Forbid();
             
         try
@@ -154,7 +160,7 @@ public static class QueueSessionEndpoints
         if (userId == null)
             return Results.Unauthorized();
             
-        if (!user.IsInAnyRole("ADMIN", "OPERATOR"))
+        if (!user.IsInRole("ADMIN"))
             return Results.Forbid();
             
         try

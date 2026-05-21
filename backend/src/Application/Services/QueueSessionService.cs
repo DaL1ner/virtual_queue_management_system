@@ -133,31 +133,26 @@ public class QueueSessionService
     }
 
     /// <summary>
-    /// Возвращает все сессии с поддержкой пагинации
+    /// Возвращает все сессии. При filterActive=true возвращает только активную сессию (OPEN или PAUSED)
     /// </summary>
-    public async Task<(List<QueueSessionDto> Items, int TotalCount)> GetAllAsync(
-        int page = 1,
-        int pageSize = 20)
+    public async Task<List<QueueSessionDto>> GetAllAsync(bool filterActive = false)
     {
-        var skip = (page - 1) * pageSize;
+        var query = _context.QueueSessions.AsQueryable();
 
-        var query = _context.QueueSessions
+        if (filterActive)
+        {
+            query = query.Where(q => q.Status == SessionStatus.Open || q.Status == SessionStatus.Paused);
+        }
+
+        var sessions = await query
             .Include(q => q.QueueConfig)
             .Include(q => q.CreatedBy)
             .Include(q => q.Tickets)
-            .Include(q => q.ExecutorStates);
-
-        var totalCount = await query.CountAsync();
-
-        var sessions = await query
+            .Include(q => q.ExecutorStates)
             .OrderByDescending(q => q.CreatedAt)
-            .Skip(skip)
-            .Take(pageSize)
             .ToListAsync();
 
-        var items = sessions.Select(MapToDto).ToList();
-
-        return (items, totalCount);
+        return sessions.Select(MapToDto).ToList();
     }
 
     /// <summary>
