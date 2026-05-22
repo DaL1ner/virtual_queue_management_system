@@ -98,13 +98,15 @@ public static class QueueSessionEndpoints
         if (session == null)
             return Results.NotFound();
 
-        var serviceTypes = await serviceTypeService.GetAllAsync(session.QueueConfigId);
+        var queueConfig = await queueSessionService.GetConfigByIdAsync(session.QueueConfigId);
+        var serviceTypesAllowed = queueConfig?.IsServiceTypeEnabled ?? false;
+
+        var serviceTypes = serviceTypesAllowed
+            ? await serviceTypeService.GetAllAsync(session.QueueConfigId)
+            : [];
 
         if (user.IsInRole("ADMIN"))
         {
-            var queueConfig = await queueSessionService.GetConfigByIdAsync(session.QueueConfigId);
-            var serviceTypesAllowed = queueConfig?.IsServiceTypeEnabled ?? false;
-
             var response = new ActiveSessionServiceTypesResponseDto(
                 session.Id,
                 session.Status.ToString(),
