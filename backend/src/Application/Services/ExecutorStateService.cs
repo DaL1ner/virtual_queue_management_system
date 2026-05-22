@@ -43,20 +43,24 @@ public class ExecutorStateService
     /// <summary>
     /// Переключение готовности исполнителя (toggle)
     /// </summary>
-    /// <param name="dto">DTO с идентификатором пользователя и опционально сессии</param>
-    /// <param name="actorUserId">ID пользователя, инициировавшего изменение (опционально)</param>
+    /// <param name="actorUserId">ID пользователя, инициировавшего изменение (обязательно)</param>
     /// <returns>DTO обновлённого состояния исполнителя</returns>
-    public async Task<ExecutorStateDto> ToggleReadyAsync(ToggleExecutorReadyDto dto, int? actorUserId = null)
+    public async Task<ExecutorStateDto> ToggleReadyAsync(int? actorUserId = null)
     {
+        if (actorUserId == null)
+            throw new UnauthorizedAccessException("Не указан идентификатор пользователя.");
+
+        int executorUserId = actorUserId.Value;
+
         // 1. Проверка существования пользователя
-        var user = await _userService.GetByIdAsync(dto.UserId);
-        _logger.LogInformation("ToggleReadyAsync: пользователь {UserId} существует", dto.UserId);
+        var user = await _userService.GetByIdAsync(executorUserId);
+        _logger.LogInformation("ToggleReadyAsync: пользователь {UserId} существует", executorUserId);
 
         // 1.5 Проверка наличия роли EXECUTOR
-        var hasExecutorRole = await _userService.HasRoleAsync(dto.UserId, "EXECUTOR");
+        var hasExecutorRole = await _userService.HasRoleAsync(executorUserId, "EXECUTOR");
         if (!hasExecutorRole)
             throw new UnauthorizedAccessException(
-                $"Пользователь {dto.UserId} не имеет роли EXECUTOR и не может управлять состоянием исполнителя.");
+                $"Пользователь {executorUserId} не имеет роли EXECUTOR и не может управлять состоянием исполнителя.");
 
         // 2. Получение активной сессии очереди
         var activeSession = await _queueSessionService.GetActiveSessionAsync();
@@ -68,7 +72,7 @@ public class ExecutorStateService
         _logger.LogInformation("ToggleReadyAsync: используем сессию {QueueSessionId}", queueSessionId);
 
         // 3. Получение или создание состояния исполнителя
-        var executorState = await GetOrCreateAsync(queueSessionId, dto.UserId);
+        var executorState = await GetOrCreateAsync(queueSessionId, executorUserId);
 
         // 4. Сохраняем старое значение для события
         var oldIsReady = executorState.IsReady;
@@ -78,7 +82,7 @@ public class ExecutorStateService
         if (newIsReady && executorState.CurrentTicketId.HasValue)
         {
             throw new BadRequestException(
-                "Исполнитель не может быть помечен как готовый, пока у него есть текущий талон. " +
+                "Исполнитель не может быть помечен как готовный, пока у него есть текущий талон. " +
                 "Завершите обслуживание текущего талона сначала.");
         }
 
@@ -96,7 +100,7 @@ public class ExecutorStateService
         await _eventPublisher.PublishAsync(new ExecutorStateChangedEvent(
             executorState.Id,
             queueSessionId,
-            dto.UserId,
+            executorUserId,
             oldIsReady,
             newIsReady,
             actorUserId));
@@ -162,6 +166,18 @@ public class ExecutorStateService
             return null;
 
         return await MapToDtoAsync(state);
+    }
+
+    /// <summary>
+    /// Получение состояния исполнителя для текущего пользователя по его userId
+    /// </summary>
+    public async Task<ExecutorStateDto?> GetByCurrentUserAsync(int userId)
+    {
+        var activeSession = await _queueSessionService.GetActiveSessionAsync();
+        if (activeSession == null)
+            throw new BadRequestException("Нет активной сессии очереди.");
+
+        return await GetBySessionAndUserAsync(activeSession.Id, userId);
     }
 
     /// <summary>
@@ -236,19 +252,24 @@ public class ExecutorStateService
     /// <summary>
     /// Фиксация неявки клиента (перевод талона в статус Skipped и освобождение исполнителя)
     /// </summary>
-    public async Task<ExecutorStateDto> MarkNoShowAsync(MarkNoShowDto dto, int? actorUserId = null)
+    public async Task<ExecutorStateDto> MarkNoShowAsync(int? actorUserId = null)
     {
+        if (actorUserId == null)
+            throw new UnauthorizedAccessException("Не указан идентификатор пользователя.");
+
+        int executorUserId = actorUserId.Value;
+
         // 1. Проверка существования пользователя
-        var user = await _userService.GetByIdAsync(dto.UserId);
-        _logger.LogInformation("MarkNoShowAsync: пользователь {UserId} существует", dto.UserId);
+        var user = await _userService.GetByIdAsync(executorUserId);
+        _logger.LogInformation("MarkNoShowAsync: пользователь {UserId} существует", executorUserId);
 
         // 1.5 Проверка наличия роли EXECUTOR
-        var hasExecutorRole = await _userService.HasRoleAsync(dto.UserId, "EXECUTOR");
+        var hasExecutorRole = await _userService.HasRoleAsync(executorUserId, "EXECUTOR");
         if (!hasExecutorRole)
             throw new UnauthorizedAccessException(
-                $"Пользователь {dto.UserId} не имеет роли EXECUTOR и не может фиксировать неявку.");
+                $"Пользователь {executorUserId} не имеет роли EXECUTOR и не может фиксировать неявку.");
 
-        // 2. Получить активную сессию очереди
+        // 2. Получить активную сессии очереди
         var activeSession = await _queueSessionService.GetActiveSessionAsync();
         if (activeSession == null)
             throw new BadRequestException("Нет активной сессии очереди.");
@@ -262,14 +283,14 @@ public class ExecutorStateService
             .Include(es => es.User)
             .Include(es => es.QueueSession)
             .Include(es => es.CurrentTicket)
-            .FirstOrDefaultAsync(es => es.QueueSessionId == queueSessionId && es.UserId == dto.UserId);
+            .FirstOrDefaultAsync(es => es.QueueSessionId == queueSessionId && es.UserId == executorUserId);
 
         if (executorState == null)
-            throw new NotFoundException($"Состояние исполнителя для пользователя {dto.UserId} в сессии {queueSessionId} не найдено.");
+            throw new NotFoundException($"Состояние исполнителя для пользователя {executorUserId} в сессии {queueSessionId} не найдено.");
 
         // 4. Проверка наличия текущего талона
         if (!executorState.CurrentTicketId.HasValue)
-            throw new BadRequestException($"У исполнителя {dto.UserId} нет текущего талона.");
+            throw new BadRequestException($"У исполнителя {executorUserId} нет текущего талона.");
 
         // 5. Проверка статуса талона (должен быть Called)
         var ticket = executorState.CurrentTicket;
@@ -301,7 +322,7 @@ public class ExecutorStateService
         // 9. Завершение клиентской сессии, если она есть
         if (ticket.ClientSessionId.HasValue)
         {
-            await _clientSessionService.InvalidateAsync(ticket.ClientSessionId.Value, actorUserId ?? dto.UserId);
+            await _clientSessionService.InvalidateAsync(ticket.ClientSessionId.Value, actorUserId ?? executorUserId);
         }
     
         // 10. Обновление состояния исполнителя
@@ -330,17 +351,22 @@ public class ExecutorStateService
     /// <summary>
     /// Начало обслуживания текущего талона исполнителем (перевод из Called в Serving)
     /// </summary>
-    public async Task<ExecutorStateDto> StartServingAsync(StartServingDto dto, int? actorUserId = null)
+    public async Task<ExecutorStateDto> StartServingAsync(int? actorUserId = null)
     {
+        if (actorUserId == null)
+            throw new UnauthorizedAccessException("Не указан идентификатор пользователя.");
+
+        int executorUserId = actorUserId.Value;
+
         // 1. Проверка существования пользователя
-        var user = await _userService.GetByIdAsync(dto.UserId);
-        _logger.LogInformation("StartServingAsync: пользователь {UserId} существует", dto.UserId);
+        var user = await _userService.GetByIdAsync(executorUserId);
+        _logger.LogInformation("StartServingAsync: пользователь {UserId} существует", executorUserId);
 
         // 2. Проверка наличия роли EXECUTOR
-        var hasExecutorRole = await _userService.HasRoleAsync(dto.UserId, "EXECUTOR");
+        var hasExecutorRole = await _userService.HasRoleAsync(executorUserId, "EXECUTOR");
         if (!hasExecutorRole)
             throw new UnauthorizedAccessException(
-                $"Пользователь {dto.UserId} не имеет роли EXECUTOR и не может начинать обслуживание.");
+                $"Пользователь {executorUserId} не имеет роли EXECUTOR и не может начинать обслуживание.");
 
         // 3. Получить активную сессию очереди
         var activeSession = await _queueSessionService.GetActiveSessionAsync();
@@ -355,14 +381,14 @@ public class ExecutorStateService
             .Include(es => es.User)
             .Include(es => es.QueueSession)
             .Include(es => es.CurrentTicket)
-            .FirstOrDefaultAsync(es => es.QueueSessionId == queueSessionId && es.UserId == dto.UserId);
+            .FirstOrDefaultAsync(es => es.QueueSessionId == queueSessionId && es.UserId == executorUserId);
 
         if (executorState == null)
-            throw new NotFoundException($"Состояние исполнителя для пользователя {dto.UserId} в сессии {queueSessionId} не найдено.");
+            throw new NotFoundException($"Состояние исполнителя для пользователя {executorUserId} в сессии {queueSessionId} не найдено.");
 
         // 5. Проверка наличия текущего талона
         if (!executorState.CurrentTicketId.HasValue)
-            throw new BadRequestException($"У исполнителя {dto.UserId} нет текущего талона.");
+            throw new BadRequestException($"У исполнителя {executorUserId} нет текущего талона.");
 
         // 6. Проверка статуса талона (должен быть Called)
         var ticket = executorState.CurrentTicket;
@@ -402,17 +428,22 @@ public class ExecutorStateService
     /// <summary>
     /// Завершение обслуживания текущего талона исполнителем (перевод из Serving в Served)
     /// </summary>
-    public async Task<ExecutorStateDto> CompleteServingAsync(CompleteServingDto dto, int? actorUserId = null)
+    public async Task<ExecutorStateDto> CompleteServingAsync(int? actorUserId = null)
     {
+        if (actorUserId == null)
+            throw new UnauthorizedAccessException("Не указан идентификатор пользователя.");
+
+        int executorUserId = actorUserId.Value;
+
         // 1. Проверка существования пользователя
-        var user = await _userService.GetByIdAsync(dto.UserId);
-        _logger.LogInformation("CompleteServingAsync: пользователь {UserId} существует", dto.UserId);
+        var user = await _userService.GetByIdAsync(executorUserId);
+        _logger.LogInformation("CompleteServingAsync: пользователь {UserId} существует", executorUserId);
 
         // 2. Проверка наличия роли EXECUTOR
-        var hasExecutorRole = await _userService.HasRoleAsync(dto.UserId, "EXECUTOR");
+        var hasExecutorRole = await _userService.HasRoleAsync(executorUserId, "EXECUTOR");
         if (!hasExecutorRole)
             throw new UnauthorizedAccessException(
-                $"Пользователь {dto.UserId} не имеет роли EXECUTOR и не может завершать обслуживание.");
+                $"Пользователь {executorUserId} не имеет роли EXECUTOR и не может завершать обслуживание.");
 
         // 3. Получить активную сессию очереди
         var activeSession = await _queueSessionService.GetActiveSessionAsync();
@@ -427,14 +458,14 @@ public class ExecutorStateService
             .Include(es => es.User)
             .Include(es => es.QueueSession)
             .Include(es => es.CurrentTicket)
-            .FirstOrDefaultAsync(es => es.QueueSessionId == queueSessionId && es.UserId == dto.UserId);
+            .FirstOrDefaultAsync(es => es.QueueSessionId == queueSessionId && es.UserId == executorUserId);
 
         if (executorState == null)
-            throw new NotFoundException($"Состояние исполнителя для пользователя {dto.UserId} в сессии {queueSessionId} не найдено.");
+            throw new NotFoundException($"Состояние исполнителя для пользователя {executorUserId} в сессии {queueSessionId} не найдено.");
 
         // 5. Проверка наличия текущего талона
         if (!executorState.CurrentTicketId.HasValue)
-            throw new BadRequestException($"У исполнителя {dto.UserId} нет текущего талона.");
+            throw new BadRequestException($"У исполнителя {executorUserId} нет текущего талона.");
 
         // 6. Проверка статуса талона (должен быть Serving)
         var ticket = executorState.CurrentTicket;
@@ -463,7 +494,7 @@ public class ExecutorStateService
         // 9. Завершение клиентской сессии, если она есть
         if (ticket.ClientSessionId.HasValue)
         {
-            await _clientSessionService.InvalidateAsync(ticket.ClientSessionId.Value, actorUserId ?? dto.UserId);
+            await _clientSessionService.InvalidateAsync(ticket.ClientSessionId.Value, actorUserId ?? executorUserId);
         }
 
         // 10. Обновление состояния исполнителя

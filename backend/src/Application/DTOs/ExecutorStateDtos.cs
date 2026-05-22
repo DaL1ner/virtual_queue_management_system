@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Application.DTOs;
+﻿namespace Application.DTOs;
 
 /// <summary>
 /// DTO для установки готовности исполнителя
@@ -10,13 +6,6 @@ namespace Application.DTOs;
 public record SetExecutorReadyDto(
     int QueueSessionId,
     bool IsReady
-);
-
-/// <summary>
-/// DTO для переключения готовности исполнителя (toggle)
-/// </summary>
-public record ToggleExecutorReadyDto(
-    int UserId
 );
 
 /// <summary>
@@ -50,25 +39,4 @@ public record CallNextTicketResponseDto(
     TicketDto CalledTicket,
     int AssignedExecutorUserId,
     string AssignedExecutorName
-);
-
-/// <summary>
-/// DTO для фиксации неявки клиента
-/// </summary>
-public record MarkNoShowDto(
-    int UserId
-);
-
-/// <summary>
-/// DTO для начала обслуживания текущего талона исполнителем
-/// </summary>
-public record StartServingDto(
-    int UserId
-);
-
-/// <summary>
-/// DTO для завершения обслуживания текущего талона исполнителем
-/// </summary>
-public record CompleteServingDto(
-    int UserId
 );

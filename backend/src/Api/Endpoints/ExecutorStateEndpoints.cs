@@ -18,6 +18,7 @@ public static class ExecutorStateEndpoints
         endpointGroup.MapPost("/ready", ToggleReady);
         endpointGroup.MapGet("/", GetAllBySession);
         endpointGroup.MapGet("/{userId:int}", GetByUser);
+        endpointGroup.MapGet("/me", GetMe);
         endpointGroup.MapPost("/call-next", CallNext);
         endpointGroup.MapPost("/mark-no-show", MarkNoShow);
         endpointGroup.MapPost("/start-serving", StartServing);
@@ -30,7 +31,6 @@ public static class ExecutorStateEndpoints
     /// Переключение готовности исполнителя (toggle)
     /// </summary>
     private static async Task<IResult> ToggleReady(
-        [FromBody] ToggleExecutorReadyDto dto,
         ClaimsPrincipal user,
         ExecutorStateService service)
     {
@@ -38,16 +38,12 @@ public static class ExecutorStateEndpoints
         if (userId == null)
             return Results.Unauthorized();
             
-        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+        if (!user.IsInRole("EXECUTOR"))
             return Results.Forbid();
             
         try
         {
-            // Валидация входных данных
-            if (dto.UserId <= 0)
-                return Results.BadRequest("UserId должен быть положительным числом.");
-
-            var result = await service.ToggleReadyAsync(dto, userId.Value);
+            var result = await service.ToggleReadyAsync(userId.Value);
             return Results.Ok(result);
         }
         catch (NotFoundException ex)
@@ -85,7 +81,7 @@ public static class ExecutorStateEndpoints
         if (userId == null)
             return Results.Unauthorized();
             
-        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+        if (!user.IsInAnyRole("OPERATOR", "ADMIN"))
             return Results.Forbid();
             
         try
@@ -116,7 +112,7 @@ public static class ExecutorStateEndpoints
         if (actorId == null)
             return Results.Unauthorized();
             
-        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+        if (!user.IsInAnyRole("OPERATOR", "ADMIN"))
             return Results.Forbid();
             
         try
@@ -138,6 +134,38 @@ public static class ExecutorStateEndpoints
     }
 
     /// <summary>
+    /// Получение состояния исполнителя для авторизованного пользователя
+    /// </summary>
+    private static async Task<IResult> GetMe(
+        ClaimsPrincipal user,
+        ExecutorStateService service)
+    {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+
+        if (!user.IsInRole("EXECUTOR"))
+            return Results.Forbid();
+
+        try
+        {
+            var state = await service.GetByCurrentUserAsync(userId.Value);
+            if (state == null)
+                return Results.NotFound($"Состояние исполнителя для пользователя {userId} не найдено.");
+
+            return Results.Ok(state);
+        }
+        catch (BadRequestException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Внутренняя ошибка сервера: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Вызов следующего талона (первого в очереди) и назначение исполнителя
     /// </summary>
     private static async Task<IResult> CallNext(
@@ -149,7 +177,7 @@ public static class ExecutorStateEndpoints
         if (userId == null)
             return Results.Unauthorized();
             
-        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+        if (!user.IsInRole("OPERATOR"))
             return Results.Forbid();
             
         try
@@ -179,7 +207,6 @@ public static class ExecutorStateEndpoints
     /// Фиксация неявки клиента (перевод талона в статус Skipped и освобождение исполнителя)
     /// </summary>
     private static async Task<IResult> MarkNoShow(
-        [FromBody] MarkNoShowDto dto,
         ClaimsPrincipal user,
         ExecutorStateService service)
     {
@@ -187,12 +214,12 @@ public static class ExecutorStateEndpoints
         if (userId == null)
             return Results.Unauthorized();
             
-        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+        if (!user.IsInRole("EXECUTOR"))
             return Results.Forbid();
             
         try
         {
-            var result = await service.MarkNoShowAsync(dto, userId.Value);
+            var result = await service.MarkNoShowAsync(userId.Value);
             return Results.Ok(result);
         }
         catch (NotFoundException ex)
@@ -222,7 +249,6 @@ public static class ExecutorStateEndpoints
     /// Начало обслуживания текущего талона исполнителем
     /// </summary>
     private static async Task<IResult> StartServing(
-        [FromBody] StartServingDto dto,
         ClaimsPrincipal user,
         ExecutorStateService service)
     {
@@ -230,12 +256,12 @@ public static class ExecutorStateEndpoints
         if (userId == null)
             return Results.Unauthorized();
             
-        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+        if (!user.IsInRole("EXECUTOR"))
             return Results.Forbid();
             
         try
         {
-            var result = await service.StartServingAsync(dto, userId.Value);
+            var result = await service.StartServingAsync(userId.Value);
             return Results.Ok(result);
         }
         catch (NotFoundException ex)
@@ -265,7 +291,6 @@ public static class ExecutorStateEndpoints
     /// Завершение обслуживания текущего талона исполнителем
     /// </summary>
     private static async Task<IResult> CompleteServing(
-        [FromBody] CompleteServingDto dto,
         ClaimsPrincipal user,
         ExecutorStateService service)
     {
@@ -273,12 +298,12 @@ public static class ExecutorStateEndpoints
         if (userId == null)
             return Results.Unauthorized();
             
-        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+        if (!user.IsInRole("EXECUTOR"))
             return Results.Forbid();
             
         try
         {
-            var result = await service.CompleteServingAsync(dto, userId.Value);
+            var result = await service.CompleteServingAsync(userId.Value);
             return Results.Ok(result);
         }
         catch (NotFoundException ex)
