@@ -15,6 +15,7 @@ public static class UserEndpoints
         var endpointGroup = app.MapGroup("/api/users").WithTags("User");
 
         endpointGroup.MapGet("/", GetAllUsers);
+        endpointGroup.MapGet("/me", GetMyUser);
         endpointGroup.MapGet("/{id:int}", GetUserById);
         endpointGroup.MapPost("/", CreateUser);
         endpointGroup.MapPatch("/{id:int}", UpdateUser);
@@ -24,16 +25,35 @@ public static class UserEndpoints
         return endpointGroup;
     }
 
-    private static async Task<IResult> GetAllUsers(UserService service)
+    private static async Task<IResult> GetAllUsers(
+        ClaimsPrincipal user,
+        UserService service)
     {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
         var users = await service.GetAllAsync();
         return Results.Ok(users);
     }
 
-    private static async Task<IResult> GetUserById(int id, UserService service)
+    private static async Task<IResult> GetUserById(
+        int id,
+        ClaimsPrincipal user,
+        UserService service)
     {
-        var user = await service.GetByIdAsync(id);
-        return Results.Ok(user);
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var userDto = await service.GetByIdAsync(id);
+        return Results.Ok(userDto);
     }
 
     private static async Task<IResult> CreateUser(
@@ -101,5 +121,23 @@ public static class UserEndpoints
             
         var updated = await service.UnassignRoleAsync(userId, roleId, unassignedById: actorId.Value);
         return Results.Ok(updated);
+    }
+
+    /// <summary>
+    /// Получение информации о текущем авторизованном пользователе
+    /// </summary>
+    private static async Task<IResult> GetMyUser(
+        ClaimsPrincipal user,
+        UserService service)
+    {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInAnyRole("EXECUTOR", "OPERATOR", "ADMIN"))
+            return Results.Forbid();
+            
+        var userDto = await service.GetByIdAsync(userId.Value);
+        return Results.Ok(userDto);
     }
 }
