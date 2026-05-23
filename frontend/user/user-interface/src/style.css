@@ -1,0 +1,72 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+}
+
+.dashboard {
+  min-height: 100vh;
+}
+
+.login-container {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.card {
+  border: none;
+}
+
+.nav-tabs .nav-link {
+  font-weight: 500;
+}
+.nav-tabs .nav-link.active {
+  background-color: #f8f9fa;
+  border-bottom-color: #f8f9fa;
+}
+
+.executor-view,
+.operator-view,
+.admin-view {
+  min-height: 70vh;
+}
+
+.badge {
+  font-size: 0.8em;
+}
+
+.alert {
+  border: none;
+}
+
+.table th {
+  font-weight: 600;
+  background-color: #f8f9fa;
+}
+
+.btn-group-sm > .btn {
+  padding: 0.25rem 0.5rem;
+}
+
+.display-4 {
+  font-size: 3.5rem;
+  font-weight: 300;
+}
+
+.display-6 {
+  font-size: 2rem;
+  font-weight: 300;
+}
+
+/* Улучшение отображения модальных окон */
+.modal-content {
+  border-radius: 10px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .display-4 {
+    font-size: 2.5rem;
+  }
+  .display-6 {
+    font-size: 1.5rem;
+  }
+}
