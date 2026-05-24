@@ -25,6 +25,11 @@ export const executorApi = {
   markNoShow() {
     return apiClient.post('/api/executor-states/mark-no-show')
       .then(response => response.data)
+  },
+  // Получить статистику активной сессии очереди
+  getQueueStats() {
+    return apiClient.get('/api/queue-sessions/statistics/active')
+      .then(response => response.data)
   }
 }
 
@@ -33,3 +38,4 @@ export const toggleReady = executorApi.toggleReady
 export const startServing = executorApi.startServing
 export const completeServing = executorApi.completeServing
 export const markNoShow = executorApi.markNoShow
+export const getQueueStats = executorApi.getQueueStats

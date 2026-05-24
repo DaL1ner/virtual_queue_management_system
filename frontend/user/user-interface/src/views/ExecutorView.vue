@@ -11,7 +11,7 @@
           </div>
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <span class="fw-bold">Готовность:</span>
+              <span class="fw-bold">Готовность: {{ executorStore.isReady ? 'Готов' : 'Не готов' }}</span>
               <div class="form-check form-switch">
                 <input
                   class="form-check-input"
@@ -22,14 +22,14 @@
                   :disabled="executorStore.loading || currentTicket"
                 />
                 <label class="form-check-label">
-                  {{ executorStore.isReady ? 'Готов' : 'Не готов' }}
+                  <span class="visually-hidden">Готовность</span>
                 </label>
               </div>
             </div>
 
             <div v-if="currentTicket" class="alert alert-info">
               <h6 class="alert-heading">Текущий клиент</h6>
-              <p class="mb-1"><strong>Талон №{{ currentTicket.id }}</strong></p>
+              <p class="mb-1"><strong>Талон №{{ currentTicket.ticketNumber }}</strong></p>
               <p class="mb-1">{{ currentTicket.clientName }} {{ currentTicket.clientSurname }}</p>
               <p class="mb-0">Приоритет: <span class="badge bg-warning">{{ currentTicket.priorityLevel }}</span></p>
             </div>
@@ -40,21 +40,21 @@
             <div class="d-grid gap-2">
               <button
                 class="btn btn-success"
-                :disabled="!currentTicket || servingStartedAt || executorStore.loading"
+                :disabled="!!servingStartedAt || !currentTicket || executorStore.loading"
                 @click="handleStartServing"
               >
                 <i class="bi bi-play-circle me-1"></i> Начать обслуживание
               </button>
               <button
                 class="btn btn-warning"
-                :disabled="!servingStartedAt || executorStore.loading"
+                :disabled="!currentTicket || !currentTicket.serviceStartedAt || executorStore.loading"
                 @click="handleCompleteServing"
               >
                 <i class="bi bi-check-circle me-1"></i> Завершить обслуживание
               </button>
               <button
                 class="btn btn-danger"
-                :disabled="!currentTicket || executorStore.loading"
+                :disabled="!currentTicket || !!servingStartedAt || executorStore.loading"
                 @click="handleMarkNoShow"
               >
                 <i class="bi bi-x-circle me-1"></i> Клиент не явился
@@ -73,16 +73,16 @@
           <div class="card-body">
             <ul class="list-group list-group-flush">
               <li class="list-group-item d-flex justify-content-between">
-                <span>Обслужено сегодня:</span>
-                <span class="fw-bold">{{ executorStore.stats.servedToday || 0 }}</span>
+                <span>Обслужено всего:</span>
+                <span class="fw-bold">{{ executorStore.stats.totalServedCount || 0 }}</span>
               </li>
               <li class="list-group-item d-flex justify-content-between">
                 <span>Среднее время:</span>
-                <span class="fw-bold">{{ formatDuration(executorStore.stats.avgServingTime) }}</span>
+                <span class="fw-bold">{{ formatDuration(executorStore.stats.avgServiceTimeSec) }}</span>
               </li>
               <li class="list-group-item d-flex justify-content-between">
-                <span>В очереди:</span>
-                <span class="fw-bold">{{ executorStore.stats.queueLength || 0 }} чел.</span>
+                <span>Клиентов в очереди:</span>
+                <span class="fw-bold">{{ executorStore.queueStats?.waitingTickets || 0 }}</span>
               </li>
             </ul>
           </div>
@@ -98,8 +98,8 @@
             </h5>
           </div>
           <div class="card-body">
-            <div v-if="servingStartedAt" class="text-center">
-              <h3 class="display-4">{{ formatElapsedTime(servingStartedAt) }}</h3>
+            <div v-if="currentTicket?.serviceStartedAt" class="text-center">
+              <h3 class="display-4">{{ formatElapsedSeconds(executorStore.elapsedSeconds) }}</h3>
               <p class="text-muted">Время обслуживания</p>
               <div class="row mt-4">
                 <div class="col">
@@ -107,8 +107,8 @@
                     <div class="card-body">
                       <h6>Информация о клиенте</h6>
                       <p v-if="currentTicket">
-                        <strong>Тип услуги:</strong> {{ currentTicket.serviceTypeName }}<br>
-                        <strong>Время ожидания:</strong> {{ formatDuration(currentTicket.waitingTime) }}<br>
+                        <strong>Тип услуги:</strong> {{ currentTicket.serviceTypeName || 'Базовая' }}<br>
+                        <strong>Время ожидания:</strong> {{ formatDuration(executorStore.calculatedWaitingTime) }}<br>
                         <strong>Дата записи:</strong> {{ formatDate(currentTicket.createdAt) }}
                       </p>
                     </div>
@@ -153,7 +153,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onBeforeUnmount } from 'vue'
 import { useExecutorStore } from '@/stores/executor'
 
 const executorStore = useExecutorStore()
@@ -162,8 +162,11 @@ const currentTicket = computed(() => executorStore.currentTicket)
 const servingStartedAt = computed(() => executorStore.servingStartedAt)
 
 onMounted(() => {
-  // Загружаем состояние при монтировании
-  executorStore.fetchState()
+  executorStore.init()
+})
+
+onBeforeUnmount(() => {
+  executorStore.stopElapsedTimer()
 })
 
 function handleToggleReady() {
@@ -185,18 +188,19 @@ function handleMarkNoShow() {
 }
 
 function formatDuration(seconds) {
-  if (!seconds) return '0:00'
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}:${secs.toString().padStart(2, '0')}`
+  if (!seconds && seconds !== 0) return '0:00'
+  const secs = Math.floor(secs)
+  const mins = Math.floor(secs / 60)
+  const remainingSecs = secs % 60
+  return `${mins}:${remainingSecs.toString().padStart(2, '0')}`
 }
 
-function formatElapsedTime(startTime) {
-  if (!startTime) return '0:00'
-  const start = new Date(startTime)
-  const now = new Date()
-  const diff = Math.floor((now - start) / 1000)
-  return formatDuration(diff)
+function formatElapsedSeconds(seconds) {
+  if (!seconds && seconds !== 0) return '0:00'
+  const secs = Math.floor(seconds)
+  const mins = Math.floor(seconds / 60)
+  const remainingSecs = seconds % 60
+  return `${mins}:${remainingSecs.toString().padStart(2, '0')}`
 }
 
 function formatDate(dateString) {

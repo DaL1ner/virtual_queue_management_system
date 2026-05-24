@@ -1,49 +1,169 @@
 <template>
   <div class="operator-view">
+    <!-- Статистика очереди -->
     <div class="row mb-4">
-      <!-- Статистика -->
       <div class="col-md-3">
         <div class="card bg-primary text-white shadow">
           <div class="card-body">
-            <h5 class="card-title">В очереди</h5>
-            <p class="display-4">{{ operatorStore.queueLength }}</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card bg-info text-white shadow">
-          <div class="card-body">
-            <h5 class="card-title">Ожидают</h5>
+            <h5 class="card-title"><i class="bi bi-hourglass-split me-2"></i>Ожидают</h5>
             <p class="display-4">{{ operatorStore.waitingCount }}</p>
+            <small>В очереди</small>
           </div>
         </div>
       </div>
       <div class="col-md-3">
         <div class="card bg-warning text-white shadow">
           <div class="card-body">
-            <h5 class="card-title">Вызваны</h5>
+            <h5 class="card-title"><i class="bi bi-megaphone me-2"></i>Вызваны</h5>
             <p class="display-4">{{ operatorStore.calledCount }}</p>
+            <small>Ожидают обслуживания</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-info text-white shadow">
+          <div class="card-body">
+            <h5 class="card-title"><i class="bi bi-person-fill me-2"></i>Обслуживаются</h5>
+            <p class="display-4">{{ operatorStore.servingCount }}</p>
+            <small>В работе</small>
           </div>
         </div>
       </div>
       <div class="col-md-3">
         <div class="card bg-success text-white shadow">
           <div class="card-body">
-            <h5 class="card-title">Исполнители</h5>
-            <p class="display-4">{{ readyExecutorsCount }}/{{ totalExecutorsCount }}</p>
-            <small>Готовы</small>
+            <h5 class="card-title"><i class="bi bi-check-circle-fill me-2"></i>Обслужено</h5>
+            <p class="display-4">{{ operatorStore.servedCount }}</p>
+            <small>Завершено</small>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="row">
-      <!-- Левая колонка: очередь -->
-      <div class="col-lg-8">
+    <!-- Исполнители - общая статистика -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card shadow">
+          <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+              <i class="bi bi-people-fill me-2"></i>Исполнители
+            </h5>
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-light" @click="refreshAll" :disabled="operatorStore.loading">
+                <i class="bi bi-arrow-clockwise me-1"></i> Обновить
+              </button>
+              <button
+                class="btn btn-outline-info"
+                @click="handleCallFirstAvailable"
+                :disabled="!operatorStore.hasReadyExecutor || operatorStore.loading"
+                title="Вызвать первого доступного клиента"
+              >
+                <i class="bi bi-lightning-charge me-1"></i> Быстрый вызов
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Список исполнителей -->
+            <div class="row">
+              <div v-if="operatorStore.executorStates.length === 0" class="col-12 text-center text-muted py-4">
+                Нет активных исполнителей
+              </div>
+              <div v-else class="col-12">
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Исполнитель</th>
+                        <th>Статус</th>
+                        <th>Обслужено</th>
+                        <th>Ср. время</th>
+                        <th>Текущий клиент</th>
+                        <th>Действия</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="executor in operatorStore.executorStates" :key="executor.userId">
+                        <td>
+                          <div class="d-flex align-items-center">
+                            <div class="avatar-circle me-2" :class="executor.isReady ? 'bg-success' : 'bg-danger'">
+                              {{ getInitials(executor.userName) }}
+                            </div>
+                            <div>
+                              <strong>{{ executor.userName }}</strong>
+                              <div class="small text-muted">ID: {{ executor.userId }}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="badge" :class="executor.isReady ? 'bg-success' : 'bg-danger'">
+                            {{ executor.isReady ? 'Готов' : 'Не готов' }}
+                          </span>
+                        </td>
+                        <td>
+                          <span class="fw-bold">{{ executor.totalServedCount || 0 }}</span>
+                        </td>
+                        <td>
+                          {{ formatDuration(executor.avgServiceTimeSec ? executor.avgServiceTimeSec * 1000 : 0) }}
+                        </td>
+                        <td>
+                          <span v-if="executor.currentTicket" class="small">
+                            Талон №{{ executor.currentTicket.id }}
+                          </span>
+                          <span v-else class="text-muted small">—</span>
+                        </td>
+                        <td>
+                          <button
+                            class="btn btn-sm btn-outline-primary"
+                            @click="handleCallNext(executor.userId)"
+                            :disabled="!executor.isReady || operatorStore.loading"
+                            title="Вызвать следующего"
+                          >
+                            <i class="bi bi-megaphone me-1"></i> Вызвать
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Итоговая статистика -->
+            <div class="row mt-3 pt-3 border-top">
+              <div class="col-md-4">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-people me-2 text-primary"></i>
+                  <span class="text-muted">Всего исполнителей:</span>
+                  <span class="ms-2 fw-bold">{{ operatorStore.totalExecutorsCount }}</span>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-check-circle me-2 text-success"></i>
+                  <span class="text-muted">Готовы к работе:</span>
+                  <span class="ms-2 fw-bold">{{ operatorStore.readyExecutorsCount }}</span>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-graph-up me-2 text-info"></i>
+                  <span class="text-muted">Всего обслужено:</span>
+                  <span class="ms-2 fw-bold">{{ operatorStore.totalServedByExecutors }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Очередь талонов -->
+    <div class="row mb-4">
+      <div class="col-12">
         <div class="card shadow">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">
-              <i class="bi bi-list-ol me-2"></i>Очередь
+              <i class="bi bi-list-ol me-2"></i>Очередь талонов
             </h5>
             <div>
               <button class="btn btn-sm btn-outline-primary" @click="operatorStore.fetchQueue">
@@ -61,6 +181,7 @@
                   <tr>
                     <th>№</th>
                     <th>Клиент</th>
+                    <th>Услуга</th>
                     <th>Приоритет</th>
                     <th>Статус</th>
                     <th>Время ожидания</th>
@@ -71,6 +192,7 @@
                   <tr v-for="ticket in operatorStore.queue" :key="ticket.id">
                     <td class="fw-bold">{{ ticket.id }}</td>
                     <td>{{ ticket.clientName }} {{ ticket.clientSurname }}</td>
+                    <td>{{ ticket.serviceTypeName || '—' }}</td>
                     <td>
                       <span class="badge" :class="priorityClass(ticket.priorityLevel)">
                         {{ ticket.priorityLevel }}
@@ -78,7 +200,7 @@
                     </td>
                     <td>
                       <span class="badge" :class="statusClass(ticket.status)">
-                        {{ ticket.status }}
+                        {{ statusLabel(ticket.status) }}
                       </span>
                     </td>
                     <td>{{ formatDuration(ticket.waitingTime) }}</td>
@@ -118,60 +240,55 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Правая колонка: исполнители и вызов -->
-      <div class="col-lg-4">
-        <div class="card shadow mb-4">
+    <!-- Информация о сессии -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card shadow">
           <div class="card-header bg-secondary text-white">
             <h5 class="card-title mb-0">
-              <i class="bi bi-people-fill me-2"></i>Исполнители
+              <i class="bi bi-info-circle me-2"></i>Информация
             </h5>
           </div>
           <div class="card-body">
-            <div v-for="executor in operatorStore.executorStates" :key="executor.userId" class="mb-3">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="mb-0">{{ executor.userName }}</h6>
-                  <small class="text-muted">ID: {{ executor.userId }}</small>
-                </div>
-                <div>
-                  <span class="badge" :class="executor.isReady ? 'bg-success' : 'bg-danger'">
-                    {{ executor.isReady ? 'Готов' : 'Не готов' }}
-                  </span>
+            <div class="row">
+              <div class="col-md-3">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-receipt me-2 text-primary"></i>
+                  <span class="text-muted">Всего талонов:</span>
+                  <span class="ms-2 fw-bold">{{ operatorStore.totalTicketsCount }}</span>
                 </div>
               </div>
-              <div class="mt-2">
-                <button
-                  class="btn btn-sm btn-outline-primary w-100"
-                  @click="handleCallNext(executor.userId)"
-                  :disabled="!executor.isReady || operatorStore.loading"
-                >
-                  <i class="bi bi-megaphone me-1"></i> Вызвать следующего
-                </button>
+              <div class="col-md-3">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-check-circle me-2 text-success"></i>
+                  <span class="text-muted">Обслужено:</span>
+                  <span class="ms-2 fw-bold text-success">{{ operatorStore.servedCount }}</span>
+                </div>
               </div>
-              <div v-if="executor.currentTicket" class="mt-2 small">
-                <strong>Текущий клиент:</strong> Талон №{{ executor.currentTicket.id }}
+              <div class="col-md-3">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-x-circle me-2 text-danger"></i>
+                  <span class="text-muted">Отменено:</span>
+                  <span class="ms-2 fw-bold text-danger">{{ operatorStore.statistics?.cancelledTickets || 0 }}</span>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-forward me-2 text-dark"></i>
+                  <span class="text-muted">Неявок:</span>
+                  <span class="ms-2 fw-bold text-dark">{{ operatorStore.statistics?.skippedTickets || 0 }}</span>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Быстрый вызов -->
-        <div class="card shadow">
-          <div class="card-header bg-info text-white">
-            <h5 class="card-title mb-0">
-              <i class="bi bi-lightning-charge me-2"></i>Быстрый вызов
-            </h5>
-          </div>
-          <div class="card-body">
-            <p class="card-text">Вызвать первого в очереди клиента любому готовому исполнителю.</p>
-            <button
-              class="btn btn-info w-100"
-              @click="handleCallFirstAvailable"
-              :disabled="!hasReadyExecutor || operatorStore.loading"
-            >
-              <i class="bi bi-play-fill me-1"></i> Вызвать первого доступного
-            </button>
+            <div v-if="operatorStore.statistics?.avgServiceTimeSec" class="mt-2">
+              <div class="d-flex align-items-center">
+                <i class="bi bi-clock me-2 text-info"></i>
+                <span class="text-muted">Ср. время обслуживания:</span>
+                <span class="ms-2 fw-bold">{{ formatDuration(operatorStore.statistics.avgServiceTimeSec * 1000) }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -188,14 +305,14 @@
           <div class="modal-body">
             <p>Талон №{{ selectedTicket?.id }} - {{ selectedTicket?.clientName }} {{ selectedTicket?.clientSurname }}</p>
             <div class="mb-3">
-              <label for="positionInput" class="form-label">Новая позиция (1 - {{ operatorStore.queueLength }})</label>
+              <label for="positionInput" class="form-label">Новая позиция (1 - {{ operatorStore.queue.length }})</label>
               <input
                 type="number"
                 class="form-control"
                 id="positionInput"
                 v-model="movePosition"
                 min="1"
-                :max="operatorStore.queueLength"
+                :max="operatorStore.queue.length"
               />
             </div>
           </div>
@@ -225,17 +342,14 @@ const operatorStore = useOperatorStore()
 const selectedTicket = ref(null)
 const movePosition = ref(1)
 
-const readyExecutorsCount = computed(() => {
-  return operatorStore.executorStates.filter(e => e.isReady).length
-})
-const totalExecutorsCount = computed(() => operatorStore.executorStates.length)
-const hasReadyExecutor = computed(() => readyExecutorsCount.value > 0)
-
 onMounted(() => {
-  // Обновление при монтировании
-  operatorStore.fetchQueue()
-  operatorStore.fetchExecutorStates()
+  operatorStore.init()
 })
+
+function getInitials(name) {
+  if (!name) return '?'
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+}
 
 function priorityClass(level) {
   if (level > 5) return 'bg-danger'
@@ -250,13 +364,26 @@ function statusClass(status) {
     SERVING: 'bg-info',
     SERVED: 'bg-success',
     CANCELLED: 'bg-danger',
-    NO_SHOW: 'bg-dark'
+    SKIPPED: 'bg-dark'
   }
   return map[status] || 'bg-light'
 }
 
-function formatDuration(seconds) {
-  if (!seconds) return '0:00'
+function statusLabel(status) {
+  const map = {
+    WAITING: 'Ожидает',
+    CALLED: 'Вызван',
+    SERVING: 'Обслуживается',
+    SERVED: 'Обслужен',
+    CANCELLED: 'Отменён',
+    SKIPPED: 'Пропущен'
+  }
+  return map[status] || status
+}
+
+function formatDuration(ms) {
+  if (!ms) return '0:00'
+  const seconds = Math.floor(ms / 1000)
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${mins}:${secs.toString().padStart(2, '0')}`
@@ -264,7 +391,6 @@ function formatDuration(seconds) {
 
 function handleCallTicket(ticket) {
   if (confirm(`Вызвать клиента ${ticket.clientName} ${ticket.clientSurname}?`)) {
-    // Здесь нужно выбрать исполнителя, упрощённо вызываем первого готового
     const readyExecutor = operatorStore.executorStates.find(e => e.isReady)
     if (readyExecutor) {
       operatorStore.callNextClient(readyExecutor.userId)
@@ -282,7 +408,7 @@ function handleCancelTicket(ticketId) {
 
 function showMoveModal(ticket) {
   selectedTicket.value = ticket
-  movePosition.value = ticket.position || 1
+  movePosition.value = ticket.sortOrder || 1
   const modal = new Modal(document.getElementById('moveTicketModal'))
   modal.show()
 }
@@ -304,6 +430,12 @@ function handleCallFirstAvailable() {
     operatorStore.callNextClient(readyExecutor.userId)
   }
 }
+
+function refreshAll() {
+  operatorStore.fetchQueue()
+  operatorStore.fetchExecutorStates()
+  operatorStore.fetchActiveStatistics()
+}
 </script>
 
 <style scoped>
@@ -312,5 +444,16 @@ function handleCallFirstAvailable() {
 }
 .card {
   border: none;
+}
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
 }
 </style>

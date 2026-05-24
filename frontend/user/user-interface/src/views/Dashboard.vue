@@ -11,21 +11,11 @@
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav me-auto">
-            <li class="nav-item">
-              <span class="nav-link text-light">
-                <i class="bi bi-person-circle me-1"></i>
-                {{ authStore.user?.username }}
-              </span>
-            </li>
-            <li class="nav-item">
-              <span class="nav-link text-light">
-                <i class="bi bi-shield-check me-1"></i>
-                Роли: {{ formattedRoles }}
-              </span>
-            </li>
-          </ul>
-          <div class="d-flex">
+          <div class="d-flex align-items-center ms-auto">
+            <span class="nav-link text-light me-3">
+              <i class="bi bi-person-circle me-1"></i>
+              {{ authStore.user?.username }}
+            </span>
             <button class="btn btn-outline-light" @click="handleLogout">
               <i class="bi bi-box-arrow-right me-1"></i> Выйти
             </button>
@@ -115,14 +105,6 @@ const hasOperatorRole = computed(() => authStore.hasRole('OPERATOR'))
 const hasAdminRole = computed(() => authStore.hasRole('ADMIN'))
 const hasAnyRole = computed(() => hasExecutorRole.value || hasOperatorRole.value || hasAdminRole.value)
 
-const formattedRoles = computed(() => {
-  const roles = []
-  if (hasExecutorRole.value) roles.push('Исполнитель')
-  if (hasOperatorRole.value) roles.push('Оператор')
-  if (hasAdminRole.value) roles.push('Администратор')
-  return roles.join(', ')
-})
-
 // Установить активную вкладку по умолчанию в зависимости от ролей
 onMounted(() => {
   console.log('[Dashboard] onMounted - authStore.roles:', authStore.roles)
@@ -131,9 +113,18 @@ onMounted(() => {
   console.log('[Dashboard] onMounted - hasAdminRole:', hasAdminRole.value)
   console.log('[Dashboard] onMounted - hasAnyRole:', hasAnyRole.value)
   if (!hasAnyRole.value) return
-  if (hasExecutorRole.value) activeTab.value = 'executor'
-  else if (hasOperatorRole.value) activeTab.value = 'operator'
-  else if (hasAdminRole.value) activeTab.value = 'admin'
+  if (hasExecutorRole.value) {
+    activeTab.value = 'executor'
+    executorStore.init()
+  }
+  else if (hasOperatorRole.value) {
+    activeTab.value = 'operator'
+    operatorStore.init()
+  }
+  else if (hasAdminRole.value) {
+    activeTab.value = 'admin'
+    adminStore.init()
+  }
 })
 
 // Следим за изменением ролей (например, после fetchCurrentUser)

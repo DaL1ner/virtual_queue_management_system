@@ -28,7 +28,15 @@ export const adminApi = {
       .then(response => response.data)
   },
   changeSessionStatus(id, status) {
-    return apiClient.post(`/api/queue-sessions/${id}/status`, { status })
+    // Преобразование строкового статуса в числовой enum (Draft=0, Open=1, Paused=2, Closed=3)
+    const statusToNumber = {
+      'Draft': 0,
+      'Open': 1,
+      'Paused': 2,
+      'Closed': 3
+    }
+    const numericStatus = statusToNumber[status] ?? status
+    return apiClient.post(`/api/queue-sessions/${id}/status`, { status: numericStatus })
       .then(response => response.data)
   },
   getSessionStatistics(id) {
@@ -85,3 +93,4 @@ export const createUser = adminApi.createUser
 export const getServiceTypes = adminApi.getServiceTypes
 export const getActiveSessionStatistics = adminApi.getActiveSessionStatistics
 export const getSessionStatistics = adminApi.getSessionStatistics
+export const changeSessionStatus = adminApi.changeSessionStatus

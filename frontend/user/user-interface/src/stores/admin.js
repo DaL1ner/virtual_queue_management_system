@@ -72,12 +72,13 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
-  // Инициализация
-  fetchQueueConfigs()
-  fetchQueueSessions()
-  fetchUsers()
-  fetchServiceTypes()
-  fetchStatistics()
+  function init() {
+    fetchQueueConfigs()
+    fetchQueueSessions()
+    fetchUsers()
+    fetchServiceTypes()
+    fetchStatistics()
+  }
 
   // Polling
   let pollingInterval = null
@@ -95,8 +96,172 @@ export const useAdminStore = defineStore('admin', () => {
       pollingInterval = null
     }
   }
-  
-  startPolling()
+
+  // QueueConfig actions
+  async function createQueueConfig(data) {
+    loading.value = true
+    try {
+      const newConfig = await api.createQueueConfig(data)
+      await fetchQueueConfigs() // Refresh list
+      return newConfig
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка создания конфигурации'
+      console.error('Failed to create queue config', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function updateQueueConfig(id, data) {
+    loading.value = true
+    try {
+      const updated = await api.updateQueueConfig(id, data)
+      await fetchQueueConfigs()
+      return updated
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка обновления конфигурации'
+      console.error('Failed to update queue config', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function deleteQueueConfig(id) {
+    loading.value = true
+    try {
+      await api.deleteQueueConfig(id)
+      await fetchQueueConfigs()
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка удаления конфигурации'
+      console.error('Failed to delete queue config', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // User actions
+  async function createUser(data) {
+    loading.value = true
+    try {
+      const newUser = await api.createUser(data)
+      await fetchUsers()
+      return newUser
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка создания пользователя'
+      console.error('Failed to create user', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function updateUser(id, data) {
+    loading.value = true
+    try {
+      const updated = await api.updateUser(id, data)
+      await fetchUsers()
+      return updated
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка обновления пользователя'
+      console.error('Failed to update user', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function deleteUser(id) {
+    loading.value = true
+    try {
+      await api.deleteUser(id)
+      await fetchUsers()
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка удаления пользователя'
+      console.error('Failed to delete user', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // ServiceType actions
+  async function createServiceType(data) {
+    loading.value = true
+    try {
+      const newType = await api.createServiceType(data)
+      await fetchServiceTypes()
+      return newType
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка создания типа услуги'
+      console.error('Failed to create service type', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function updateServiceType(id, data) {
+    loading.value = true
+    try {
+      const updated = await api.updateServiceType(id, data)
+      await fetchServiceTypes()
+      return updated
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка обновления типа услуги'
+      console.error('Failed to update service type', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function deleteServiceType(id) {
+    loading.value = true
+    try {
+      await api.deleteServiceType(id)
+      await fetchServiceTypes()
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка удаления типа услуги'
+      console.error('Failed to delete service type', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // QueueSession actions (create already exists in API, but add to store)
+  async function createQueueSession(data) {
+    loading.value = true
+    try {
+      const newSession = await api.createQueueSession(data)
+      await fetchQueueSessions()
+      return newSession
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка создания сессии'
+      console.error('Failed to create queue session', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function changeSessionStatus(id, status) {
+    loading.value = true
+    try {
+      const updated = await api.changeSessionStatus(id, status)
+      await fetchQueueSessions()
+      return updated
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка изменения статуса сессии'
+      console.error('Failed to change session status', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
 
   return {
     queueConfigs,
@@ -112,6 +277,18 @@ export const useAdminStore = defineStore('admin', () => {
     fetchServiceTypes,
     fetchStatistics,
     startPolling,
-    stopPolling
+    stopPolling,
+    init,
+    createQueueConfig,
+    updateQueueConfig,
+    deleteQueueConfig,
+    createUser,
+    updateUser,
+    deleteUser,
+    createServiceType,
+    updateServiceType,
+    deleteServiceType,
+    createQueueSession,
+    changeSessionStatus
   }
 })

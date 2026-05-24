@@ -11,6 +11,11 @@ export const operatorApi = {
     return apiClient.get('/api/tickets/all', { params: { sorted } })
       .then(response => response.data)
   },
+  // Получить статистику активной сессии
+  getActiveStatistics() {
+    return apiClient.get('/api/queue-sessions/statistics/active')
+      .then(response => response.data)
+  },
   // Вызвать следующего клиента
   callNext(executorId) {
     return apiClient.post('/api/executor-states/call-next', { executorId })
@@ -35,6 +40,7 @@ export const operatorApi = {
 
 export const getQueue = operatorApi.getQueue
 export const getAllTickets = operatorApi.getAllTickets
+export const getActiveStatistics = operatorApi.getActiveStatistics
 export const callNext = operatorApi.callNext
 export const cancelTicket = operatorApi.cancelTicket
 export const moveTicketToPosition = operatorApi.moveTicketToPosition
