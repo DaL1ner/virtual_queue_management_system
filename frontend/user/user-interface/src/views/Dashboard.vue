@@ -99,6 +99,7 @@ const operatorStore = useOperatorStore()
 const adminStore = useAdminStore()
 
 const activeTab = ref('executor')
+const userHasManuallySwitched = ref(false)
 
 const hasExecutorRole = computed(() => authStore.hasRole('EXECUTOR'))
 const hasOperatorRole = computed(() => authStore.hasRole('OPERATOR'))
@@ -129,32 +130,61 @@ onMounted(() => {
 
 // Следим за изменением ролей (например, после fetchCurrentUser)
 watch(() => authStore.roles, () => {
+  console.log('[Dashboard] authStore.roles changed:', authStore.roles)
   if (!hasAnyRole.value) return
-  if (hasExecutorRole.value && activeTab.value !== 'executor') activeTab.value = 'executor'
-  else if (hasOperatorRole.value && activeTab.value !== 'operator') activeTab.value = 'operator'
-  else if (hasAdminRole.value && activeTab.value !== 'admin') activeTab.value = 'admin'
+  // Если пользователь уже вручную переключил вкладку, не меняем автоматически
+  if (userHasManuallySwitched.value) {
+    console.log('[Dashboard] User has manually switched tabs, skipping auto-switch')
+    return
+  }
+  if (hasExecutorRole.value && activeTab.value !== 'executor') {
+    console.log('[Dashboard] Switching to executor tab')
+    activeTab.value = 'executor'
+  }
+  else if (hasOperatorRole.value && activeTab.value !== 'operator') {
+    console.log('[Dashboard] Switching to operator tab')
+    activeTab.value = 'operator'
+  }
+  else if (hasAdminRole.value && activeTab.value !== 'admin') {
+    console.log('[Dashboard] Switching to admin tab')
+    activeTab.value = 'admin'
+  }
 }, { deep: true })
 
 // Управление polling при переключении вкладок
 watch(activeTab, (newTab, oldTab) => {
+  console.log('[Dashboard] activeTab changed:', oldTab, '->', newTab)
+  // Если вкладка не изменилась, ничего не делаем (может случиться из-за watch на roles)
+  if (newTab === oldTab) {
+    console.log('[Dashboard] Tab unchanged, skipping polling update')
+    return
+  }
   if (oldTab === 'executor') {
+    console.log('[Dashboard] Stopping executor polling')
     executorStore.stopPolling?.()
   } else if (oldTab === 'operator') {
+    console.log('[Dashboard] Stopping operator polling')
     operatorStore.stopPolling?.()
   } else if (oldTab === 'admin') {
+    console.log('[Dashboard] Stopping admin polling')
     adminStore.stopPolling?.()
   }
   
   if (newTab === 'executor') {
+    console.log('[Dashboard] Starting executor polling')
     executorStore.startPolling?.()
   } else if (newTab === 'operator') {
+    console.log('[Dashboard] Starting operator polling')
     operatorStore.startPolling?.()
   } else if (newTab === 'admin') {
+    console.log('[Dashboard] Starting admin polling')
     adminStore.startPolling?.()
   }
 })
 
 function switchTab(tab) {
+  console.log('[Dashboard] switchTab called with:', tab, 'current activeTab:', activeTab.value)
+  userHasManuallySwitched.value = true
   activeTab.value = tab
 }
 

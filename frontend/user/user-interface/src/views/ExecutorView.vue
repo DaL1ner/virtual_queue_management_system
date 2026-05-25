@@ -162,11 +162,14 @@ const currentTicket = computed(() => executorStore.currentTicket)
 const servingStartedAt = computed(() => executorStore.servingStartedAt)
 
 onMounted(() => {
+  console.log('[ExecutorView] mounted')
   executorStore.init()
 })
 
 onBeforeUnmount(() => {
+  console.log('[ExecutorView] beforeUnmount')
   executorStore.stopElapsedTimer()
+  executorStore.stopPolling?.()
 })
 
 function handleToggleReady() {
@@ -189,7 +192,7 @@ function handleMarkNoShow() {
 
 function formatDuration(seconds) {
   if (!seconds && seconds !== 0) return '0:00'
-  const secs = Math.floor(secs)
+  const secs = Math.floor(seconds)
   const mins = Math.floor(secs / 60)
   const remainingSecs = secs % 60
   return `${mins}:${remainingSecs.toString().padStart(2, '0')}`
@@ -198,8 +201,8 @@ function formatDuration(seconds) {
 function formatElapsedSeconds(seconds) {
   if (!seconds && seconds !== 0) return '0:00'
   const secs = Math.floor(seconds)
-  const mins = Math.floor(seconds / 60)
-  const remainingSecs = seconds % 60
+  const mins = Math.floor(secs / 60)
+  const remainingSecs = secs % 60
   return `${mins}:${remainingSecs.toString().padStart(2, '0')}`
 }
 

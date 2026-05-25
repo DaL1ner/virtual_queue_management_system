@@ -119,6 +119,7 @@ export const useExecutorStore = defineStore('executor', () => {
 
   // Start elapsed time counter based on serviceStartedAt
   function startElapsedTimer(serviceStartedAt) {
+    console.log('[ExecutorStore] startElapsedTimer called with:', serviceStartedAt)
     stopElapsedTimer()
     if (serviceStartedAt) {
       const started = new Date(serviceStartedAt)
@@ -129,26 +130,32 @@ export const useExecutorStore = defineStore('executor', () => {
     elapsedInterval = setInterval(() => {
       elapsedSeconds.value++
     }, 1000)
+    console.log('[ExecutorStore] elapsedInterval started')
   }
 
   function stopElapsedTimer() {
+    console.log('[ExecutorStore] stopElapsedTimer called, elapsedInterval exists:', !!elapsedInterval)
     if (elapsedInterval) {
       clearInterval(elapsedInterval)
       elapsedInterval = null
+      console.log('[ExecutorStore] elapsedInterval cleared')
     }
   }
 
   // Polling for executor state
   let pollingInterval = null
   function startPolling(interval = 5000) { // 5 seconds instead of 30
+    console.log('[ExecutorStore] startPolling, interval:', interval)
     stopPolling()
     pollingInterval = setInterval(() => {
+      console.log('[ExecutorStore] polling tick')
       fetchState()
       fetchQueueStats()
     }, interval)
   }
   
   function stopPolling() {
+    console.log('[ExecutorStore] stopPolling')
     if (pollingInterval) {
       clearInterval(pollingInterval)
       pollingInterval = null
@@ -159,13 +166,33 @@ export const useExecutorStore = defineStore('executor', () => {
   function init() {
     fetchState()
     fetchQueueStats()
-    startElapsedTimer(servingStartedAt.value)
+    // Таймер запустится автоматически через watch при получении данных
   }
 
   // Watch for ticket changes and update timer accordingly
-  watch(currentTicket, (newTicket) => {
-    if (newTicket?.serviceStartedAt) {
-      startElapsedTimer(newTicket.serviceStartedAt)
+  let lastServiceStartedAt = null
+  watch(currentTicket, (newTicket, oldTicket) => {
+    console.log('[ExecutorStore] currentTicket watch triggered:', {
+      old: oldTicket?.id,
+      new: newTicket?.id,
+      hasServiceStartedAt: !!newTicket?.serviceStartedAt,
+      oldServiceStartedAt: oldTicket?.serviceStartedAt,
+      newServiceStartedAt: newTicket?.serviceStartedAt
+    })
+    
+    const newStartedAt = newTicket?.serviceStartedAt
+    const oldStartedAt = oldTicket?.serviceStartedAt
+    
+    // Если serviceStartedAt не изменился, не перезапускаем таймер
+    if (newStartedAt === oldStartedAt && newStartedAt === lastServiceStartedAt) {
+      console.log('[ExecutorStore] serviceStartedAt unchanged, skipping timer update')
+      return
+    }
+    
+    lastServiceStartedAt = newStartedAt
+    
+    if (newStartedAt) {
+      startElapsedTimer(newStartedAt)
     } else {
       elapsedSeconds.value = 0
       stopElapsedTimer()

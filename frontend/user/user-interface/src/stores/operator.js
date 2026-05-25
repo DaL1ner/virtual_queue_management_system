@@ -90,11 +90,16 @@ export const useOperatorStore = defineStore('operator', () => {
   }
 
   async function callNextClient(executorId) {
+    console.log('[OperatorStore] callNextClient for executor:', executorId)
+    error.value = null
     try {
       await api.callNext(executorId)
+      console.log('[OperatorStore] callNext successful, refreshing data')
       await Promise.all([fetchQueue(), fetchExecutorStates(), fetchActiveStatistics()])
+      console.log('[OperatorStore] data refreshed')
     } catch (err) {
       error.value = err.response?.data?.error || 'Ошибка вызова следующего клиента'
+      console.error('[OperatorStore] callNextClient error:', err)
       throw err
     }
   }
@@ -122,8 +127,10 @@ export const useOperatorStore = defineStore('operator', () => {
   // Polling
   let pollingInterval = null
   function startPolling(interval = 30000) {
+    console.log('[OperatorStore] startPolling, interval:', interval)
     stopPolling()
     pollingInterval = setInterval(() => {
+      console.log('[OperatorStore] polling tick')
       fetchQueue()
       fetchExecutorStates()
       fetchActiveStatistics()
@@ -131,6 +138,7 @@ export const useOperatorStore = defineStore('operator', () => {
   }
   
   function stopPolling() {
+    console.log('[OperatorStore] stopPolling')
     if (pollingInterval) {
       clearInterval(pollingInterval)
       pollingInterval = null
