@@ -35,7 +35,8 @@ nav:
     #- howto/run-migrations.md
   - Reference:
     - reference/api/index.md
-    #- reference/code/index.md
+    - reference/code/backend/backend_documentation_index.md
+    - reference/code/frontend/frontend_documentation_index.md
   - Explanation:
     - explanation/architecture-overview.md
     - explanation/requirements/roles.md
