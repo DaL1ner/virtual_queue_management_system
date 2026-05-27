@@ -1,4 +1,4 @@
-# Полная документация бэкенда Virtual Queue Management System (VQMS)
+# Полная документация бэкенда системы
 
 ## Обзор
 
@@ -7,22 +7,8 @@
 ### Части документации
 
 1. **[Часть 1: Обзор архитектуры](backend_documentation_part1_architecture.md)**
-   - Технологический стек и архитектурный стиль
-   - Структура проекта и слои приложения
-   - Модель данных и ключевые принципы
-   - Конфигурация и развертывание
-
 2. **[Часть 2: Детали реализации](backend_documentation_part2_implementation.md)**
-   - Подробное описание Domain Layer (сущности, интерфейсы, перечисления)
-   - Детализация Application Layer (сервисы, DTO, события)
-   - Реализация Infrastructure Layer (DbContext, безопасность, DI)
-   - Паттерны проектирования и обработка ошибок
-
 3. **[Часть 3: API и интеграции](backend_documentation_part3_api_integrations.md)**
-   - Полное описание всех API endpoints
-   - Middleware и аутентификация
-   - Интеграции с внешними системами
-   - Безопасность, тестирование и эксплуатация
 
 ## Краткое содержание системы
 
@@ -59,18 +45,18 @@ Virtual Queue Management System (VQMS) - это система управлен�
 - Docker и Docker Compose (опционально)
 
 ### Запуск в разработке
-```bash
-# Клонирование репозитория
-git clone <repository-url>
-cd virtual_queue_management_system
-
-# Запуск через Docker Compose
-docker-compose up -d
-
-# Или запуск вручную
-cd backend
-dotnet restore
-dotnet run --project src/Api/Api.csproj
+``` bash
+# Клонирование репозитория  
+git clone <repository-url>  
+cd virtual_queue_management_system  
+  
+# Запуск через Docker Compose  
+docker-compose up -d  
+  
+# Или запуск вручную  
+cd backend  
+dotnet restore  
+dotnet run --project src/Api/Api.csproj  
 ```
 
 ### Доступ к API
@@ -85,29 +71,29 @@ dotnet run --project src/Api/Api.csproj
 ## Структура проекта
 
 ```
-backend/
-├── src/
-│   ├── Api/                    # API Layer
-│   │   ├── Endpoints/         # Minimal API endpoints
-│   │   ├── Middleware/        # Authentication middleware
-│   │   ├── Program.cs         # Точка входа
-│   │   └── appsettings.json   # Конфигурация
-│   ├── Application/           # Application Layer
-│   │   ├── Services/          # Сервисы приложения
-│   │   ├── DTOs/              # Data Transfer Objects
-│   │   ├── Events/            # Доменные события
-│   │   └── DependencyInjection/
-│   ├── Domain/                # Domain Layer
-│   │   ├── Entities/          # Доменные сущности
-│   │   ├── Enums/             # Перечисления
-│   │   ├── Interfaces/        # Абстракции
-│   │   └── DTOs/              # Внутренние DTO
-│   └── Infrastructure/        # Infrastructure Layer
-│       ├── Data/              # Работа с БД (DbContext)
-│       ├── Security/          # Сервисы безопасности
-│       └── DependencyInjection/
-├── Dockerfile                 # Конфигурация Docker образа
-└── README.md                  # Документация проекта
+backend/  
+├── src/  
+│   ├── Api/                    # API Layer  
+│   │   ├── Endpoints/         # Minimal API endpoints  
+│   │   ├── Middleware/        # Authentication middleware  
+│   │   ├── Program.cs         # Точка входа  
+│   │   └── appsettings.json   # Конфигурация  
+│   ├── Application/           # Application Layer  
+│   │   ├── Services/          # Сервисы приложения  
+│   │   ├── DTOs/              # Data Transfer Objects  
+│   │   ├── Events/            # Доменные события  
+│   │   └── DependencyInjection/  
+│   ├── Domain/                # Domain Layer  
+│   │   ├── Entities/          # Доменные сущности  
+│   │   ├── Enums/             # Перечисления  
+│   │   ├── Interfaces/        # Абстракции  
+│   │   └── DTOs/              # Внутренние DTO  
+│   └── Infrastructure/        # Infrastructure Layer  
+│       ├── Data/              # Работа с БД (DbContext)  
+│       ├── Security/          # Сервисы безопасности  
+│       └── DependencyInjection/  
+├── Dockerfile                 # Конфигурация Docker образа  
+└── README.md                  # Документация проекта  
 ```
 
 ## Основные сущности
@@ -199,64 +185,64 @@ backend/
 ## Развертывание
 
 ### Docker
-```bash
-# Сборка и запуск
-docker-compose up -d
-
-# Остановка
-docker-compose down
-
-# Просмотр логов
-docker-compose logs -f api
+``` bash
+# Сборка и запуск  
+docker-compose up -d  
+  
+# Остановка  
+docker-compose down  
+  
+# Просмотр логов  
+docker-compose logs -f api  
 ```
 
 ### Kubernetes
-```yaml
-# Пример deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: vqms-api
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: vqms-api
-  template:
-    metadata:
-      labels:
-        app: vqms-api
-    spec:
-      containers:
-      - name: api
-        image: vqms-api:latest
-        ports:
-        - containerPort: 8080
-        env:
-        - name: ConnectionStrings__DefaultConnection
-          valueFrom:
-            secretKeyRef:
-              name: vqms-secrets
-              key: database-connection
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 8080
-        readinessProbe:
-          httpGet:
-            path: /api/health
-            port: 8080
+``` yaml
+# Пример deployment  
+apiVersion: apps/v1  
+kind: Deployment  
+metadata:  
+  name: vqms-api  
+spec:  
+  replicas: 3  
+  selector:  
+    matchLabels:  
+      app: vqms-api  
+  template:  
+    metadata:  
+      labels:  
+        app: vqms-api  
+    spec:  
+      containers:  
+      - name: api  
+        image: vqms-api:latest  
+        ports:  
+        - containerPort: 8080  
+        env:  
+        - name: ConnectionStrings__DefaultConnection  
+          valueFrom:  
+            secretKeyRef:  
+              name: vqms-secrets  
+              key: database-connection  
+        livenessProbe:  
+          httpGet:  
+            path: /healthz  
+            port: 8080  
+        readinessProbe:  
+          httpGet:  
+            path: /api/health  
+            port: 8080  
 ```
 
 ### Переменные окружения
-```bash
-# Обязательные
-ASPNETCORE_ENVIRONMENT=Production
-ConnectionStrings__DefaultConnection=Host=...;Database=...;Username=...;Password=...
-
-# Опциональные
-Serilog__MinimumLevel=Information
-CORS__AllowedOrigins=https://frontend.example.com
+``` bash
+# Обязательные  
+ASPNETCORE_ENVIRONMENT=Production  
+ConnectionStrings__DefaultConnection=Host=...;Database=...;Username=...;Password=...  
+  
+# Опциональные  
+Serilog__MinimumLevel=Information  
+CORS__AllowedOrigins=https://frontend.example.com  
 ```
 
 ## Дальнейшее развитие
@@ -285,4 +271,5 @@ CORS__AllowedOrigins=https://frontend.example.com
 - **Масштабируемость**: Готова к работе в production среде
 - **Документированность**: Полная документация и Swagger UI
 
-Для получения более подробной информации обратитесь к соответствующим частям документации.
+---
+*Документация создана автоматически на основе анализа кодовой базы.*
