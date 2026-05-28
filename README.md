@@ -2,7 +2,7 @@
 
 # Система управления виртуальной очередью<br> Virtual Queue Management System
 
-> **Учебный проект** по курсу «Архитектура приложений и данных»  
+> **Учебный проект**   
 > Веб-приложение для управления виртуальной очередью в сервисных точках
 
 [![Vue.js](https://img.shields.io/badge/Vue.js-4FC08D?logo=vuedotjs&logoColor=fff)](https://vuejs.org/)
@@ -34,8 +34,7 @@
   - [⚙️ Функциональность MVP](#️-функциональность-mvp)
     - [Интерфейс клиента](#интерфейс-клиента)
     - [Интерфейс оператора/исполнителя](#интерфейс-оператораисполнителя)
-  - [📁 Структура проекта](#-структура-проекта)
-  - [👥 Команда проекта](#-команда-проекта)
+  - [📁 Быстрый старт](#-быстрый-старт)
 
 ---
 
@@ -76,20 +75,17 @@ Virtual Queue Management System – это система управления �
 | **Оператор** | Управляет очередью: вызывает, перемещает, удаляет клиентов |
 | **Администратор** | Настраивает конфигурацию очереди, управляет пользователями и ролями |
 
-> **Оператор + Исполнитель** – комбинированная роль, сочетающая все права обеих ролей
-
 ---
 
 ## 🛠️ Технологический стек
 
-| Категория | Технологии |
-|-----------|------------|
-| **Frontend** | Vue.js 3, Vite, Bootstrap |
-| **Backend** | .NET |
-| **База данных** | PostgreSQL |
-| **Контейнеризация** | Docker |
-| **Деплой** | Render |
-| **Обновление данных** | WebSocket |
+| Категория | Технологии |-|
+|-----------|------------|------------|
+| **Frontend** | Vue.js 3, Vite, Bootstrap | <img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/vue_js.png"> |
+| **Backend** | .NET | <img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/_net_core.png"> |
+| **База данных** | PostgreSQL | <img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/postgresql.png"> |
+| **Контейнеризация** | Docker | <img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/docker.png"> |
+| **Обновление данных** | Polling | <img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/rest.png"> |
 
 ---
 
@@ -103,24 +99,11 @@ Virtual Queue Management System – это система управления �
 
 ---
 
-## 📁 Структура проекта
+## 📁 Быстрый старт
 
 ```
 Актуализировать
 ```
-
----
-
-## 👥 Команда проекта
-
-| Участник | GitHub | Роль |
-|----------|--------|------|
-| PO / Developer | [@DaL1ner](https://github.com/DaL1ner) | Product Owner, разработчик |
-| SM / Developer | [@1-s-e-d](https://github.com/1-s-e-d) | Scrum Master, разработчик |
-| Developer | [@adalar4ik](https://github.com/adalar4ik) | Разработчик |
-| Developer | [@alerent8-bit](https://github.com/alerent8-bit) | Разработчик |
-| Developer | [@anastasia1233455](https://github.com/anastasia1233455) | Разработчик |
-| Developer | [@derizhable](https://github.com/derizhable) | Разработчик |
 
 ---
 
