@@ -88,4 +88,21 @@ public class TokenValidationService : ITokenValidationService
         _logger.LogWarning("No valid session found for token hash");
         return null;
     }
+
+    public async Task<Domain.Entities.UserSession?> GetSessionByTokenAsync(string token)
+    {
+        if (string.IsNullOrEmpty(token))
+            return null;
+
+        var tokenHash = _tokenService.HashToken(token);
+
+        var userSession = await _context.UserSessions
+            .Include(us => us.User)
+            .FirstOrDefaultAsync(us =>
+                us.TokenHash == tokenHash &&
+                us.IsActive &&
+                us.ExpiresAt > DateTime.UtcNow);
+
+        return userSession;
+    }
 }

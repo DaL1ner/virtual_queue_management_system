@@ -69,3 +69,21 @@ public record ServiceTypeSimpleDto(
     int Id,
     string Name
 );
+
+/// <summary>
+/// DTO для ответа с типом услуги и информацией о конфигурации очереди
+/// </summary>
+public record ServiceTypeWithConfigDto(
+    int Id,
+    int QueueConfigId,
+    string QueueConfigName,
+    string Name,
+    string Code,
+    char Letter,
+    int BasePriorityLevel,
+    int? PlanAvgServiceTimeSec,
+    bool IsActive,
+    bool IsHighlighting,
+    int SortOrder,
+    DateTime CreatedAt
+);

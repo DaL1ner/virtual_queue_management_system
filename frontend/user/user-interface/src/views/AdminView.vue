@@ -206,6 +206,7 @@
             <thead>
               <tr>
                 <th>ID</th>
+                <th>Конфигурация</th>
                 <th>Название</th>
                 <th>Код</th>
                 <th>Буква</th>
@@ -216,6 +217,7 @@
             <tbody>
               <tr v-for="type in adminStore.serviceTypes" :key="type.id">
                 <td>{{ type.id }}</td>
+                <td>{{ type.queueConfigName }}</td>
                 <td>{{ type.name }}</td>
                 <td>{{ type.code }}</td>
                 <td>{{ type.letter }}</td>

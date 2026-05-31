@@ -71,6 +71,10 @@ export const adminApi = {
     // Endpoint возвращает ActiveSessionServiceTypesResponseDto с полем ServiceTypes
     return response.data.ServiceTypes || []
   },
+  async getAllServiceTypesWithConfig() {
+    const response = await apiClient.get('/api/service-types/all')
+    return response.data || []
+  },
   createServiceType(data) {
     return apiClient.post('/api/service-types', data)
       .then(response => response.data)
@@ -91,6 +95,7 @@ export const createQueueSession = adminApi.createQueueSession
 export const getUsers = adminApi.getUsers
 export const createUser = adminApi.createUser
 export const getServiceTypes = adminApi.getServiceTypes
+export const getAllServiceTypesWithConfig = adminApi.getAllServiceTypesWithConfig
 export const getActiveSessionStatistics = adminApi.getActiveSessionStatistics
 export const getSessionStatistics = adminApi.getSessionStatistics
 export const changeSessionStatus = adminApi.changeSessionStatus

@@ -162,28 +162,17 @@ export const useExecutorStore = defineStore('executor', () => {
     }
   }
 
-  // Инициализация (вызывается из компонента)
-  function init() {
-    fetchState()
-    fetchQueueStats()
-    // Таймер запустится автоматически через watch при получении данных
-  }
-
-  // Watch for ticket changes and update timer accordingly
+  // Watch for serviceStartedAt changes and update timer accordingly
+  // This watch handles both initial state and changes to serviceStartedAt
   let lastServiceStartedAt = null
-  watch(currentTicket, (newTicket, oldTicket) => {
-    console.log('[ExecutorStore] currentTicket watch triggered:', {
-      old: oldTicket?.id,
-      new: newTicket?.id,
-      hasServiceStartedAt: !!newTicket?.serviceStartedAt,
-      oldServiceStartedAt: oldTicket?.serviceStartedAt,
-      newServiceStartedAt: newTicket?.serviceStartedAt
+  watch(servingStartedAt, (newStartedAt, oldStartedAt) => {
+    console.log('[ExecutorStore] servingStartedAt watch triggered:', {
+      newStartedAt,
+      oldStartedAt,
+      lastServiceStartedAt
     })
     
-    const newStartedAt = newTicket?.serviceStartedAt
-    const oldStartedAt = oldTicket?.serviceStartedAt
-    
-    // Если serviceStartedAt не изменился, не перезапускаем таймер
+    // Если serviceStartedAt не изменился и мы уже запустили таймер, не перезапускаем
     if (newStartedAt === oldStartedAt && newStartedAt === lastServiceStartedAt) {
       console.log('[ExecutorStore] serviceStartedAt unchanged, skipping timer update')
       return
@@ -197,12 +186,46 @@ export const useExecutorStore = defineStore('executor', () => {
       elapsedSeconds.value = 0
       stopElapsedTimer()
     }
+  }, { immediate: true })
+
+  // Watch for ticket changes (for additional state updates)
+  watch(currentTicket, (newTicket, oldTicket) => {
+    console.log('[ExecutorStore] currentTicket watch triggered:', {
+      old: oldTicket?.id,
+      new: newTicket?.id,
+      hasServiceStartedAt: !!newTicket?.serviceStartedAt,
+      oldServiceStartedAt: oldTicket?.serviceStartedAt,
+      newServiceStartedAt: newTicket?.serviceStartedAt
+    })
+    
+    // Обновляем lastServiceStartedAt если он отличается
+    const newStartedAt = newTicket?.serviceStartedAt
+    if (newStartedAt !== lastServiceStartedAt) {
+      lastServiceStartedAt = newStartedAt
+      if (newStartedAt) {
+        startElapsedTimer(newStartedAt)
+      }
+    }
   })
+
+  // Инициализация (вызывается из компонента)
+  function init() {
+    console.log('[ExecutorStore] init called')
+    // Сбрасываем lastServiceStartedAt при каждой инициализации, чтобы watch перезапустил таймер
+    lastServiceStartedAt = null
+    fetchState()
+    fetchQueueStats()
+    // Таймер запустится автоматически через watch с immediate: true
+  }
 
   // Cleanup on unmount
   onBeforeUnmount(() => {
     stopElapsedTimer()
     stopPolling()
+    // Сбрасываем lastServiceStartedAt, чтобы при повторном монтировании watch перезапустил таймер
+    lastServiceStartedAt = null
+    // Сбрасываем elapsedSeconds, чтобы таймер начинал отсчёт с нуля
+    elapsedSeconds.value = 0
   })
 
   return {

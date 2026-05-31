@@ -193,4 +193,29 @@ public class UserSessionService
 
         return session;
     }
+
+    /// <summary>
+    /// Завершение сессии по токену (logout)
+    /// </summary>
+    public async Task LogoutAsync(string token, int userId, string login)
+    {
+        var session = await _context.UserSessions
+            .FirstOrDefaultAsync(us => us.TokenHash == _tokenService.HashToken(token) && us.UserId == userId);
+
+        if (session == null)
+        {
+            _logger.LogWarning("Session not found for logout: userId={UserId}", userId);
+            return;
+        }
+
+        session.IsActive = false;
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("User session revoked: sessionId={SessionId}, userId={UserId}", session.Id, userId);
+
+        await _eventPublisher.PublishAsync(new UserSessionRevokedEvent(
+            session.Id,
+            userId,
+            login));
+    }
 }

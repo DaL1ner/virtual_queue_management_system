@@ -50,7 +50,7 @@ export const useAdminStore = defineStore('admin', () => {
   async function fetchServiceTypes() {
     loading.value = true
     try {
-      serviceTypes.value = await api.getServiceTypes()
+      serviceTypes.value = await api.getAllServiceTypesWithConfig()
     } catch (err) {
       error.value = err.response?.data?.error || 'Ошибка загрузки типов услуг'
       console.error('Failed to fetch service types', err)

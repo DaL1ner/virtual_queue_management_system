@@ -35,6 +35,33 @@ public class ServiceTypeService
     }
 
     /// <summary>
+    /// Возвращает все типы услуг с информацией о конфигурации очереди
+    /// </summary>
+    public async Task<IEnumerable<ServiceTypeWithConfigDto>> GetAllWithConfigAsync()
+    {
+        var serviceTypes = await _context.ServiceTypes
+            .Include(st => st.QueueConfig)
+            .OrderBy(st => st.QueueConfigId)
+            .ThenBy(st => st.SortOrder)
+            .ToListAsync();
+
+        return serviceTypes.Select(st => new ServiceTypeWithConfigDto(
+            st.Id,
+            st.QueueConfigId,
+            st.QueueConfig?.Name ?? "Unknown",
+            st.Name,
+            st.Code,
+            st.Letter,
+            st.BasePriorityLevel,
+            st.PlanAvgServiceTimeSec,
+            st.IsActive,
+            st.IsHighlighting,
+            st.SortOrder,
+            st.CreatedAt
+        ));
+    }
+
+    /// <summary>
     /// Возвращает тип обслуживания по ID
     /// </summary>
     public async Task<ServiceTypeDto?> GetByIdAsync(int id)

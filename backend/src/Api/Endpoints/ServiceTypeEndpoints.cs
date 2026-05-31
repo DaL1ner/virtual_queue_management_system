@@ -18,6 +18,9 @@ public static class ServiceTypeEndpoints
         // GET /api/service-types - получение всех типов обслуживания (требует query param queueConfigId)
         endpointGroup.MapGet("/", GetAllServiceTypes);
 
+        // GET /api/service-types/all - получение всех типов обслуживания с информацией о конфигурации
+        endpointGroup.MapGet("/all", GetAllServiceTypesWithConfig);
+
         // GET /api/service-types/{id} - получение конкретного типа обслуживания
         endpointGroup.MapGet("/{id:int}", GetServiceTypeById);
 
@@ -46,6 +49,24 @@ public static class ServiceTypeEndpoints
             return Results.Forbid();
             
         var serviceTypes = await service.GetAllAsync(queueConfigId);
+        return Results.Ok(serviceTypes);
+    }
+
+    /// <summary>
+    /// Получает все типы обслуживания с информацией о конфигурации очереди
+    /// </summary>
+    private static async Task<IResult> GetAllServiceTypesWithConfig(
+        ClaimsPrincipal user,
+        ServiceTypeService service)
+    {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var serviceTypes = await service.GetAllWithConfigAsync();
         return Results.Ok(serviceTypes);
     }
 
