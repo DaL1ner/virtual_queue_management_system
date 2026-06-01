@@ -142,6 +142,20 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
+  async function deactivateQueueConfig(id) {
+    loading.value = true
+    try {
+      await api.deactivateQueueConfig(id)
+      await fetchQueueConfigs()
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка деактивации конфигурации'
+      console.error('Failed to deactivate queue config', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   // User actions
   async function createUser(data) {
     loading.value = true
@@ -187,6 +201,34 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
+  async function deactivateUser(id) {
+    loading.value = true
+    try {
+      await api.deactivateUser(id)
+      await fetchUsers()
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка деактивации пользователя'
+      console.error('Failed to deactivate user', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function activateUser(id) {
+    loading.value = true
+    try {
+      await api.activateUser(id)
+      await fetchUsers()
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка активации пользователя'
+      console.error('Failed to activate user', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   // ServiceType actions
   async function createServiceType(data) {
     loading.value = true
@@ -226,6 +268,20 @@ export const useAdminStore = defineStore('admin', () => {
     } catch (err) {
       error.value = err.response?.data?.error || 'Ошибка удаления типа услуги'
       console.error('Failed to delete service type', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function deactivateServiceType(id) {
+    loading.value = true
+    try {
+      await api.deactivateServiceType(id)
+      await fetchServiceTypes()
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка деактивации типа услуги'
+      console.error('Failed to deactivate service type', err)
       throw err
     } finally {
       loading.value = false
@@ -282,12 +338,16 @@ export const useAdminStore = defineStore('admin', () => {
     createQueueConfig,
     updateQueueConfig,
     deleteQueueConfig,
+    deactivateQueueConfig,
     createUser,
     updateUser,
     deleteUser,
+    deactivateUser,
+    activateUser,
     createServiceType,
     updateServiceType,
     deleteServiceType,
+    deactivateServiceType,
     createQueueSession,
     changeSessionStatus
   }

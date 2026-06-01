@@ -109,3 +109,37 @@ public sealed class UserSessionCreatedEvent : DomainEvent
         UserAgent = userAgent;
     }
 }
+
+/// <summary>
+/// Событие: учётная запись сотрудника активирована
+/// </summary>
+public sealed class UserActivatedEvent : DomainEvent
+{
+    public int UserId { get; }
+    public string Login { get; }
+    public int ActivatedById { get; }
+
+    public UserActivatedEvent(int userId, string login, int activatedById)
+    {
+        UserId = userId;
+        Login = login;
+        ActivatedById = activatedById;
+    }
+}
+
+/// <summary>
+/// Событие: учётная запись сотрудника деактивирована
+/// </summary>
+public sealed class UserDeactivatedEvent : DomainEvent
+{
+    public int UserId { get; }
+    public string Login { get; }
+    public int DeactivatedById { get; }
+
+    public UserDeactivatedEvent(int userId, string login, int deactivatedById)
+    {
+        UserId = userId;
+        Login = login;
+        DeactivatedById = deactivatedById;
+    }
+}

@@ -17,6 +17,10 @@ export const adminApi = {
   deleteQueueConfig(id) {
     return apiClient.delete(`/api/queue-configs/${id}`)
   },
+  deactivateQueueConfig(id) {
+    return apiClient.patch(`/api/queue-configs/${id}/deactivate`)
+      .then(response => response.data)
+  },
 
   // QueueSession
   getQueueSessions(activeOnly = false) {
@@ -64,6 +68,14 @@ export const adminApi = {
   deleteUser(id) {
     return apiClient.delete(`/api/users/${id}`)
   },
+  deactivateUser(id) {
+    return apiClient.patch(`/api/users/${id}/deactivate`)
+      .then(response => response.data)
+  },
+  activateUser(id) {
+    return apiClient.patch(`/api/users/${id}/activate`)
+      .then(response => response.data)
+  },
 
   // ServiceType
   async getServiceTypes() {
@@ -85,6 +97,10 @@ export const adminApi = {
   },
   deleteServiceType(id) {
     return apiClient.delete(`/api/service-types/${id}`)
+  },
+  deactivateServiceType(id) {
+    return apiClient.patch(`/api/service-types/${id}/deactivate`)
+      .then(response => response.data)
   }
 }
 
@@ -98,4 +114,7 @@ export const getServiceTypes = adminApi.getServiceTypes
 export const getAllServiceTypesWithConfig = adminApi.getAllServiceTypesWithConfig
 export const getActiveSessionStatistics = adminApi.getActiveSessionStatistics
 export const getSessionStatistics = adminApi.getSessionStatistics
-export const changeSessionStatus = adminApi.changeSessionStatus
+export const deactivateQueueConfig = adminApi.deactivateQueueConfig
+export const deactivateUser = adminApi.deactivateUser
+export const activateUser = adminApi.activateUser
+export const deactivateServiceType = adminApi.deactivateServiceType

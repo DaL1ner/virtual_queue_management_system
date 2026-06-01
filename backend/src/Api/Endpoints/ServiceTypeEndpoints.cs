@@ -30,6 +30,9 @@ public static class ServiceTypeEndpoints
         // PUT /api/service-types/{id} - редактирование типа обслуживания
         endpointGroup.MapPut("/{id:int}", UpdateServiceType);
 
+        // PATCH /api/service-types/{id}/deactivate - деактивация типа обслуживания (soft delete)
+        endpointGroup.MapPatch("/{id:int}/deactivate", DeactivateServiceType);
+
         return endpointGroup;
     }
 
@@ -129,5 +132,24 @@ public static class ServiceTypeEndpoints
             
         var updated = await service.UpdateAsync(id, dto, actorUserId: userId.Value);
         return Results.Ok(updated);
+    }
+
+    /// <summary>
+    /// Деактивирует тип услуги (soft delete)
+    /// </summary>
+    private static async Task<IResult> DeactivateServiceType(
+        int id,
+        ClaimsPrincipal user,
+        ServiceTypeService service)
+    {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var deactivated = await service.DeactivateAsync(id, deactivatedById: userId.Value);
+        return Results.Ok(deactivated);
     }
 }

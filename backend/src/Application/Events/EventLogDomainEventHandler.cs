@@ -22,8 +22,12 @@ public class EventLogDomainEventHandler :
     INotificationHandler<ClientSessionInvalidatedEvent>,
     INotificationHandler<QueueConfigCreatedEvent>,
     INotificationHandler<QueueConfigUpdatedEvent>,
+    INotificationHandler<QueueConfigDeactivatedEvent>,
     INotificationHandler<ServiceTypeCreatedEvent>,
     INotificationHandler<ServiceTypeUpdatedEvent>,
+    INotificationHandler<ServiceTypeDeactivatedEvent>,
+    INotificationHandler<UserDeactivatedEvent>,
+    INotificationHandler<UserActivatedEvent>,
     INotificationHandler<ExecutorStateChangedEvent>
 {
     private readonly AppDbContext _context;
@@ -225,6 +229,22 @@ public class EventLogDomainEventHandler :
         await _context.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task Handle(QueueConfigDeactivatedEvent notification, CancellationToken cancellationToken)
+    {
+        var eventLog = new EventLog
+        {
+            QueueSessionId = null,
+            TicketId = null,
+            ActorUserId = notification.DeactivatedById,
+            EventType = EventType.QueueConfigDeactivated,
+            Timestamp = notification.OccurredAt,
+            Details = JsonSerializer.Serialize(new { notification.ConfigId, notification.ConfigName, notification.DeactivatedById })
+        };
+
+        _context.EventLogs.Add(eventLog);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task Handle(ServiceTypeCreatedEvent notification, CancellationToken cancellationToken)
     {
         var eventLog = new EventLog
@@ -251,6 +271,54 @@ public class EventLogDomainEventHandler :
             EventType = EventType.ServiceTypeUpdated,
             Timestamp = notification.OccurredAt,
             Details = JsonSerializer.Serialize(new { notification.ServiceTypeId, notification.QueueConfigId, notification.ActorUserId })
+        };
+
+        _context.EventLogs.Add(eventLog);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task Handle(ServiceTypeDeactivatedEvent notification, CancellationToken cancellationToken)
+    {
+        var eventLog = new EventLog
+        {
+            QueueSessionId = null,
+            TicketId = null,
+            ActorUserId = notification.DeactivatedById,
+            EventType = EventType.ServiceTypeDeactivated,
+            Timestamp = notification.OccurredAt,
+            Details = JsonSerializer.Serialize(new { notification.ServiceTypeId, notification.QueueConfigId, notification.Name, notification.DeactivatedById })
+        };
+
+        _context.EventLogs.Add(eventLog);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task Handle(UserDeactivatedEvent notification, CancellationToken cancellationToken)
+    {
+        var eventLog = new EventLog
+        {
+            QueueSessionId = null,
+            TicketId = null,
+            ActorUserId = notification.DeactivatedById,
+            EventType = EventType.UserDeactivated,
+            Timestamp = notification.OccurredAt,
+            Details = JsonSerializer.Serialize(new { notification.UserId, notification.Login, notification.DeactivatedById })
+        };
+
+        _context.EventLogs.Add(eventLog);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task Handle(UserActivatedEvent notification, CancellationToken cancellationToken)
+    {
+        var eventLog = new EventLog
+        {
+            QueueSessionId = null,
+            TicketId = null,
+            ActorUserId = notification.ActivatedById,
+            EventType = EventType.UserActivated,
+            Timestamp = notification.OccurredAt,
+            Details = JsonSerializer.Serialize(new { notification.UserId, notification.Login, notification.ActivatedById })
         };
 
         _context.EventLogs.Add(eventLog);

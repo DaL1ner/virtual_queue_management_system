@@ -35,3 +35,22 @@ public sealed class ServiceTypeUpdatedEvent : DomainEvent
         ActorUserId = actorUserId;
     }
 }
+
+/// <summary>
+/// Событие: тип услуги деактивирован
+/// </summary>
+public sealed class ServiceTypeDeactivatedEvent : DomainEvent
+{
+    public int ServiceTypeId { get; }
+    public int QueueConfigId { get; }
+    public string Name { get; }
+    public int DeactivatedById { get; }
+
+    public ServiceTypeDeactivatedEvent(int serviceTypeId, int queueConfigId, string name, int deactivatedById)
+    {
+        ServiceTypeId = serviceTypeId;
+        QueueConfigId = queueConfigId;
+        Name = name;
+        DeactivatedById = deactivatedById;
+    }
+}

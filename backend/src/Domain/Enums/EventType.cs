@@ -49,5 +49,15 @@ public enum EventType
     UserCreated = 27,
     UserUpdated = 28,
     UserRoleAssigned = 29,
-    UserRoleUnassigned = 30
+    UserRoleUnassigned = 30,
+    UserDeactivated = 31,
+
+    // Queue Config
+    QueueConfigDeactivated = 32,
+
+    // Service Type
+    ServiceTypeDeactivated = 33,
+
+    // User
+    UserActivated = 34
 }

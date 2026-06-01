@@ -31,3 +31,20 @@ public sealed class QueueConfigUpdatedEvent : DomainEvent
         ActorUserId = actorUserId;
     }
 }
+
+/// <summary>
+/// Событие: конфигурация очереди деактивирована
+/// </summary>
+public sealed class QueueConfigDeactivatedEvent : DomainEvent
+{
+    public int ConfigId { get; }
+    public string ConfigName { get; }
+    public int DeactivatedById { get; }
+
+    public QueueConfigDeactivatedEvent(int configId, string configName, int deactivatedById)
+    {
+        ConfigId = configId;
+        ConfigName = configName;
+        DeactivatedById = deactivatedById;
+    }
+}

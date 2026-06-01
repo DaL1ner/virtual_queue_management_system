@@ -18,6 +18,7 @@ public static class QueueConfigEndpoints
         endpointGroup.MapGet("/{id:int}", GetQueueConfigById);
         endpointGroup.MapPost("/", CreateQueueConfig);
         endpointGroup.MapPut("/{id:int}", UpdateQueueConfig);
+        endpointGroup.MapPatch("/{id:int}/deactivate", DeactivateQueueConfig);
 
         return endpointGroup;
     }
@@ -87,5 +88,24 @@ public static class QueueConfigEndpoints
             
         var updated = await service.UpdateAsync(id, dto, actorUserId: userId.Value);
         return Results.Ok(updated);
+    }
+
+    /// <summary>
+    /// Деактивирует конфигурацию очереди (soft delete)
+    /// </summary>
+    private static async Task<IResult> DeactivateQueueConfig(
+        int id,
+        ClaimsPrincipal user,
+        QueueConfigService service)
+    {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var deactivated = await service.DeactivateAsync(id, deactivatedById: userId.Value);
+        return Results.Ok(deactivated);
     }
 }

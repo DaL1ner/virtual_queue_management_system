@@ -19,6 +19,8 @@ public static class UserEndpoints
         endpointGroup.MapGet("/{id:int}", GetUserById);
         endpointGroup.MapPost("/", CreateUser);
         endpointGroup.MapPatch("/{id:int}", UpdateUser);
+        endpointGroup.MapPatch("/{id:int}/deactivate", DeactivateUser);
+        endpointGroup.MapPatch("/{id:int}/activate", ActivateUser);
         endpointGroup.MapPost("/{userId:int}/roles/{roleId:int}", AssignRole);
         endpointGroup.MapDelete("/{userId:int}/roles/{roleId:int}", UnassignRole);
 
@@ -36,7 +38,7 @@ public static class UserEndpoints
         if (!user.IsInRole("ADMIN"))
             return Results.Forbid();
             
-        var users = await service.GetAllAsync();
+        var users = await service.GetAllAsync(isActive: true);
         return Results.Ok(users);
     }
 
@@ -87,6 +89,44 @@ public static class UserEndpoints
             
         var updated = await service.UpdateAsync(id, dto, updatedById: userId.Value);
         return Results.Ok(updated);
+    }
+
+    /// <summary>
+    /// Деактивирует учётную запись пользователя (soft delete)
+    /// </summary>
+    private static async Task<IResult> DeactivateUser(
+        int id,
+        ClaimsPrincipal user,
+        UserService service)
+    {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var deactivated = await service.DeactivateAsync(id, deactivatedById: userId.Value);
+        return Results.Ok(deactivated);
+    }
+
+    /// <summary>
+    /// Активирует учётную запись пользователя
+    /// </summary>
+    private static async Task<IResult> ActivateUser(
+        int id,
+        ClaimsPrincipal user,
+        UserService service)
+    {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var activated = await service.ActivateAsync(id, activatedById: userId.Value);
+        return Results.Ok(activated);
     }
 
     private static async Task<IResult> AssignRole(

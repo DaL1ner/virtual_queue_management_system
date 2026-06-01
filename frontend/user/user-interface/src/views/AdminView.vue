@@ -144,7 +144,7 @@
                 <td>{{ config.maxQueueSize }}</td>
                 <td>
                   <button class="btn btn-sm btn-outline-primary me-1" @click="openEditConfigModal(config)">Редактировать</button>
-                  <button class="btn btn-sm btn-outline-danger" @click="deleteConfig(config.id)">Удалить</button>
+                  <button class="btn btn-sm btn-outline-warning" @click="deactivateConfig(config.id)">Деактивировать</button>
                 </td>
               </tr>
             </tbody>
@@ -169,6 +169,7 @@
                 <th>Логин</th>
                 <th>Email</th>
                 <th>Роли</th>
+                <th>Статус</th>
                 <th>Действия</th>
               </tr>
             </thead>
@@ -183,8 +184,14 @@
                   </span>
                 </td>
                 <td>
+                  <span class="badge" :class="user.isActive ? 'bg-success' : 'bg-danger'">
+                    {{ user.isActive ? 'Активен' : 'Неактивен' }}
+                  </span>
+                </td>
+                <td>
                   <button class="btn btn-sm btn-outline-primary me-1" @click="openEditUserModal(user)">Редактировать</button>
-                  <button class="btn btn-sm btn-outline-danger" @click="deleteUser(user.id)">Удалить</button>
+                  <button v-if="user.isActive" class="btn btn-sm btn-outline-warning" @click="deactivateUser(user.id)">Деактивировать</button>
+                  <button v-else class="btn btn-sm btn-outline-success" @click="activateUser(user.id)">Активировать</button>
                 </td>
               </tr>
             </tbody>
@@ -224,7 +231,7 @@
                 <td>{{ type.basePriorityLevel }}</td>
                 <td>
                   <button class="btn btn-sm btn-outline-primary me-1" @click="openEditServiceTypeModal(type)">Редактировать</button>
-                  <button class="btn btn-sm btn-outline-danger" @click="deleteServiceType(type.id)">Удалить</button>
+                  <button class="btn btn-sm btn-outline-warning" @click="deactivateServiceType(type.id)">Деактивировать</button>
                 </td>
               </tr>
             </tbody>
@@ -719,7 +726,7 @@ function parseStatus(status) {
   const parsed = statusMap[status]
   if (parsed === undefined) {
     console.warn('Unknown status:', status, '(type:', typeof status, ')')
-    return status // Возвращаем как есть, если не знаем преобразование
+    return status // Возвращаем как есть, если не знаю преобразование
   }
   return parsed
 }
@@ -859,10 +866,10 @@ async function submitEditConfig() {
   }
 }
 
-async function deleteConfig(id) {
-  if (confirm('Удалить конфигурацию?')) {
+async function deactivateConfig(id) {
+  if (confirm('Деактивировать конфигурацию?')) {
     try {
-      await adminStore.deleteQueueConfig(id)
+      await adminStore.deactivateQueueConfig(id)
     } catch (err) {
       // Error already handled in store
     }
@@ -916,10 +923,20 @@ async function submitEditUser() {
   }
 }
 
-async function deleteUser(id) {
-  if (confirm('Удалить пользователя?')) {
+async function deactivateUser(id) {
+  if (confirm('Деактивировать пользователя?')) {
     try {
-      await adminStore.deleteUser(id)
+      await adminStore.deactivateUser(id)
+    } catch (err) {
+      // Error already handled in store
+    }
+  }
+}
+
+async function activateUser(id) {
+  if (confirm('Активировать пользователя?')) {
+    try {
+      await adminStore.activateUser(id)
     } catch (err) {
       // Error already handled in store
     }
@@ -976,10 +993,10 @@ async function submitEditServiceType() {
   }
 }
 
-async function deleteServiceType(id) {
-  if (confirm('Удалить тип услуги?')) {
+async function deactivateServiceType(id) {
+  if (confirm('Деактивировать тип услуги?')) {
     try {
-      await adminStore.deleteServiceType(id)
+      await adminStore.deactivateServiceType(id)
     } catch (err) {
       // Error already handled in store
     }

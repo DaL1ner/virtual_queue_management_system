@@ -199,6 +199,48 @@ public class UserService
     }
 
     /// <summary>
+    /// Деактивация учётной записи (soft delete)
+    /// </summary>
+    public async Task<UserDto> DeactivateAsync(int id, int deactivatedById)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == id);
+
+        if (user == null)
+        {
+            throw new NotFoundException($"User with id {id} not found");
+        }
+
+        user.IsActive = false;
+        await _context.SaveChangesAsync();
+
+        await _eventPublisher.PublishAsync(new UserDeactivatedEvent(user.Id, user.Login, deactivatedById));
+
+        return MapToDto(user);
+    }
+
+    /// <summary>
+    /// Активация учётной записи
+    /// </summary>
+    public async Task<UserDto> ActivateAsync(int id, int activatedById)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == id);
+
+        if (user == null)
+        {
+            throw new NotFoundException($"User with id {id} not found");
+        }
+
+        user.IsActive = true;
+        await _context.SaveChangesAsync();
+
+        await _eventPublisher.PublishAsync(new UserActivatedEvent(user.Id, user.Login, activatedById));
+
+        return MapToDto(user);
+    }
+
+    /// <summary>
     /// Назначение роли пользователю
     /// </summary>
     public async Task<UserDto> AssignRoleAsync(int userId, int roleId, int assignedById)
