@@ -1632,6 +1632,7 @@ public static class UserEndpoints
         endpointGroup.MapPost("/", CreateUser);
         endpointGroup.MapPatch("/{id:int}", UpdateUser);
         endpointGroup.MapPatch("/{id:int}/deactivate", DeactivateUser);
+        endpointGroup.MapPatch("/{id:int}/activate", ActivateUser);
         endpointGroup.MapPost("/{userId:int}/roles/{roleId:int}", AssignRole);
         endpointGroup.MapDelete("/{userId:int}/roles/{roleId:int}", UnassignRole);
 
@@ -1649,7 +1650,7 @@ public static class UserEndpoints
         if (!user.IsInRole("ADMIN"))
             return Results.Forbid();
             
-        var users = await service.GetAllAsync();
+        var users = await service.GetAllAsync(isActive: true);
         return Results.Ok(users);
     }
 
@@ -1719,6 +1720,25 @@ public static class UserEndpoints
             
         var deactivated = await service.DeactivateAsync(id, deactivatedById: userId.Value);
         return Results.Ok(deactivated);
+    }
+
+    /// <summary>
+    /// Активирует учётную запись пользователя
+    /// </summary>
+    private static async Task<IResult> ActivateUser(
+        int id,
+        ClaimsPrincipal user,
+        UserService service)
+    {
+        var userId = user.GetUserId();
+        if (userId == null)
+            return Results.Unauthorized();
+            
+        if (!user.IsInRole("ADMIN"))
+            return Results.Forbid();
+            
+        var activated = await service.ActivateAsync(id, activatedById: userId.Value);
+        return Results.Ok(activated);
     }
 
     private static async Task<IResult> AssignRole(
@@ -2882,6 +2902,7 @@ public class EventLogDomainEventHandler :
     INotificationHandler<ServiceTypeUpdatedEvent>,
     INotificationHandler<ServiceTypeDeactivatedEvent>,
     INotificationHandler<UserDeactivatedEvent>,
+    INotificationHandler<UserActivatedEvent>,
     INotificationHandler<ExecutorStateChangedEvent>
 {
     private readonly AppDbContext _context;
@@ -3157,6 +3178,22 @@ public class EventLogDomainEventHandler :
             EventType = EventType.UserDeactivated,
             Timestamp = notification.OccurredAt,
             Details = JsonSerializer.Serialize(new { notification.UserId, notification.Login, notification.DeactivatedById })
+        };
+
+        _context.EventLogs.Add(eventLog);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task Handle(UserActivatedEvent notification, CancellationToken cancellationToken)
+    {
+        var eventLog = new EventLog
+        {
+            QueueSessionId = null,
+            TicketId = null,
+            ActorUserId = notification.ActivatedById,
+            EventType = EventType.UserActivated,
+            Timestamp = notification.OccurredAt,
+            Details = JsonSerializer.Serialize(new { notification.UserId, notification.Login, notification.ActivatedById })
         };
 
         _context.EventLogs.Add(eventLog);
@@ -3672,6 +3709,23 @@ public sealed class UserSessionCreatedEvent : DomainEvent
         Login = login;
         IpAddress = ipAddress;
         UserAgent = userAgent;
+    }
+}
+
+/// <summary>
+/// Событие: учётная запись сотрудника активирована
+/// </summary>
+public sealed class UserActivatedEvent : DomainEvent
+{
+    public int UserId { get; }
+    public string Login { get; }
+    public int ActivatedById { get; }
+
+    public UserActivatedEvent(int userId, string login, int activatedById)
+    {
+        UserId = userId;
+        Login = login;
+        ActivatedById = activatedById;
     }
 }
 
@@ -6842,6 +6896,27 @@ public class UserService
     }
 
     /// <summary>
+    /// Активация учётной записи
+    /// </summary>
+    public async Task<UserDto> ActivateAsync(int id, int activatedById)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == id);
+
+        if (user == null)
+        {
+            throw new NotFoundException($"User with id {id} not found");
+        }
+
+        user.IsActive = true;
+        await _context.SaveChangesAsync();
+
+        await _eventPublisher.PublishAsync(new UserActivatedEvent(user.Id, user.Login, activatedById));
+
+        return MapToDto(user);
+    }
+
+    /// <summary>
     /// Назначение роли пользователю
     /// </summary>
     public async Task<UserDto> AssignRoleAsync(int userId, int roleId, int assignedById)
@@ -7607,7 +7682,10 @@ public enum EventType
     QueueConfigDeactivated = 32,
 
     // Service Type
-    ServiceTypeDeactivated = 33
+    ServiceTypeDeactivated = 33,
+
+    // User
+    UserActivated = 34
 }
 
 

@@ -15,7 +15,7 @@ export function useTicket() {
 
   async function fetchServiceTypes() {
     try {
-      const data = await api.get<ServiceTypeSimpleDto[]>('/api/queue-sessions/active/service-types');
+      const data = await api.get<ServiceTypeSimpleDto[]>('/queue-sessions/active/service-types');
       return data;
     } catch (err) {
       console.error('Failed to fetch service types:', err);
@@ -33,7 +33,7 @@ export function useTicket() {
       deviceFingerprint,
     };
     try {
-      const response = await api.post<{ ticket: any; sessionToken: string }>('/api/tickets', fullDto);
+      const response = await api.post<{ ticket: any; sessionToken: string }>('/tickets', fullDto);
       authStore.setToken(response.sessionToken);
       return response;
     } catch (err) {
@@ -44,7 +44,7 @@ export function useTicket() {
 
   async function fetchActiveTicket() {
     try {
-      const data = await api.get<MyActiveTicketDetailDto>('/api/tickets/me');
+      const data = await api.get<MyActiveTicketDetailDto>('/tickets/me');
       ticketStore.setActiveTicket(data);
       return data;
     } catch (err: any) {
@@ -59,7 +59,7 @@ export function useTicket() {
 
   async function cancelTicket() {
     try {
-      const data = await api.post('/api/tickets/me/cancel');
+      const data = await api.post('/tickets/me/cancel');
       ticketStore.clear();
       authStore.clearToken();
       return data;
@@ -72,7 +72,7 @@ export function useTicket() {
   async function moveTicketBackward(steps: number) {
     try {
       const dto: MoveTicketBackwardDto = { steps };
-      const data = await api.post<MyActiveTicketDetailDto>('/api/tickets/me/move-backward', dto);
+      const data = await api.post<MyActiveTicketDetailDto>('/tickets/me/move-backward', dto);
       ticketStore.setActiveTicket(data);
       return data;
     } catch (err) {

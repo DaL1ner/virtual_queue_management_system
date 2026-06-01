@@ -5,6 +5,9 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
+  // В production сборка будет раздаваться бэкендом по пути /app/
+  // В dev-режиме (Vite dev server) base = '/'
+  base: process.env.NODE_ENV === 'production' ? '/app/' : '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')

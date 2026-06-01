@@ -3,32 +3,32 @@ import apiClient from './index'
 export const executorApi = {
   // Получить своё состояние
   getMe() {
-    return apiClient.get('/api/executor-states/me')
+    return apiClient.get('/executor-states/me')
       .then(response => response.data)
   },
   // Переключить готовность
   toggleReady() {
-    return apiClient.post('/api/executor-states/ready')
+    return apiClient.post('/executor-states/ready')
       .then(response => response.data)
   },
   // Начать обслуживание
   startServing() {
-    return apiClient.post('/api/executor-states/start-serving')
+    return apiClient.post('/executor-states/start-serving')
       .then(response => response.data)
   },
   // Завершить обслуживание
   completeServing() {
-    return apiClient.post('/api/executor-states/complete-serving')
+    return apiClient.post('/executor-states/complete-serving')
       .then(response => response.data)
   },
   // Отметить неявку
   markNoShow() {
-    return apiClient.post('/api/executor-states/mark-no-show')
+    return apiClient.post('/executor-states/mark-no-show')
       .then(response => response.data)
   },
   // Получить статистику активной сессии очереди
   getQueueStats() {
-    return apiClient.get('/api/queue-sessions/statistics/active')
+    return apiClient.get('/queue-sessions/statistics/active')
       .then(response => response.data)
   }
 }

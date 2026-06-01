@@ -2,18 +2,18 @@ import apiClient from './index'
 
 export const authApi = {
   login(credentials) {
-    return apiClient.post('/api/auth/login', credentials)
+    return apiClient.post('/auth/login', credentials)
       .then(response => response.data)
   },
   logout() {
-    return apiClient.post('/api/auth/logout')
+    return apiClient.post('/auth/logout')
   },
   getCurrentUser() {
-    return apiClient.get('/api/users/me')
+    return apiClient.get('/users/me')
       .then(response => response.data)
   },
   refreshToken() {
-    return apiClient.post('/api/auth/refresh')
+    return apiClient.post('/auth/refresh')
       .then(response => response.data)
   }
 }

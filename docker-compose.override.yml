@@ -1,41 +1,24 @@
-# docker-compose.override.yml (обновлённый)
+# docker-compose.override.yml
+# Переопределения для Development-режима
 services:
   backend:
     build:
-      target: build
+      context: .
+      dockerfile: backend/Dockerfile
+      target: final
       args:
         BUILD_CONFIGURATION: Debug
     
-    working_dir: /src
-    
     volumes:
-      # Исходники — синхронизируем
-      - ./backend:/src:cached
-      # Кэш NuGet
-      - ~/.nuget/packages:/root/.nuget/packages
-      
-      # 👇 ИЗОЛИРУЕМ артефакты сборки (контейнер-онли)
-      - /src/src/Api/bin
-      - /src/src/Api/obj
-      - /src/src/Application/bin
-      - /src/src/Application/obj
-      - /src/src/Domain/bin
-      - /src/src/Domain/obj
-      - /src/src/Infrastructure/bin
-      - /src/src/Infrastructure/obj
-    
-    command: >
-      sh -c "
-        dotnet restore /src/src/Api/Api.csproj &&
-        dotnet watch --project /src/src/Api/Api.csproj run --no-launch-profile
-      "
+      # Фронтенд-сборки для раздачи статики в dev-режиме
+      # Позволяет обновлять статику без пересборки контейнера
+      - ./frontend/client/client-interface/dist:/app/wwwroot/client:cached
+      - ./frontend/user/user-interface/dist:/app/wwwroot/app:cached
     
     environment:
-      - DOTNET_USE_POLLING_FILE_WATCHER=1
       - ASPNETCORE_URLS=http://+:8080
       - ASPNETCORE_ENVIRONMENT=Development
     
-    user: root
     ports:
       - "8080:8080"
     healthcheck:

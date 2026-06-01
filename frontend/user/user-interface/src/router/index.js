@@ -1,6 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
+// В production (сборка раздаётся бэкендом по пути /app/) Vue Router должен
+// использовать base /app/ для корректной работы навигации.
+// В dev-режиме (Vite dev server) base должен быть /.
+const isProduction = import.meta.env.PROD
+
 const routes = [
   {
     path: '/login',
@@ -25,7 +30,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(isProduction ? '/app/' : '/'),
   routes
 })
 

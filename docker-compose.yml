@@ -37,17 +37,20 @@ services:
   #docker compose --profile docs up
   #http://localhost:8000
 
+  # ──────────────────────────────────────────────
+  # Production: бэкенд раздаёт статические сборки фронтендов
+  # ──────────────────────────────────────────────
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: vqms_backend
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Production
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: vqms_db
@@ -56,6 +59,40 @@ services:
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=vqms_db;Username=vqms_user;Password=vqms_password"
     ports:
       - "8080:8080"
+    networks:
+      - vqms_net
+
+  # ──────────────────────────────────────────────
+  # Dev: Vite dev server для клиентского интерфейса
+  # ──────────────────────────────────────────────
+  client-frontend:
+    image: node:20-alpine
+    container_name: vqms_client_frontend
+    working_dir: /app
+    volumes:
+      - ./frontend/client/client-interface:/app
+    ports:
+      - "5173:5173"
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+    profiles:
+      - dev-frontend
+    networks:
+      - vqms_net
+
+  # ──────────────────────────────────────────────
+  # Dev: Vite dev server для интерфейса сотрудников
+  # ──────────────────────────────────────────────
+  user-frontend:
+    image: node:20-alpine
+    container_name: vqms_user_frontend
+    working_dir: /app
+    volumes:
+      - ./frontend/user/user-interface:/app
+    ports:
+      - "5174:5174"
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+    profiles:
+      - dev-frontend
     networks:
       - vqms_net
 

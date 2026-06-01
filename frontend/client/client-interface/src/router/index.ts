@@ -4,6 +4,11 @@ import TicketView from '../views/TicketView.vue';
 import NotFound from '../views/NotFound.vue';
 import { useAuthStore } from '../stores/auth.store';
 
+// В production (сборка раздаётся бэкендом по пути /client/) Vue Router должен
+// использовать base /client/ для корректной работы навигации.
+// В dev-режиме (Vite dev server) base должен быть /.
+const isProduction = import.meta.env.PROD;
+
 const routes = [
   {
     path: '/',
@@ -24,7 +29,7 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(isProduction ? '/client/' : '/'),
   routes,
 });
 

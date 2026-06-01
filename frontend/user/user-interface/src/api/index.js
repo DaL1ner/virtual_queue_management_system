@@ -1,7 +1,11 @@
 import axios from 'axios'
 
+// В production (сборка раздаётся бэкендом) API доступен по относительному пути /api
+// В dev-режиме (Vite dev server) используется переменная окружения или localhost:8080
+const isProduction = import.meta.env.PROD
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+  baseURL: isProduction ? '/api' : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'),
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
