@@ -28,7 +28,7 @@ Virtual Queue Management System (VQMS) - это система управлен�
 
 Система построена по принципам **Clean Architecture** (Чистой архитектуры) с четким разделением на слои:
 
-```
+```text
 ┌─────────────────────────────────────────────────┐
 │                    API Layer                     │
 │  (Endpoints, Middleware, Controllers)           │
@@ -128,20 +128,20 @@ Virtual Queue Management System (VQMS) - это система управлен�
 ## Поток данных
 
 ### Типичный запрос
-1. **HTTP Request** → API Endpoint
-2. **Authentication Middleware** → Валидация токена
-3. **Endpoint Handler** → Вызов Application Service
-4. **Application Service** → Работа с Domain Entities
-5. **Infrastructure** → Сохранение в БД через DbContext
-6. **Domain Events** → Публикация событий через MediatR
-7. **Response** → Возврат DTO клиенту
+1. **HTTP Request** -> API Endpoint
+2. **Authentication Middleware** -> Валидация токена
+3. **Endpoint Handler** -> Вызов Application Service
+4. **Application Service** -> Работа с Domain Entities
+5. **Infrastructure** -> Сохранение в БД через DbContext
+6. **Domain Events** -> Публикация событий через MediatR
+7. **Response** -> Возврат DTO клиенту
 
 ### Пример: Создание талона
-```
-Клиент → POST /api/tickets → Authentication Middleware → TicketEndpoints.CreateTicket()
-→ TicketService.CreateAsync() → QueueSessionService.GetActiveSessionAsync()
-→ AppDbContext.Tickets.Add() → SaveChangesAsync() → Publish TicketCreatedEvent
-→ Return TicketDto
+```text
+Клиент -> POST /api/tickets -> Authentication Middleware -> TicketEndpoints.CreateTicket()
+-> TicketService.CreateAsync() -> QueueSessionService.GetActiveSessionAsync()
+-> AppDbContext.Tickets.Add() -> SaveChangesAsync() -> Publish TicketCreatedEvent
+-> Return TicketDto
 ```
 
 ## Модель данных
