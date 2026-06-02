@@ -25,6 +25,10 @@ plugins:
   - search
   - swagger-ui-tag
 
+extra_javascript:
+  - infra/javascripts/mermaid-init.js
+  - https://unpkg.com/mermaid@10.4.0/dist/mermaid.min.js
+
 nav:
   - Home: index.md
   - Tutorials:
