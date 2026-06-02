@@ -23,7 +23,6 @@ theme:
 
 plugins:
   - search
-  - mermaid2
   - swagger-ui-tag
 
 nav:
