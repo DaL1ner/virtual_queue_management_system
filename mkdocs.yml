@@ -25,10 +25,6 @@ plugins:
   - search
   - swagger-ui-tag
 
-extra_javascript:
-  - infra/javascripts/mermaid-init.js
-  - https://unpkg.com/mermaid@10.4.0/dist/mermaid.min.js
-
 nav:
   - Home: index.md
   - Tutorials:
@@ -52,14 +48,20 @@ nav:
     #- explanation/adr/index.md
 
 markdown_extensions:
-  - codehilite:
+  - pymdownx.highlight:
       use_pygments: true
+      default_lang: text
+      auto_title: false
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
+          format: !!python/name:mermaid_fence.mermaid_format
   - pymdownx.tabbed:
       alternate_style: true
   - attr_list
   - md_in_html
+
+extra_javascript:
+  - infra/javascripts/mermaid-init.js
+  - https://unpkg.com/mermaid@10.4.0/dist/mermaid.min.js
