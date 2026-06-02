@@ -63,13 +63,13 @@ Virtual Queue Management System (VQMS) - это система управлен�
 #### 1. Domain Layer (`backend/src/Domain/`)
 **Назначение**: Содержит бизнес-логику и основные концепции предметной области.
 
-**Структура**:
+**Структура**:  
 - `Entities/` - Доменные сущности (User, Ticket, QueueSession и др.)  
 - `Enums/` - Перечисления (TicketStatus, SessionStatus, EventType)  
 - `Interfaces/` - Абстракции для инфраструктурных сервисов  
 - `DTOs/` - Внутренние DTO для передачи данных между слоями  
 
-**Ключевые сущности**:
+**Ключевые сущности**:  
 - `User` - Пользователи системы (администраторы, операторы)  
 - `QueueConfig` - Конфигурация очереди  
 - `QueueSession` - Сессия работы очереди  
@@ -82,13 +82,13 @@ Virtual Queue Management System (VQMS) - это система управлен�
 #### 2. Application Layer (`backend/src/Application/`)
 **Назначение**: Содержит бизнес-правила и координацию работы доменных объектов.
 
-**Структура**:
+**Структура**:  
 - `Services/` - Сервисы приложения (TicketService, UserService и др.)  
 - `DTOs/` - Data Transfer Objects для API  
 - `Events/` - Доменные события и их обработчики  
 - `DependencyInjection/` - Регистрация сервисов приложения  
 
-**Ключевые сервисы**:
+**Ключевые сервисы**:  
 - `TicketService` - Управление талонами (создание, вызов, обслуживание)  
 - `QueueSessionService` - Управление сессиями очереди  
 - `UserService` - Управление пользователями и аутентификация  
@@ -98,12 +98,12 @@ Virtual Queue Management System (VQMS) - это система управлен�
 #### 3. Infrastructure Layer (`backend/src/Infrastructure/`)
 **Назначение**: Реализация внешних зависимостей и инфраструктурных сервисов.
 
-**Структура**:
+**Структура**:  
 - `Data/` - Работа с базой данных (DbContext, конвертеры)  
 - `Security/` - Сервисы безопасности (TokenService, PasswordHasher)  
 - `DependencyInjection/` - Регистрация инфраструктурных сервисов  
 
-**Ключевые компоненты**:
+**Ключевые компоненты**:  
 - `AppDbContext` - Контекст базы данных Entity Framework Core  
 - `TokenService` - Генерация и верификация токенов  
 - `PasswordHasher` - Хеширование паролей  
@@ -112,13 +112,13 @@ Virtual Queue Management System (VQMS) - это система управлен�
 #### 4. API Layer (`backend/src/Api/`)
 **Назначение**: Предоставление HTTP API и обработка запросов.
 
-**Структура**:
+**Структура**:  
 - `Endpoints/` - Minimal API endpoints (Auth, Ticket, Queue и др.)  
 - `Middleware/` - Промежуточное ПО (аутентификация)  
 - `Helpers/` - Вспомогательные классы  
 - `Program.cs` - Точка входа и конфигурация приложения  
 
-**Ключевые endpoints**:
+**Ключевые endpoints**:  
 - `AuthEndpoints` - Аутентификация и управление сессиями  
 - `TicketEndpoints` - Операции с талонами  
 - `QueueSessionEndpoints` - Управление сессиями очереди  
