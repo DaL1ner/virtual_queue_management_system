@@ -2,7 +2,6 @@
 
 # Система управления виртуальной очередью<br> Virtual Queue Management System
 
-> **Учебный проект**   
 > Веб-приложение для управления виртуальной очередью в сервисных точках
 
 [![Vue.js](https://img.shields.io/badge/Vue.js-4FC08D?logo=vuedotjs&logoColor=fff)](https://vuejs.org/)
