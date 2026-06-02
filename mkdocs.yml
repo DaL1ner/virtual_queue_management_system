@@ -51,6 +51,8 @@ nav:
 markdown_extensions:
   - pymdownx.highlight:
       use_pygments: true
+      default_lang: text
+      auto_title: false
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
