@@ -8,149 +8,149 @@
 **Назначение**: Представляет пользователя системы (администратор, оператор, исполнитель).
 
 **Поля**:
-- `Id` (int) - Уникальный идентификатор
-- `Login` (string) - Уникальный логин для входа
-- `PasswordHash` (string) - Хеш пароля
-- `FullName` (string) - Полное имя
-- `LastName` (string) - Фамилия
-- `Email` (string?) - Электронная почта (уникальная)
-- `IsActive` (bool) - Активен ли пользователь
-- `CreatedAt` (DateTime) - Дата создания
-- `UpdatedAt` (DateTime?) - Дата последнего обновления
+- `Id` (int) - Уникальный идентификатор  
+- `Login` (string) - Уникальный логин для входа  
+- `PasswordHash` (string) - Хеш пароля  
+- `FullName` (string) - Полное имя  
+- `LastName` (string) - Фамилия  
+- `Email` (string?) - Электронная почта (уникальная)  
+- `IsActive` (bool) - Активен ли пользователь  
+- `CreatedAt` (DateTime) - Дата создания  
+- `UpdatedAt` (DateTime?) - Дата последнего обновления  
 
 **Навигационные свойства**:
-- `UserRoles` - Роли пользователя
-- `UserSessions` - Сессии пользователя
-- `CreatedQueueConfigs` - Созданные конфигурации очередей
-- `CreatedQueueSessions` - Созданные сессии очередей
-- `ServedTickets` - Обслуженные талоны
-- `EventLogs` - События, связанные с пользователем
+- `UserRoles` - Роли пользователя  
+- `UserSessions` - Сессии пользователя  
+- `CreatedQueueConfigs` - Созданные конфигурации очередей  
+- `CreatedQueueSessions` - Созданные сессии очередей  
+- `ServedTickets` - Обслуженные талоны  
+- `EventLogs` - События, связанные с пользователем  
 
 #### 2. Ticket (Талон)
 **Назначение**: Основная единица очереди - запись клиента на обслуживание.
 
 **Поля**:
-- `Id` (int) - Уникальный идентификатор
-- `QueueSessionId` (int) - Ссылка на сессию очереди
-- `ServiceTypeId` (int?) - Тип услуги (опционально)
-- `TicketNumber` (string) - Номер талона (например, "A001")
-- `ClientName` (string) - Имя клиента
-- `ClientSurname` (string) - Фамилия клиента
-- `SortOrder` (decimal) - Порядок сортировки в очереди
-- `PriorityLevel` (int) - Уровень приоритета (0 - нормальный)
-- `Status` (TicketStatus) - Текущий статус
-- `Version` (int) - Версия для оптимистичной блокировки
-- `CreatedAt` (DateTime) - Время создания
-- `CalledAt` (DateTime?) - Время вызова
-- `ServiceStartedAt` (DateTime?) - Время начала обслуживания
-- `ServiceEndedAt` (DateTime?) - Время окончания обслуживания
-- `UpdatedAt` (DateTime?) - Время последнего обновления
-- `ServedByUserId` (int?) - ID пользователя, обслуживающего талон
-- `ClientSessionId` (int?) - ID клиентской сессии
-- `CancelReason` (string?) - Причина отмены
+- `Id` (int) - Уникальный идентификатор  
+- `QueueSessionId` (int) - Ссылка на сессию очереди  
+- `ServiceTypeId` (int?) - Тип услуги (опционально)  
+- `TicketNumber` (string) - Номер талона (например, "A-001")  
+- `ClientName` (string) - Имя клиента  
+- `ClientSurname` (string) - Фамилия клиента  
+- `SortOrder` (decimal) - Порядок сортировки в очереди  
+- `PriorityLevel` (int) - Уровень приоритета (0 - нормальный)  
+- `Status` (TicketStatus) - Текущий статус  
+- `Version` (int) - Версия для оптимистичной блокировки  
+- `CreatedAt` (DateTime) - Время создания  
+- `CalledAt` (DateTime?) - Время вызова  
+- `ServiceStartedAt` (DateTime?) - Время начала обслуживания  
+- `ServiceEndedAt` (DateTime?) - Время окончания обслуживания  
+- `UpdatedAt` (DateTime?) - Время последнего обновления  
+- `ServedByUserId` (int?) - ID пользователя, обслуживающего талон  
+- `ClientSessionId` (int?) - ID клиентской сессии  
+- `CancelReason` (string?) - Причина отмены  
 
 **Навигационные свойства**:
-- `QueueSession` - Сессия очереди
-- `ServiceType` - Тип услуги
-- `ServedByUser` - Пользователь-исполнитель
-- `ClientSession` - Клиентская сессия
-- `EventLogs` - События талона
+- `QueueSession` - Сессия очереди  
+- `ServiceType` - Тип услуги  
+- `ServedByUser` - Пользователь-исполнитель  
+- `ClientSession` - Клиентская сессия  
+- `EventLogs` - События талона  
 
 #### 3. QueueSession (Сессия очереди)
 **Назначение**: Представляет рабочую сессию очереди в определенный период времени.
 
 **Поля**:
-- `Id` (int) - Уникальный идентификатор
-- `QueueConfigId` (int) - Конфигурация очереди
-- `Name` (string) - Название сессии
-- `Description` (string?) - Описание
-- `Status` (SessionStatus) - Статус (DRAFT, OPEN, PAUSED, CLOSED)
-- `StartedAt` (DateTime?) - Время начала
-- `ClosedAt` (DateTime?) - Время закрытия
-- `CreatedByUserId` (int) - Создатель
-- `CreatedAt` (DateTime) - Время создания
-- `UpdatedAt` (DateTime?) - Время обновления
+- `Id` (int) - Уникальный идентификатор  
+- `QueueConfigId` (int) - Конфигурация очереди  
+- `Name` (string) - Название сессии  
+- `Description` (string?) - Описание  
+- `Status` (SessionStatus) - Статус (DRAFT, OPEN, PAUSED, CLOSED)  
+- `StartedAt` (DateTime?) - Время начала  
+- `ClosedAt` (DateTime?) - Время закрытия  
+- `CreatedByUserId` (int) - Создатель  
+- `CreatedAt` (DateTime) - Время создания  
+- `UpdatedAt` (DateTime?) - Время обновления  
 
 **Навигационные свойства**:
-- `QueueConfig` - Конфигурация очереди
-- `CreatedByUser` - Пользователь-создатель
-- `Tickets` - Талоны в сессии
-- `ClientSessions` - Клиентские сессии
+- `QueueConfig` - Конфигурация очереди  
+- `CreatedByUser` - Пользователь-создатель  
+- `Tickets` - Талоны в сессии  
+- `ClientSessions` - Клиентские сессии  
 
 #### 4. QueueConfig (Конфигурация очереди)
 **Назначение**: Настройки и параметры очереди.
 
 **Поля**:
-- `Id` (int) - Уникальный идентификатор
-- `Name` (string) - Название конфигурации
-- `Description` (string?) - Описание
-- `IsActive` (bool) - Активна ли конфигурация
-- `IsServiceTypeEnabled` (bool) - Включены ли типы услуг
-- `DistributionMode` (DistributionMode) - Режим распределения (ROUND_ROBIN, PRIORITY)
-- `AverageServiceTimeMinutes` (int) - Среднее время обслуживания (минуты)
-- `MaxWaitingTimeMinutes` (int) - Максимальное время ожидания
-- `CreatedByUserId` (int) - Создатель
-- `CreatedAt` (DateTime) - Время создания
-- `UpdatedAt` (DateTime?) - Время обновления
+- `Id` (int) - Уникальный идентификатор  
+- `Name` (string) - Название конфигурации  
+- `Description` (string?) - Описание  
+- `IsActive` (bool) - Активна ли конфигурация  
+- `IsServiceTypeEnabled` (bool) - Включены ли типы услуг  
+- `DistributionMode` (DistributionMode) - Режим распределения (ROUND_ROBIN, PRIORITY)  
+- `AverageServiceTimeMinutes` (int) - Среднее время обслуживания (минуты)  
+- `MaxWaitingTimeMinutes` (int) - Максимальное время ожидания  
+- `CreatedByUserId` (int) - Создатель  
+- `CreatedAt` (DateTime) - Время создания  
+- `UpdatedAt` (DateTime?) - Время обновления  
 
 **Навигационные свойства**:
-- `CreatedByUser` - Пользователь-создатель
-- `QueueSessions` - Сессии очереди
-- `ServiceTypes` - Типы услуг
+- `CreatedByUser` - Пользователь-создатель  
+- `QueueSessions` - Сессии очереди  
+- `ServiceTypes` - Типы услуг  
 
 #### 5. ServiceType (Тип услуги)
 **Назначение**: Категоризация услуг для талонов.
 
 **Поля**:
-- `Id` (int) - Уникальный идентификатор
-- `QueueConfigId` (int) - Конфигурация очереди
-- `Name` (string) - Название типа
-- `Letter` (char) - Буква для номера талона (A, B, C...)
-- `Description` (string?) - Описание
-- `BasePriorityLevel` (int) - Базовый приоритет
-- `IsActive` (bool) - Активен ли тип
-- `SortOrder` (int) - Порядок сортировки
-- `CreatedAt` (DateTime) - Время создания
-- `UpdatedAt` (DateTime?) - Время обновления
+- `Id` (int) - Уникальный идентификатор  
+- `QueueConfigId` (int) - Конфигурация очереди  
+- `Name` (string) - Название типа  
+- `Letter` (char) - Буква для номера талона (A, B, C...)  
+- `Description` (string?) - Описание  
+- `BasePriorityLevel` (int) - Базовый приоритет  
+- `IsActive` (bool) - Активен ли тип  
+- `SortOrder` (int) - Порядок сортировки  
+- `CreatedAt` (DateTime) - Время создания  
+- `UpdatedAt` (DateTime?) - Время обновления  
 
 **Навигационные свойства**:
-- `QueueConfig` - Конфигурация очереди
-- `Tickets` - Талоны этого типа
+- `QueueConfig` - Конфигурация очереди  
+- `Tickets` - Талоны этого типа  
 
 #### 6. ExecutorState (Состояние исполнителя)
 **Назначение**: Отслеживание состояния оператора/исполнителя.
 
 **Поля**:
-- `Id` (int) - Уникальный идентификатор
-- `UserId` (int) - Пользователь-исполнитель
-- `QueueSessionId` (int) - Сессия очереди
-- `IsReady` (bool) - Готов принимать талоны
-- `CurrentTicketId` (int?) - Текущий обслуживаемый талон
-- `LastStatusChange` (DateTime) - Время последнего изменения статуса
-- `CreatedAt` (DateTime) - Время создания
-- `UpdatedAt` (DateTime?) - Время обновления
+- `Id` (int) - Уникальный идентификатор  
+- `UserId` (int) - Пользователь-исполнитель  
+- `QueueSessionId` (int) - Сессия очереди  
+- `IsReady` (bool) - Готов принимать талоны  
+- `CurrentTicketId` (int?) - Текущий обслуживаемый талон  
+- `LastStatusChange` (DateTime) - Время последнего изменения статуса  
+- `CreatedAt` (DateTime) - Время создания  
+- `UpdatedAt` (DateTime?) - Время обновления  
 
 **Навигационные свойства**:
-- `User` - Пользователь-исполнитель
-- `QueueSession` - Сессия очереди
-- `CurrentTicket` - Текущий талон
+- `User` - Пользователь-исполнитель  
+- `QueueSession` - Сессия очереди  
+- `CurrentTicket` - Текущий талон  
 
 #### 7. ClientSession (Клиентская сессия)
 **Назначение**: Сессия клиента для отслеживания состояния в системе.
 
 **Поля**:
-- `Id` (int) - Уникальный идентификатор
-- `DeviceFingerprint` (string) - Уникальный идентификатор устройства
-- `TokenHash` (string) - Хеш токена сессии
-- `IpAddress` (string?) - IP-адрес
-- `UserAgent` (string?) - User-Agent браузера
-- `IsActive` (bool) - Активна ли сессия
-- `CreatedAt` (DateTime) - Время создания
-- `UpdatedAt` (DateTime?) - Время обновления
+- `Id` (int) - Уникальный идентификатор  
+- `DeviceFingerprint` (string) - Уникальный идентификатор устройства  
+- `TokenHash` (string) - Хеш токена сессии  
+- `IpAddress` (string?) - IP-адрес  
+- `UserAgent` (string?) - User-Agent браузера  
+- `IsActive` (bool) - Активна ли сессия  
+- `CreatedAt` (DateTime) - Время создания  
+- `UpdatedAt` (DateTime?) - Время обновления  
 
 **Навигационные свойства**:
-- `Tickets` - Талоны клиента
-- `QueueSession` - Сессия очереди
+- `Tickets` - Талоны клиента  
+- `QueueSession` - Сессия очереди  
 
 ### Перечисления (Enums)
 
@@ -319,9 +319,9 @@ private async Task<int> CalculatePositionAsync(Ticket ticket)
 5. `ResumeSessionAsync()` - Возобновление сессии
 
 **Логика открытия сессии**:
-- Проверка, что нет других активных сессий для этой конфигурации
-- Создание записи QueueSession со статусом OPEN
-- Инициализация связанных сущностей (ExecutorState для исполнителей)
+- Проверка, что нет других активных сессий для этой конфигурации  
+- Создание записи QueueSession со статусом OPEN  
+- Инициализация связанных сущностей (ExecutorState для исполнителей)  
 
 #### UserService
 **Назначение**: Управление пользователями и аутентификация.
@@ -756,51 +756,51 @@ public class UnauthorizedException : Exception
 
 ### Глобальная обработка ошибок
 В endpoints используется try-catch с преобразованием исключений в соответствующие HTTP статусы:
-- `NotFoundException` → 404 Not Found
-- `BadRequestException` → 400 Bad Request
-- `ConflictException` → 409 Conflict
-- `UnauthorizedException` → 401 Unauthorized
-- Остальные → 500 Internal Server Error
+- `NotFoundException` -> 404 Not Found  
+- `BadRequestException` -> 400 Bad Request  
+- `ConflictException` -> 409 Conflict  
+- `UnauthorizedException` -> 401 Unauthorized  
+- Остальные -> 500 Internal Server Error  
 
 ## Тестируемость
 
 ### Мокируемые зависимости
 Все внешние зависимости представлены через интерфейсы:
-- `ITokenService` - Генерация и проверка токенов
-- `IPasswordHasher` - Хеширование паролей
-- `ITokenValidationService` - Валидация токенов
-- `IEventPublisher` - Публикация событий
-- `IDbContext` - Абстракция доступа к данным
+- `ITokenService` - Генерация и проверка токенов  
+- `IPasswordHasher` - Хеширование паролей  
+- `ITokenValidationService` - Валидация токенов  
+- `IEventPublisher` - Публикация событий  
+- `IDbContext` - Абстракция доступа к данным  
 
 ### Изоляция тестов
-- **Unit тесты**: Тестирование сервисов с моками зависимостей
-- **Integration тесты**: Тестирование с реальной БД в памяти
-- **API тесты**: Тестирование endpoints через TestServer
+- **Unit тесты**: Тестирование сервисов с моками зависимостей  
+- **Integration тесты**: Тестирование с реальной БД в памяти  
+- **API тесты**: Тестирование endpoints через TestServer  
 
 ## Производительность и оптимизация
 
 ### Индексы базы данных
 Ключевые индексы для оптимизации запросов:
-1. `idx_ticket_session_status` - Быстрый поиск талонов по сессии и статусу
-2. `idx_ticket_client_session` - Поиск активных талонов клиента
-3. `idx_session_queue_status` - Поиск активных сессий
-4. `idx_user_login` - Быстрая аутентификация по логину
-5. `idx_user_sessions_token` - Быстрая валидация токенов
+1. `idx_ticket_session_status` - Быстрый поиск талонов по сессии и статусу  
+2. `idx_ticket_client_session` - Поиск активных талонов клиента  
+3. `idx_session_queue_status` - Поиск активных сессий  
+4. `idx_user_login` - Быстрая аутентификация по логину  
+5. `idx_user_sessions_token` - Быстрая валидация токенов  
 
 ### Асинхронные операции
 Все операции ввода-вывода асинхронные:
-- Асинхронные методы EF Core (`ToListAsync`, `FirstOrDefaultAsync`)
-- Асинхронное сохранение (`SaveChangesAsync`)
-- Асинхронная публикация событий (`PublishAsync`)
+- Асинхронные методы EF Core (`ToListAsync`, `FirstOrDefaultAsync`)  
+- Асинхронное сохранение (`SaveChangesAsync`)  
+- Асинхронная публикация событий (`PublishAsync`)  
 
 ### Кэширование
 Планируемые улучшения:
-- Кэширование активной сессии очереди
-- Кэширование очереди талонов
-- Кэширование состояний исполнителей
+- Кэширование активной сессии очереди  
+- Кэширование очереди талонов  
+- Кэширование состояний исполнителей  
 
 ## Заключение
 
-Реализация бэкенда VQMS демонстрирует применение современных практик разработки на .NET. Система построена с учетом принципов SOLID, Clean Architecture и Domain-Driven Design. Детальная проработка каждого слоя обеспечивает поддерживаемость, тестируемость и расширяемость кода.
-
+Реализация бэкенда VQMS демонстрирует применение современных практик разработки на .NET. Система построена с учетом принципов SOLID, Clean Architecture и Domain-Driven Design. Детальная проработка каждого слоя обеспечивает поддерживаемость, тестируемость и расширяемость кода.  
+  
 В следующей части документации будут рассмотрены API endpoints, их спецификации и интеграционные аспекты системы.
