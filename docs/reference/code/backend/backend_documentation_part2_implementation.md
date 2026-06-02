@@ -304,11 +304,7 @@ public async Task<TicketDto> CreateAsync(CreateTicketDto dto, int? clientSession
 private async Task<int> CalculatePositionAsync(Ticket ticket)
 {
     return await _context.Tickets
-        .CountAsync(t => t.QueueSessionId == ticket.QueueSessionId &&
-                        t.Status == TicketStatus.Waiting &&
-                        (t.PriorityLevel > ticket.PriorityLevel ||
-                         (t.PriorityLevel == ticket.PriorityLevel && t.SortOrder < ticket.SortOrder) ||
-                         (t.PriorityLevel == ticket.PriorityLevel && t.SortOrder == ticket.SortOrder && t.CreatedAt < ticket.CreatedAt)));
+        .CountAsync(t => t.QueueSessionId == ticket.QueueSessionId && t.Status == TicketStatus.Waiting && (t.PriorityLevel > ticket.PriorityLevel || (t.PriorityLevel == ticket.PriorityLevel && t.SortOrder < ticket.SortOrder) || (t.PriorityLevel == ticket.PriorityLevel && t.SortOrder == ticket.SortOrder && t.CreatedAt < ticket.CreatedAt)));
 }
 ```
 
