@@ -8,7 +8,7 @@
 [![Vue.js](https://img.shields.io/badge/Vue.js-4FC08D?logo=vuedotjs&logoColor=fff)](https://vuejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff)](https://vite-docs.ru/)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-7952B3?logo=bootstrap&logoColor=fff)](https://getbootstrap.ru/)
-[![.NET](https://img.shields.io/badge/.NET-512BD4?logo=dotnet&logoColor=fff)](https://fastapi.tiangolo.com/)
+[![.NET](https://img.shields.io/badge/.NET-512BD4?logo=dotnet&logoColor=fff)](https://dotnet.microsoft.com/)
 [![PostgreSQL](https://img.shields.io/badge/Postgres-%23316192.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=fff)](https://www.docker.com/)
 
@@ -62,30 +62,245 @@ Virtual Queue Management System – это система управления �
 
 ## 🛠️ Технологический стек
 
-| Категория | Технологии |-|
-|-----------|------------|------------|
-| **Frontend** | Vue.js 3, Vite, Bootstrap | <img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/vue_js.png"> |
-| **Backend** | .NET | <img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/_net_core.png"> |
-| **База данных** | PostgreSQL | <img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/postgresql.png"> |
-| **Контейнеризация** | Docker | <img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/docker.png"> |
-| **Обновление данных** | Polling | <img height="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/rest.png"> |
+| Категория | Технологии |
+|-----------|------------|
+| **Frontend (клиент)** | Vue.js 3 (Composition API, TypeScript), Vite, Bootstrap 5, Pinia, Vue Router, Axios |
+| **Frontend (сотрудники)** | Vue.js 3, Vite, Bootstrap 5, Pinia, Vue Router, Axios, Bootstrap Icons |
+| **Backend** | .NET (ASP.NET Core, Minimal API), Entity Framework Core, MediatR, Serilog |
+| **База данных** | PostgreSQL 16 |
+| **Контейнеризация** | Docker, Docker Compose |
+| **Обновление данных** | Polling |
+| **Аутентификация** | Bearer Token (JWT) + FingerprintJS (клиентская идентификация) |
 
 ---
 
 ## ⚙️ Функциональность MVP
 
 ### Интерфейс клиента
-- Актуализировать
 
-### Интерфейс оператора/исполнителя
-- Актуализировать
+Клиентский интерфейс предназначен для посетителей сервисной точки и доступен без аутентификации. Идентификация клиента выполняется по отпечатку устройства (FingerprintJS).
+
+**Основные возможности:**
+
+- **Вход в очередь** — выбор типа услуги, ввод имени/фамилии, получение талона с номером
+- **Мониторинг талона** — отслеживание статуса в реальном времени
+- **Управление талоном** — отмена талона, перемещение назад в очереди
+- **Автообновление** — polling статуса каждые 10 секунд с возможностью приостановки
+
+![Интерфейс клиента - вход в очередь](docs/tutorials/img/Интерфейс%20клиента%20-%20вход%20в%20очередь.png)
+
+![Интерфейс клиента - мониторинг талона](docs/tutorials/img/Интерфейс%20клиента%20-%20мониторинг%20талона.png)
+
+### Интерфейс сотрудников
+
+Интерфейс сотрудников объединяет три роли в едином дашборде с переключением вкладок. Доступен после аутентификации по логину и паролю.
+
+#### Оператор
+
+Управляет очередью и контролирует работу исполнителей.
+
+- **Статистика очереди** — количество ожидающих, вызванных, обслуживаемых и обслуженных клиентов
+- **Список исполнителей** — таблица с состоянием готовности, количеством обслуженных, средним временем
+- **Управление талонами** — вызов следующего клиента, перенаправление к исполнителю, пропуск/отмена
+- **Быстрый вызов** — вызов первого ожидающего к случайному свободному исполнителю
+
+![Интерфейс оператора](docs/tutorials/img/Интерфейс%20оператора.png)
+
+#### Исполнитель
+
+Работает с вызванными клиентами и управляет своим состоянием.
+
+- **Управление готовностью** — переключатель "Готов/Не готов" к приёму клиентов
+- **Текущий клиент** — информация о талоне, имени клиента и приоритете
+- **Действия** — начало обслуживания, завершение обслуживания, отметка "клиент не явился"
+- **Статистика** — количество обслуженных, среднее время обслуживания
+
+![Интерфейс исполнителя](docs/tutorials/img/Интерфейс%20исполнителя.png)
+
+#### Администратор
+
+Настраивает систему и управляет справочными данными.
+
+- **Сессии очередей** — создание, запуск, приостановка и завершение сессий
+- **Конфигурации** — настройка параметров очереди (режим распределения, макс. размер, приоритеты)
+- **Пользователи** — управление учётными записями и ролями сотрудников
+- **Типы услуг** — настройка доступных услуг с указанием времени обслуживания
+- **Статистика** — просмотр логов событий системы
+
+![Интерфейс администратора](docs/tutorials/img/Интерфейс%20администратора.png)
 
 ---
 
-## 📁 Быстрый старт
+## 🚀 Быстрый старт
+
+### Требования
+
+- [Docker](https://www.docker.com/) и [Docker Compose](https://docs.docker.com/compose/) (рекомендуемый способ)
+- ИЛИ [.NET 8 SDK](https://dotnet.microsoft.com/download) + [Node.js 20+](https://nodejs.org/) + [PostgreSQL 16](https://www.postgresql.org/)
+
+### Production mode 
+
+В этом режиме ASP.NET Core бэкенд на порту `8080` сам отдаёт статические сборки Vue.js приложений.
+
+#### Через Docker (рекомендуется)
+
+```bash
+# Сборка и запуск всех сервисов
+docker compose up --build backend db
+```
+
+После запуска:
+
+| URL | Назначение |
+|-----|------------|
+| `http://localhost:8080/` | Редирект на `/client/` |
+| `http://localhost:8080/client/` | Интерфейс посетителя (получение талона) |
+| `http://localhost:8080/app/` | Интерфейс сотрудников (редирект на `/app/login`) |
+| `http://localhost:8080/app/login` | Вход для сотрудников |
+| `http://localhost:8080/app/dashboard` | Дашборд сотрудника |
+| `http://localhost:8080/swagger` | Swagger UI |
+| `http://localhost:8080/healthz` | Health check |
+
+#### Локально без Docker
+
+```bash
+# 1. Собрать фронтенды
+cd frontend/client/client-interface
+npm ci
+npm run build:prod
+
+cd ../../user/user-interface
+npm ci
+npm run build:prod
+
+# 2. Запустить бэкенд (из корня проекта)
+cd ../../backend
+dotnet run --project src/Api/Api.csproj
+```
+
+> **Важно:** Для локального запуска без Docker нужна запущенная PostgreSQL (см. `appsettings.json`).
+
+### Development mode
+
+В этом режиме фронтенды запускаются через Vite dev server с hot-reload, а API-запросы проксируются на бэкенд.
+
+#### Через Docker
+
+```bash
+# Запуск бэкенда + БД + фронтенды
+docker compose --profile dev-frontend up --build
+```
+
+Или по отдельности:
+
+```bash
+# Терминал 1: БД и бэкенд
+docker compose up --build db backend
+
+# Терминал 2: Фронтенды
+docker compose --profile dev-frontend up
+```
+
+После запуска:
+
+| URL | Назначение |
+|-----|------------|
+| `http://localhost:5173/` | Клиентский интерфейс (Vite, hot-reload) |
+| `http://localhost:5174/` | Интерфейс сотрудников (Vite, hot-reload) |
+| `http://localhost:8080/swagger` | Swagger UI |
+| `http://localhost:8080/healthz` | Health check |
+
+#### Локально без Docker
+
+```bash
+# Терминал 1: Бэкенд
+cd backend
+dotnet run --project src/Api/Api.csproj
+
+# Терминал 2: Клиентский интерфейс
+cd frontend/client/client-interface
+npm ci
+npm run dev
+
+# Терминал 3: Интерфейс сотрудников
+cd frontend/user/user-interface
+npm ci
+npm run dev
+```
+
+### Структура URL
 
 ```
-Актуализировать
+http://localhost:8080/
+├── /client/          # Статическая сборка client-interface (посетители)
+│   ├── /             # Главная страница (вход в очередь)
+│   └── /ticket       # Страница талона (SPA-роутинг)
+├── /app/             # Статическая сборка user-interface (сотрудники)
+│   ├── /login        # Вход
+│   ├── /dashboard    # Дашборд (вкладки: Исполнитель / Оператор / Администратор)
+│   ├── /operator     # Панель оператора
+│   ├── /executor     # Панель исполнителя
+│   └── /admin        # Панель администратора
+├── /api/             # API endpoints
+├── /swagger          # Swagger UI
+└── /healthz          # Health check
+```
+
+### Переменные окружения
+
+#### Бэкенд
+
+| Переменная | Описание | По умолчанию |
+|-----------|----------|-------------|
+| `ASPNETCORE_ENVIRONMENT` | Окружение (`Development`/`Production`) | `Development` |
+| `ConnectionStrings__DefaultConnection` | Строка подключения к БД | `Host=localhost;Port=5432;...` |
+
+#### Фронтенды (только для dev-режима)
+
+| Переменная | Описание | По умолчанию |
+|-----------|----------|-------------|
+| `VITE_API_BASE_URL` | Базовый URL API | `http://localhost:8080` |
+
+В production-режиме фронтенды ходят в API по относительному пути `/api`, так как раздаются тем же хостом.
+
+### Сборка фронтендов
+
+```bash
+# Production-сборка (base path: /client/ или /app/)
+npm run build:prod
+
+# Development-сборка (base path: /)
+npm run build
+```
+
+Разница между `build` и `build:prod`:
+
+| Скрипт | Base path | Назначение |
+|--------|-----------|------------|
+| `build` | `/` | Для dev-сервера |
+| `build:prod` | `/client/` или `/app/` | Для раздачи через бэкенд |
+
+---
+
+## 📁 Архитектура проекта
+
+```
+virtual_queue_management_system/
+├── backend/                          # .NET Backend
+│   └── src/
+│       ├── Api/                      # ASP.NET Core Minimal API (точка входа)
+│       ├── Application/              # Слой приложения (CQRS, DTOs, сервисы)
+│       ├── Domain/                   # Доменный слой (сущности, интерфейсы, перечисления)
+│       └── Infrastructure/           # Инфраструктура (EF Core, JWT, хеширование)
+├── frontend/
+│   ├── client/client-interface/      # Vue.js 3 клиентский интерфейс (посетители)
+│   └── user/user-interface/          # Vue.js 3 интерфейс сотрудников
+├── docs/                             # Документация (MkDocs)
+├── infra/
+│   └── db/init/                      # SQL-скрипты инициализации БД
+├── docker-compose.yml                # Docker Compose (production + dev профили)
+├── docker-compose.override.yml       # Переопределения для dev-режима
+└── Dockerfile.docs                   # Dockerfile для документации
 ```
 
 ---
