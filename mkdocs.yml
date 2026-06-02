@@ -48,15 +48,6 @@ nav:
     #- explanation/adr/index.md
 
 markdown_extensions:
-  - pymdownx.highlight:
-      use_pygments: true
-      default_lang: text
-      auto_title: false
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:mermaid_fence.mermaid_format
   - pymdownx.tabbed:
       alternate_style: true
   - attr_list
