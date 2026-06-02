@@ -147,26 +147,7 @@ Virtual Queue Management System (VQMS) - это система управлен�
 ## Модель данных
 
 ### Основные отношения
-```mermaid
-erDiagram
-    User ||--o{ UserRole : has
-    User ||--o{ UserSession : creates
-    User ||--o{ QueueConfig : creates
-    User ||--o{ QueueSession : creates
-    User ||--o{ Ticket : serves
-    
-    QueueConfig ||--o{ QueueSession : has
-    QueueConfig ||--o{ ServiceType : defines
-    
-    QueueSession ||--o{ Ticket : contains
-    QueueSession ||--o{ ClientSession : tracks
-    
-    ServiceType ||--o{ Ticket : categorizes
-    
-    Ticket ||--o{ EventLog : generates
-    ClientSession ||--o{ Ticket : creates
-    ExecutorState ||--o{ Ticket : processes
-```
+
 
 ### Ключевые ограничения
 - Одна активная сессия очереди на конфигурацию
