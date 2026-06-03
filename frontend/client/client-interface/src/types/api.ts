@@ -29,7 +29,7 @@ export interface TicketDto {
   serviceLetter?: string;
   sortOrder: number;
   priorityLevel: number;
-  status: string;
+  status: number; // 0=Waiting, 1=Called, 2=Serving, 3=Served, 4=Skipped, 5=Cancelled
   version: number;
   createdAt: string;
   calledAt?: string;

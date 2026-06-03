@@ -76,13 +76,7 @@ const props = defineProps<{
 }>();
 
 const statusText = computed(() => {
-  const statusMap: Record<string | number, string> = {
-    Waiting: 'Ожидает',
-    Called: 'Вызван',
-    Serving: 'Обслуживается',
-    Served: 'Обслужен',
-    Cancelled: 'Отменён',
-    Skipped: 'Пропущен',
+  const statusMap: Record<number, string> = {
     0: 'Ожидает',
     1: 'Вызван',
     2: 'Обслуживается',
@@ -94,13 +88,7 @@ const statusText = computed(() => {
 });
 
 const statusBadgeClass = computed(() => {
-  const map: Record<string | number, string> = {
-    Waiting: 'bg-warning text-dark',
-    Called: 'bg-info text-dark',
-    Serving: 'bg-primary text-white',
-    Served: 'bg-success text-white',
-    Cancelled: 'bg-secondary text-dark',
-    Skipped: 'bg-danger text-white',
+  const map: Record<number, string> = {
     0: 'bg-warning text-dark',
     1: 'bg-info text-dark',
     2: 'bg-primary text-white',
@@ -112,10 +100,10 @@ const statusBadgeClass = computed(() => {
 });
 
 const headerClass = computed(() => {
-  const status = String(props.ticket.status);
-  if (status === 'Waiting' || status === '0') return 'bg-warning text-dark';
-  if (status === 'Called' || status === '1') return 'bg-info text-dark';
-  if (status === 'Serving' || status === '2') return 'bg-primary text-white';
+  const status = props.ticket.status;
+  if (status === 0) return 'bg-warning text-dark';
+  if (status === 1) return 'bg-info text-dark';
+  if (status === 2) return 'bg-primary text-white';
   return 'bg-secondary text-white';
 });
 

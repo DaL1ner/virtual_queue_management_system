@@ -20,13 +20,14 @@
             <button
               class="btn btn-outline-danger btn-lg"
               @click="handleCancel"
-              :disabled="loading"
+              :disabled="loading || !canExit"
             >
               <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
               Выйти из очереди
             </button>
             <small class="text-muted mt-1 d-block">
-              Ваш талон будет отменён, и вы покинете очередь.
+              <span v-if="!canExit && canExitReason">{{ canExitReason }}</span>
+              <span v-else>Ваш талон будет отменён, и вы покинете очередь.</span>
             </small>
           </div>
         </div>
@@ -52,8 +53,13 @@
         <div class="alert alert-info">
           <h4 class="alert-heading h6">Важно</h4>
           <ul class="mb-0">
-            Если вы не готовы подойти, используйте "Переместиться назад".<br>
-            Если вы передумали получать услугу, пожалуйста, используйте "Покинуть очередь".
+            <li v-if="canExit">
+              Если вы не готовы подойти, используйте "Переместиться назад".<br>
+              Если вы передумали получать услугу, используйте "Выйти из очереди".
+            </li>
+            <li v-else>
+              Выход из очереди недоступен в текущем статусе талона.
+            </li>
           </ul>
         </div>
       </div>
@@ -139,6 +145,26 @@ const maxSteps = computed(() => props.ticket.totalWaiting - props.ticket.positio
 const isLastInQueue = computed(() => maxSteps.value <= 0);
 const successMessage = ref('');
 const errorMessage = ref('');
+
+// Выход из очереди доступен только в статусе Waiting (0 = Waiting)
+const canExit = computed(() => props.ticket.status === 0);
+const canExitReason = computed(() => {
+  const status = props.ticket.status;
+  switch (status) {
+    case 1: // Called
+      return 'Вы вызваны к специалисту. Выход недоступен.';
+    case 2: // Serving
+      return 'Вы находитесь на обслуживании. Выход недоступен.';
+    case 3: // Served
+      return 'Обслуживание завершено. Выход недоступен.';
+    case 4: // Skipped
+      return 'Талон пропущен. Выход недоступен.';
+    case 5: // Cancelled
+      return 'Талон отменён. Выход недоступен.';
+    default:
+      return `Статус "${status}". Выход недоступен.`;
+  }
+});
 
 const quickSteps = computed(() => {
   const max = maxSteps.value;

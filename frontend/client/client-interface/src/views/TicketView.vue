@@ -75,13 +75,13 @@ const ticket = computed(() => ticketStore.activeTicket);
 
 const statusText = computed(() => {
   if (!ticket.value) return '';
-  const statusMap: Record<string, string> = {
-    Waiting: 'Ожидает',
-    Called: 'Вызван',
-    Serving: 'Обслуживается',
-    Served: 'Обслужен',
-    Cancelled: 'Отменён',
-    Skipped: 'Пропущен',
+  const statusMap: Record<number, string> = {
+    0: 'Ожидает',
+    1: 'Вызван',
+    2: 'Обслуживается',
+    3: 'Обслужен',
+    4: 'Пропущен',
+    5: 'Отменён',
   };
   return statusMap[ticket.value.status] || ticket.value.status;
 });
@@ -89,17 +89,17 @@ const statusText = computed(() => {
 const statusBadgeClass = computed(() => {
   if (!ticket.value) return '';
   switch (ticket.value.status) {
-    case 'Waiting':
+    case 0: // Waiting
       return 'badge bg-warning text-dark';
-    case 'Called':
+    case 1: // Called
       return 'badge bg-info';
-    case 'Serving':
+    case 2: // Serving
       return 'badge bg-primary';
-    case 'Served':
+    case 3: // Served
       return 'badge bg-success';
-    case 'Cancelled':
+    case 5: // Cancelled
       return 'badge bg-secondary';
-    case 'Skipped':
+    case 4: // Skipped
       return 'badge bg-danger';
     default:
       return 'badge bg-light text-dark';
