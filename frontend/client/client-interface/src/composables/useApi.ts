@@ -2,10 +2,8 @@ import { ref } from 'vue';
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import { useAuthStore } from '../stores/auth.store';
 
-// В production (сборка раздаётся бэкендом) API доступен по относительному пути /api
-// В dev-режиме (Vite dev server) используется переменная окружения
-const isProduction = import.meta.env.PROD;
-const API_BASE_URL = isProduction ? '/api' : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080');
+// API доступен по относительному пути /api — в dev режиме Vite проксирует запросы на бэкенд
+const API_BASE_URL = '/api';
 
 export function useApi() {
   const authStore = useAuthStore();
