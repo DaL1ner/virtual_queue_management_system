@@ -723,22 +723,114 @@ https://api.vqms.example.com (продакшен)
 }
 ```
 
-#### PUT /api/users/{userId}
-**Назначение**: Обновление пользователя.
+#### PATCH /api/users/{id}
+**Назначение**: Обновление учётных данных пользователя (частичное обновление).
 
 **Требования**: Роль ADMIN
 
-#### POST /api/users/{userId}/deactivate
-**Назначение**: Деактивация пользователя.
+**Запрос**:
+```json
+{
+  "fullName": "Новое Имя",
+  "lastName": "Новая Фамилия",
+  "email": "newemail@example.com",
+  "password": "newsecurepassword",
+  "isActive": true,
+  "roleIds": [1, 2, 3]
+}
+```
+
+**Описание полей**:
+- Все поля опциональны — обновляются только переданные
+- `password` — если передан, хешируется и сохраняется; если не передан или пустой — пароль не меняется
+- `roleIds` — если передан, роли синхронизируются: снятые удаляются, новые добавляются; если не передан — роли не трогаются
+- `email` — проверяется на уникальность перед сохранением
+
+**Ответ**:
+```json
+{
+  "id": 1,
+  "login": "admin",
+  "fullName": "Новое Имя",
+  "lastName": "Новая Фамилия",
+  "email": "newemail@example.com",
+  "isActive": true,
+  "createdAt": "2024-01-01T00:00:00Z",
+  "updatedAt": "2024-01-15T14:00:00Z",
+  "roles": [
+    { "id": 1, "name": "Администратор", "code": "ADMIN", "description": null, "createdAt": "..." },
+    { "id": 2, "name": "Оператор", "code": "OPERATOR", "description": null, "createdAt": "..." }
+  ]
+}
+```
+
+#### PATCH /api/users/{id}/deactivate
+**Назначение**: Деактивация пользователя (soft delete).
 
 **Требования**: Роль ADMIN
 
-#### POST /api/users/{userId}/activate
+**Ответ**:
+```json
+{
+  "id": 1,
+  "login": "admin",
+  "isActive": false,
+  "updatedAt": "2024-01-15T14:00:00Z"
+}
+```
+
+#### PATCH /api/users/{id}/activate
 **Назначение**: Активация пользователя.
 
 **Требования**: Роль ADMIN
 
-### 8. Health Checks и мониторинг
+**Ответ**:
+```json
+{
+  "id": 1,
+  "login": "admin",
+  "isActive": true,
+  "updatedAt": "2024-01-15T14:00:00Z"
+}
+```
+
+### 8. Управление ролями (Roles)
+
+#### GET /api/roles
+**Назначение**: Получение списка всех доступных ролей.
+
+**Требования**: Роль ADMIN
+
+**Ответ**:
+```json
+[
+  {
+    "id": 1,
+    "name": "Администратор",
+    "code": "ADMIN",
+    "description": "Полный доступ к управлению системой",
+    "createdAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": 2,
+    "name": "Оператор",
+    "code": "OPERATOR",
+    "description": "Управление очередью и талонами",
+    "createdAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": 3,
+    "name": "Исполнитель",
+    "code": "EXECUTOR",
+    "description": "Обслуживание клиентов",
+    "createdAt": "2024-01-01T00:00:00Z"
+  }
+]
+```
+
+**Назначение**: Используется в интерфейсе администратора для отображения и выбора ролей при создании/редактировании пользователей.
+
+### 9. Health Checks и мониторинг
 
 #### GET /healthz
 **Назначение**: Проверка здоровья приложения (Kubernetes liveness probe).
@@ -944,6 +1036,43 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 ```
+
+### Dockerfile: Multi-stage build
+
+[`backend/Dockerfile`](backend/Dockerfile) использует multi-stage сборку с автоматическим построением фронтендов:
+
+```dockerfile
+# Stage 1: Сборка клиентского интерфейса
+FROM node:20-alpine AS client-build
+WORKDIR /app
+COPY frontend/client/client-interface/package*.json ./
+RUN npm ci
+COPY frontend/client/client-interface/ .
+RUN npm run build
+
+# Stage 2: Сборка пользовательского интерфейса
+FROM node:20-alpine AS user-build
+WORKDIR /app
+COPY frontend/user/user-interface/package*.json ./
+RUN npm ci
+COPY frontend/user/user-interface/ .
+RUN npm run build
+
+# Stage 3: Сборка .NET бэкенда
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+# ... сборка проекта
+
+# Stage 4: Финальный образ
+FROM base AS final
+COPY --from=publish /app/publish .
+COPY --from=client-build /app/dist ./wwwroot/client
+COPY --from=user-build /app/dist ./wwwroot/app
+```
+
+**Преимущества автоматической сборки:**
+- Ручная сборка через `npm run build` не требуется
+- Фронтенды собираются в изолированных контейнерах Node.js 20
+- Готовые сборки автоматически включаются в финальный образ
 
 ### Переменные окружения
 ```bash

@@ -184,16 +184,20 @@ backend/
 ## Развертывание
 
 ### Docker
-``` bash
-# Сборка и запуск  
-docker-compose up -d  
-  
-# Остановка  
-docker-compose down  
-  
-# Просмотр логов  
-docker-compose logs -f api  
+```bash
+# Сборка и запуск
+# Dockerfile автоматически собирает оба фронтенда (client-interface и user-interface)
+# в процессе сборки образа через multi-stage build
+docker compose up --build backend db
+
+# Остановка
+docker compose down
+
+# Просмотр логов
+docker compose logs -f backend
 ```
+
+> **Примечание:** В [`backend/Dockerfile`](backend/Dockerfile) определены multi-stage этапы `client-build` и `user-build`, которые автоматически собирают фронтенды на основе Node.js 20. Ручная сборка через `npm run build` не требуется.
 
 ### Kubernetes
 ``` yaml

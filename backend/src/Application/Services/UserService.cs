@@ -153,6 +153,7 @@ public class UserService
     public async Task<UserDto> UpdateAsync(int id, UpdateUserDto dto, int updatedById)
     {
         var user = await _context.Users
+            .Include(u => u.UserRoles)
             .FirstOrDefaultAsync(u => u.Id == id);
 
         if (user == null)
@@ -188,6 +189,50 @@ public class UserService
         if (dto.IsActive.HasValue)
         {
             user.IsActive = dto.IsActive.Value;
+        }
+
+        // Обновление пароля (если указан)
+        if (!string.IsNullOrWhiteSpace(dto.Password))
+        {
+            user.PasswordHash = _passwordHasher.HashPassword(dto.Password);
+        }
+
+        // Синхронизация ролей (если передан список)
+        if (dto.RoleIds != null)
+        {
+            var currentRoleIds = user.UserRoles.Select(ur => ur.RoleId).ToHashSet();
+            var newRoleIds = dto.RoleIds.ToHashSet();
+
+            // Удаление ролей, которых нет в новом списке
+            var rolesToRemove = user.UserRoles
+                .Where(ur => !newRoleIds.Contains(ur.RoleId))
+                .ToList();
+
+            foreach (var userRole in rolesToRemove)
+            {
+                _context.UserRoles.Remove(userRole);
+            }
+
+            // Добавление новых ролей, которых ещё нет у пользователя
+            var roleIdsToAdd = newRoleIds
+                .Where(roleId => !currentRoleIds.Contains(roleId))
+                .ToList();
+
+            foreach (var roleId in roleIdsToAdd)
+            {
+                var role = await _context.Roles.FindAsync(roleId);
+                if (role != null)
+                {
+                    var userRole = new UserRole
+                    {
+                        UserId = user.Id,
+                        RoleId = role.Id,
+                        AssignedAt = DateTime.UtcNow,
+                        AssignedBy = updatedById
+                    };
+                    _context.UserRoles.Add(userRole);
+                }
+            }
         }
 
         await _context.SaveChangesAsync();

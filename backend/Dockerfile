@@ -7,6 +7,26 @@ EXPOSE 8080
 ENV ASPNETCORE_ENVIRONMENT=Development
 
 # ──────────────────────────────────────────────
+# Этап сборки Frontend: Client Interface
+# ──────────────────────────────────────────────
+FROM node:20-alpine AS client-build
+WORKDIR /app
+COPY frontend/client/client-interface/package*.json ./
+RUN npm ci --no-cache
+COPY frontend/client/client-interface/ .
+RUN rm -rf node_modules/.vite .vite dist && npm run build:prod
+
+# ──────────────────────────────────────────────
+# Этап сборки Frontend: User Interface
+# ──────────────────────────────────────────────
+FROM node:20-alpine AS user-build
+WORKDIR /app
+COPY frontend/user/user-interface/package*.json ./
+RUN npm ci --no-cache
+COPY frontend/user/user-interface/ .
+RUN rm -rf node_modules/.vite .vite dist && npm run build:prod
+
+# ──────────────────────────────────────────────
 # Этап сборки .NET backend
 # ──────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
@@ -31,8 +51,7 @@ RUN dotnet publish "./Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:Use
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-# Копируем предварительно собранные фронтенд-сборки из контекста сборки
-# (собираются локально через npm run build:prod)
-COPY frontend/client/client-interface/dist ./wwwroot/client
-COPY frontend/user/user-interface/dist ./wwwroot/app
+# Копируем собранные фронтенд-сборки из stages
+COPY --from=client-build /app/dist ./wwwroot/client
+COPY --from=user-build /app/dist ./wwwroot/app
 ENTRYPOINT ["dotnet", "Api.dll"]

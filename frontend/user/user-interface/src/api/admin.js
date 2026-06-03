@@ -62,7 +62,7 @@ export const adminApi = {
       .then(response => response.data)
   },
   updateUser(id, data) {
-    return apiClient.put(`/users/${id}`, data)
+    return apiClient.patch(`/users/${id}`, data)
       .then(response => response.data)
   },
   deleteUser(id) {
@@ -74,6 +74,12 @@ export const adminApi = {
   },
   activateUser(id) {
     return apiClient.patch(`/users/${id}/activate`)
+      .then(response => response.data)
+  },
+
+  // Role
+  getRoles() {
+    return apiClient.get('/roles')
       .then(response => response.data)
   },
 
@@ -122,6 +128,7 @@ export const getSessionStatistics = adminApi.getSessionStatistics
 export const deactivateQueueConfig = adminApi.deactivateQueueConfig
 export const deactivateUser = adminApi.deactivateUser
 export const activateUser = adminApi.activateUser
+export const getRoles = adminApi.getRoles
 export const createServiceType = adminApi.createServiceType
 export const updateServiceType = adminApi.updateServiceType
 export const deleteServiceType = adminApi.deleteServiceType

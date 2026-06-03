@@ -19,6 +19,7 @@
 
 ```bash
 # Сборка и запуск всех сервисов
+# Dockerfile автоматически собирает оба фронтенда в процессе сборки образа
 docker compose up --build backend db
 ```
 
@@ -33,6 +34,8 @@ docker compose up --build backend db
 | `http://localhost:8080/app/dashboard` | Дашборд сотрудника |
 | `http://localhost:8080/swagger` | Swagger UI |
 | `http://localhost:8080/healthz` | Health check |
+
+> **Примечание:** Dockerfile автоматически собирает оба фронтенда (`client-interface` и `user-interface`) в процессе сборки образа через multi-stage build. Ручная сборка через `npm run build` не требуется.
 
 ### Локально без Docker
 

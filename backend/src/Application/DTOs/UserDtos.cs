@@ -31,6 +31,7 @@ public record UpdateUserDto(
     string? FullName = null,
     string? LastName = null,
     string? Email = null,
+    string? Password = null,
     bool? IsActive = null,
     IEnumerable<int>? RoleIds = null
 );

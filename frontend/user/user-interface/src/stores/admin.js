@@ -7,6 +7,7 @@ export const useAdminStore = defineStore('admin', () => {
   const queueSessions = ref([])
   const users = ref([])
   const serviceTypes = ref([])
+  const roles = ref([])
   const statistics = ref(null)
   const loading = ref(false)
   const error = ref(null)
@@ -47,6 +48,15 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
+  async function fetchRoles() {
+    try {
+      roles.value = await api.getRoles()
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Ошибка загрузки ролей'
+      console.error('Failed to fetch roles', err)
+    }
+  }
+
   async function fetchServiceTypes() {
     loading.value = true
     try {
@@ -76,6 +86,7 @@ export const useAdminStore = defineStore('admin', () => {
     fetchQueueConfigs()
     fetchQueueSessions()
     fetchUsers()
+    fetchRoles()
     fetchServiceTypes()
     fetchStatistics()
   }
@@ -324,12 +335,14 @@ export const useAdminStore = defineStore('admin', () => {
     queueSessions,
     users,
     serviceTypes,
+    roles,
     statistics,
     loading,
     error,
     fetchQueueConfigs,
     fetchQueueSessions,
     fetchUsers,
+    fetchRoles,
     fetchServiceTypes,
     fetchStatistics,
     startPolling,

@@ -421,7 +421,21 @@
               </div>
               <div class="mb-3">
                 <label class="form-label">Роли (опционально)</label>
-                <div class="form-text">Выбор ролей пока не реализован</div>
+                <div v-if="adminStore.roles.length === 0" class="form-text">Загрузка ролей...</div>
+                <div v-else class="role-checkboxes">
+                  <div v-for="role in adminStore.roles" :key="role.id" class="form-check form-check-inline">
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      :id="'create-role-' + role.id"
+                      :value="role.id"
+                      v-model="userForm.roleIds"
+                    >
+                    <label class="form-check-label" :for="'create-role-' + role.id">
+                      {{ role.name }} ({{ role.code }})
+                    </label>
+                  </div>
+                </div>
               </div>
             </form>
           </div>
@@ -465,7 +479,21 @@
               </div>
               <div class="mb-3">
                 <label class="form-label">Роли (опционально)</label>
-                <div class="form-text">Выбор ролей пока не реализован</div>
+                <div v-if="adminStore.roles.length === 0" class="form-text">Загрузка ролей...</div>
+                <div v-else class="role-checkboxes">
+                  <div v-for="role in adminStore.roles" :key="role.id" class="form-check form-check-inline">
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      :id="'edit-role-' + role.id"
+                      :value="role.id"
+                      v-model="userForm.roleIds"
+                    >
+                    <label class="form-check-label" :for="'edit-role-' + role.id">
+                      {{ role.name }} ({{ role.code }})
+                    </label>
+                  </div>
+                </div>
               </div>
             </form>
           </div>
