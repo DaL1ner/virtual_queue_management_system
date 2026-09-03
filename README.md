@@ -1,5 +1,7 @@
 <div align="center">
 
+[![Свидетельство Роспатент](https://img.shields.io/badge/Реестр_ПО-2026683968-28A745?style=flat-square)](https://fips.ru/EGD/7a8f17a0-a219-44fa-8b48-60d32af9a957)
+
 # Система управления виртуальной очередью<br> Virtual Queue Management System
 
 > Веб-приложение для управления виртуальной очередью в сервисных точках
